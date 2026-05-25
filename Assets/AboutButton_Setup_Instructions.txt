@@ -1,0 +1,57 @@
+ABOUT BUTTON SETUP INSTRUCTIONS
+================================
+
+I've created the necessary scripts and prefab for you. Here's how to set up the About button in your MainMenu scene:
+
+STEP 1: ADD THE ABOUT BUTTON TO MAIN MENU
+------------------------------------------
+1. Open the MainMenu scene in Unity
+2. In the Canvas, find where your "Simulation" and "Quit" buttons are located
+3. Create a new Button between them:
+   - Right-click in the Canvas → UI → Button
+   - Position it between "Simulation" and "Quit" buttons
+   - Set the button text to "About"
+   - Make sure it's properly aligned with other buttons
+
+STEP 2: ADD THE ABOUT PANEL PREFAB
+-----------------------------------
+1. In the Project window, find the "AboutPanel.prefab" I created
+2. Drag and drop it into your MainMenu scene (as a child of the Canvas)
+3. Make sure it's positioned above other UI elements (higher in hierarchy)
+
+STEP 3: SETUP THE ABOUTPANEL SCRIPT
+------------------------------------
+1. Select the AboutPanel GameObject in the scene
+2. In the Inspector, you'll see the AboutPanel script component
+3. Assign the references:
+   - About Panel: Drag the AboutPanel GameObject here
+   - About Button: Drag your new "About" button here
+   - Back Button: Drag the "Back" button from the AboutPanel here
+
+STEP 4: ADD CANVAS GROUP COMPONENT
+-----------------------------------
+1. Select the AboutPanel GameObject
+2. Add Component → UI → Canvas Group
+3. This enables the fade animation
+
+STEP 5: TEST THE FUNCTIONALITY
+-------------------------------
+1. Enter Play mode
+2. Click the "About" button - the panel should animate in
+3. Click the "Back" button - the panel should animate out
+4. The panel should display "Hello from Developer" text
+
+TROUBLESHOOTING
+----------------
+- If animations don't work, make sure CanvasGroup component is added
+- If buttons don't respond, check that the script references are properly assigned
+- If the panel doesn't show, ensure it's positioned correctly in the Canvas hierarchy
+
+ANIMATION CUSTOMIZATION
+-----------------------
+You can adjust the animation in the AboutPanel script:
+- Animation Duration: How long the animation takes
+- Show Curve: Animation curve for showing the panel
+- Hide Curve: Animation curve for hiding the panel
+
+The current setup uses smooth ease-in-out curves for natural-looking animations.
