@@ -9,6 +9,10 @@ public class LocalizationManager : MonoBehaviour
 {
     public static LocalizationManager Instance { get; private set; }
 
+    // Делегат и событие смены языка
+    public delegate void LanguageChangedDelegate();
+    public static event LanguageChangedDelegate OnLanguageChanged;
+
     private Dictionary<string, string> translations = new();
     public static Language CurrentLanguage { get; set; } = Language.English;
 
@@ -40,7 +44,6 @@ public class LocalizationManager : MonoBehaviour
         GameState.language = CurrentLanguage; // Синхронизируем GameState
 
         LoadTranslations(CurrentLanguage);
-        ApplyTranslations();
     }
 
     private void OnEnable()
@@ -56,8 +59,11 @@ public class LocalizationManager : MonoBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        // Автоматически переводим всю сцену при её загрузке
-        ApplyTranslations();
+        // Автоматически находим новые текстовые объекты в сцене и вешаем на них локализатор
+        AutoRegisterLocalizedTexts();
+        
+        // Оповещаем все текстовые объекты о смене сцены и необходимости обновить тексты
+        OnLanguageChanged?.Invoke();
     }
 
     public void ChangeLanguage(Language lang)
@@ -69,11 +75,23 @@ public class LocalizationManager : MonoBehaviour
         }
 
         LoadTranslations(lang);
-        ApplyTranslations();
+        
+        // Оповещаем все подписанные текстовые объекты о смене языка
+        OnLanguageChanged?.Invoke();
 
         // Сохраняем выбор в память устройства
         PlayerPrefs.SetInt("SelectedLanguage", (int)lang);
         PlayerPrefs.Save();
+    }
+
+    // Метод получения перевода по ключу
+    public string GetTranslation(string key)
+    {
+        if (translations != null && translations.TryGetValue(key, out string translation))
+        {
+            return translation;
+        }
+        return null;
     }
 
     private void LoadTranslations(Language lang)
@@ -92,34 +110,28 @@ public class LocalizationManager : MonoBehaviour
         }
     }
 
-    private void ApplyTranslations()
+    // Вспомогательный метод для автоматической регистрации локализации на текстовых объектах
+    private void AutoRegisterLocalizedTexts()
     {
-        if (translations == null || translations.Count == 0) return;
-
-        var textObjectsToTranslate = FindObjectsByType<Text>(
-            FindObjectsInactive.Include,
-            FindObjectsSortMode.None);
-        foreach (var textElement in textObjectsToTranslate)
+        // Находим все текстовые элементы в сцене и автоматически вешаем LocalizedText
+        var texts = FindObjectsByType<Text>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var t in texts)
         {
-            if (translations.TryGetValue(textElement.name, out string translation))
+            if (t.gameObject.GetComponent<LocalizedText>() == null)
             {
-                textElement.text = translation;
+                t.gameObject.AddComponent<LocalizedText>();
             }
         }
 
-        var texMeshProObjectsToTranslate = FindObjectsByType<TMP_Text>(
-            FindObjectsInactive.Include,
-            FindObjectsSortMode.None);
-        foreach (var textElement in texMeshProObjectsToTranslate)
+        var tmpTexts = FindObjectsByType<TMP_Text>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var tmp in tmpTexts)
         {
-            if (translations.TryGetValue(textElement.name, out string translation))
+            if (tmp.gameObject.GetComponent<LocalizedText>() == null)
             {
-                textElement.text = translation;
+                tmp.gameObject.AddComponent<LocalizedText>();
             }
         }
-
     }
-
 }
 
 public enum Language

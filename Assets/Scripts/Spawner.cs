@@ -1,41 +1,63 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using System.Security.Cryptography;
 using UnityEngine;
 
 public class Spawner : MonoBehaviour
 {
-    
     [Tooltip("The Prefab to be spawned into the scene.")]
     public GameObject spawnPrefab = null;
 
     [Tooltip("The time between spawns")]
     public float spawnTime = 0.1f;
 
-    // keep track of time passed for next spawn
+    // Пул объектов для переиспользования снарядов/астероидов
+    private List<GameObject> pooledProjectiles = new List<GameObject>();
     private float nextSpawn = 0f;
 
-    // Start is called before the first frame update
     void Start()
     {
         nextSpawn = 0f;
+        pooledProjectiles.Clear();
     }
 
-    // Update is called once per frame
     void Update()
     {
-        // update the time until nextSpawn
         nextSpawn += Time.deltaTime;
 
-        // if time to spawn
-        if (nextSpawn>spawnTime)
+        if (nextSpawn > spawnTime)
         {
-            // Spawn the gameObject at the spawners current position and rotation
-            GameObject projectileGameObject = Instantiate(spawnPrefab, transform.position, transform.rotation, null);
-
-            // reset the time until nextSpawn
+            SpawnProjectile();
             nextSpawn = 0f;
         }
+    }
 
+    private void SpawnProjectile()
+    {
+        if (spawnPrefab == null) return;
+
+        GameObject projectile = GetPooledObject();
+        if (projectile != null)
+        {
+            projectile.transform.position = transform.position;
+            projectile.transform.rotation = transform.rotation;
+            projectile.SetActive(true);
+        }
+    }
+
+    private GameObject GetPooledObject()
+    {
+        // Ищем неактивный снаряд в пуле
+        for (int i = 0; i < pooledProjectiles.Count; i++)
+        {
+            if (pooledProjectiles[i] != null && !pooledProjectiles[i].activeInHierarchy)
+            {
+                return pooledProjectiles[i];
+            }
+        }
+
+        // Если все снаряды заняты или пул пуст — создаем новый
+        GameObject newObj = Instantiate(spawnPrefab, transform.position, transform.rotation, null);
+        pooledProjectiles.Add(newObj);
+        return newObj;
     }
 }
