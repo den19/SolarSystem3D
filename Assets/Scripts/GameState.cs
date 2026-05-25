@@ -14,6 +14,9 @@ public class GameState : MonoBehaviour
         {
             instance = this;
             DontDestroyOnLoad(gameObject); // Сохраняет объект при смене сцен
+            
+            // Инициализируем глобальный менеджер локализации на старте игры
+            LocalizationManager.Initialize();
         }
     }
 }
