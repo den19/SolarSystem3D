@@ -58,6 +58,39 @@ public class VisualsInitializer : MonoBehaviour
             cameraData.volumeLayerMask = 1; // Default layer
             
             Debug.Log($"[Visuals] Постобработка успешно включена на камере: {cam.name}");
+
+            // 1.Б Автоматически навешиваем MobileOrbitCamera для сенсорного управления
+            if (cam.gameObject.GetComponent<MobileOrbitCamera>() == null)
+            {
+                MobileOrbitCamera orbitCam = cam.gameObject.AddComponent<MobileOrbitCamera>();
+                
+                // Находим цель для детальных камер планет
+                string planetTargetName = MapCameraToPlanet(cam.name);
+                if (!string.IsNullOrEmpty(planetTargetName))
+                {
+                    GameObject planetGo = GameObject.Find(planetTargetName);
+                    if (planetGo != null)
+                    {
+                        orbitCam.target = planetGo.transform;
+                        
+                        // Тонкие настройки зума для детальных камер, чтобы не залетать сквозь меши
+                        orbitCam.minDistance = 1.8f;
+                        orbitCam.maxDistance = 15f;
+                        orbitCam.distance = 4.5f;
+                        
+                        Debug.Log($"[Visuals] Сенсорное управление MobileOrbitCamera добавлено на детальную камеру: {cam.name} с фокусом на {planetTargetName}");
+                    }
+                }
+                else
+                {
+                    // Для главной камеры настраиваем более широкий зум
+                    orbitCam.minDistance = 10f;
+                    orbitCam.maxDistance = 600f;
+                    orbitCam.distance = 45f;
+                    
+                    Debug.Log($"[Visuals] Сенсорное управление MobileOrbitCamera успешно добавлено на главную камеру: {cam.name}");
+                }
+            }
         }
 
         // 2. Автоматически создаем или настраиваем Global Volume в сцене
@@ -106,5 +139,20 @@ public class VisualsInitializer : MonoBehaviour
         // В сборке загружаем из ресурсов
         return Resources.Load<VolumeProfile>("SampleSceneProfile");
         #endif
+    }
+
+    private string MapCameraToPlanet(string cameraName)
+    {
+        string camLower = cameraName.ToLower();
+        if (camLower.Contains("earth")) return "Earth";
+        if (camLower.Contains("mars")) return "Mars";
+        if (camLower.Contains("neptune")) return "Neptune";
+        if (camLower.Contains("uranus")) return "Uranus";
+        if (camLower.Contains("saturn")) return "Saturn";
+        if (camLower.Contains("jupiter")) return "Jupiter";
+        if (camLower.Contains("venus")) return "Venus";
+        if (camLower.Contains("mercury")) return "Mercury";
+        if (camLower.Contains("moon")) return "Moon";
+        return null;
     }
 }
