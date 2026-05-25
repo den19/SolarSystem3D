@@ -1,0 +1,291 @@
+Solar System V7: Bugfix, Performance Optimization, and Game Design Enhancements Plan
+
+As an experienced Unity C# developer, game designer, and UX architect, I have thoroughly analyzed the project structure and its 13 core scripts. Below is the detailed plan.
+
+
+
+1. Critical Bugs Analysis and Fixes
+
+We have detected several architectural and logic errors that will cause crashes, frozen UI, or extremely unpredictable behavior on Android devices.
+
+Bug 1: Unsorted RaycastAll in Click Detection
+
+
+
+
+
+File: [Assets/Scripts/LookAtTarget.cs](Assets/Scripts/LookAtTarget.cs)
+
+
+
+Issue: The script uses Physics.RaycastAll(ray) and immediately takes the first element hits[0]. Unity's RaycastAll returns hits in an arbitrary, non-deterministic order, meaning clicking on a planet will frequently select the Sun, orbit lines, or a moon behind it.
+
+
+
+Solution: Replace Physics.RaycastAll with a standard Physics.Raycast which returns the closest hit, or sort the hits by distance.
+
+
+
+Proposed Implementation:
+
+RaycastHit hit;
+if (Physics.Raycast(ray, out hit))
+{
+    currentTarget = hit.collider.gameObject;
+    // ... handle name cases ...
+}
+
+Bug 2: Dropdown Value De-synchronization in LanguageChanger
+
+
+
+
+
+File: [Assets/Scripts/LanguageChanger.cs](Assets/Scripts/LanguageChanger.cs)
+
+
+
+Issue: In Start(), if GameState.isPaused is false (as on first run in the main menu), the dropdown options are populated, but languageDropdown.value is never set to the active language index. The UI will default to English (index 0) even if the active system language is Russian (index 1). Additionally, if listener events are not assigned in the Editor Inspector, the dropdown is completely non-functional.
+
+
+
+Solution: Refactor Start() to always synchronize the dropdown's visual state with the backend value and register the listener dynamically in code.
+
+
+
+Proposed Implementation:
+
+void Start()
+{
+    languageDropdown.ClearOptions();
+    List<string> languages = new List<string>() { "English", "Русский" };
+    languageDropdown.AddOptions(languages);
+    
+    languageDropdown.value = (int)GameState.language;
+    languageDropdown.onValueChanged.RemoveAllListeners();
+    languageDropdown.onValueChanged.AddListener(OnChangeLanguage);
+}
+
+Bug 3: UI Animation Freeze on Pause in AboutPanel
+
+
+
+
+
+File: [Assets/Scripts/AboutPanel.cs](Assets/Scripts/AboutPanel.cs)
+
+
+
+Issue: If the game is paused by setting Time.timeScale = 0, the coroutines AnimateShow() and AnimateHide() will freeze permanently because they rely on Time.deltaTime to calculate progress. This locks the application and forces a restart.
+
+
+
+Solution: Use Time.unscaledDeltaTime to drive the animation, making UI transitions independent of the physical simulation speed.
+
+
+
+Proposed Implementation:
+
+elapsedTime += Time.unscaledDeltaTime;
+
+Bug 4: Incomplete Simulation Pausing
+
+
+
+
+
+File: [Assets/Scripts/PauseAndResume.cs](Assets/Scripts/PauseAndResume.cs)
+
+
+
+Issue: The actual physics pause logic is fully commented out. When the user enters the menu, planets keep rotating and consuming mobile processor power, causing thermal throttling and rapid battery drain on Android.
+
+
+
+Solution: Uncomment the Time.timeScale = 0 logic and safely restore it on resume.
+
+Bug 5: Writable Directory Crash on Android
+
+
+
+
+
+File: [Assets/Scripts/ScreenshotUtility.cs](Assets/Scripts/ScreenshotUtility.cs)
+
+
+
+Issue: The screenshot utility attempts to create and write to the "Screenshots" directory relative to the current directory. On Android, this directory is write-protected, leading to a crash on execution. Additionally, there is a minor syntax typo: +width instead of width on line 103.
+
+
+
+Solution: Save screenshots directly to Application.persistentDataPath when running on a build, and fix the syntax typo.
+
+
+
+2. Performance Optimizations for Android
+
+To increase frame rates, prevent stuttering, and reduce battery usage on mobile:
+
+A. Object Pooling for Projectiles (Asteroids/Probes)
+
+
+
+
+
+File: [Assets/Scripts/Spawner.cs](Assets/Scripts/Spawner.cs) and [Assets/Scripts/Projectile.cs](Assets/Scripts/Projectile.cs)
+
+
+
+Problem: Spawning a prefab every 0.1 seconds and destroying it via Destroy(gameObject) causes huge Garbage Collection (GC) pressure and CPU spikes on mobile.
+
+
+
+Solution: Implement a reusable Object Pool for the projectiles. Instead of instantiating and destroying, we activate and deactivate objects from a cached pool list.
+
+flowchart TD
+    RequestAsteroid[Request Asteroid] --> CheckActive[Check Pool for Inactive Asteroid]
+    CheckActive -->|Available| ReuseAsteroid[Activate and Reset Asteroid]
+    CheckActive -->|Empty| CreateAsteroid[Instantiate New Asteroid]
+    CreateAsteroid --> AddToPool[Add to Pool Collection]
+    AddToPool --> ReuseAsteroid
+    ReuseAsteroid --> OutOfBounds[Asteroid Out of Bounds]
+    OutOfBounds --> ReturnToPool[Deactivate and Return to Pool]
+
+B. Optimized Translations
+
+
+
+
+
+File: [Assets/Scripts/LocalizationManager.cs](Assets/Scripts/LocalizationManager.cs)
+
+
+
+Problem: Calling FindObjectsByType across the entire scene on every language update searches every game object, causing massive lag spikes on Android.
+
+
+
+Solution: Create a script LocalizedText that registers individual UI texts on Awake and updates automatically when LocalizationManager fires a "LanguageChanged" C# event.
+
+
+
+3. UI, Graphics, and UX Redesign
+
+To turn this into a premium, modern application that users love to review and share:
+
+A. Professional Post-Processing (URP)
+
+
+
+
+
+Set up a Post-Processing Volume with Bloom, Color Grading (ACES), and Vignette to give the Sun an intense cosmic glow and make the deep space textures pop.
+
+
+
+Add an Atmosphere Rim Shader on Earth, Venus, and Mars to simulate realistic scattering of light on their atmospheres.
+
+B. Modern Sci-Fi UI Layout
+
+
+
+
+
+Upgrade all legacy Text and Dropdown components to TextMesh Pro (TMP).
+
+
+
+Design a semi-transparent futuristic UI (blur panels, thin neon borders, and cosmic deep-blue and gold color palettes).
+
+
+
+Revamp the language changer, volume controls, and planet details into an elegant sliding side panel.
+
+C. Advanced Mobile Touch Controls
+
+
+
+
+
+Implement a robust MobileOrbitCamera supporting:
+
+
+
+
+
+Swipe/Drag: Rotate the camera smoothly around the selected target.
+
+
+
+Pinch-to-Zoom: Smoothly adjust field-of-view or camera distance.
+
+
+
+Double Tap: Zoom directly onto the selected planet.
+
+flowchart TD
+    UserSwipe[User Swipe / Drag] --> DragDelta[Calculate Drag Delta]
+    DragDelta --> UpdateOrbit[Rotate Camera around Target]
+    UserPinch[User Pinch / Scroll] --> ZoomDelta[Calculate Zoom Delta]
+    ZoomDelta --> UpdateZoom[Adjust Camera Distance]
+    UpdateOrbit --> CameraLookAt[Camera Looks at Planet]
+    UpdateZoom --> CameraLookAt
+
+
+
+4. New Educational & Gamified Features
+
+A. Cosmic Time-Scale Slider
+
+
+
+
+
+Add a slider in the UI to let the user manipulate the speed of orbits (e.g., Time.timeScale from 0x to 1000x) so they can observe how fast Mercury orbits compared to Neptune.
+
+B. Orbit Scale Toggle (Realistic vs. Visual)
+
+
+
+
+
+Give users a toggle between:
+
+
+
+
+
+Realistic Scale: True physical distances and scale.
+
+
+
+Visual Mode: Magnified sizes of planets and shortened distances to make them visible side-by-side.
+
+C. Gravity Slingshot Interactive Toy (Gamification)
+
+
+
+
+
+Leverage the Spawner and Projectile scripts to let users launch probes or asteroids!
+
+
+
+Apply gravity pull from the Sun and planets onto the projectile (Rigidbody.AddForce) so players can try to perform a gravity slingshot or orbit a planet without crashing into it! This turns the simulation into an incredibly fun physics sandbox.
+
+D. Interactive Astronomy Quiz & Voice Narrator
+
+
+
+
+
+Organize the massive texts inside english.json and russian.json into tidy tabs (Overview, Structure, Fun Facts).
+
+
+
+Add a "Space Quiz" mini-game. Answering questions correctly unlocks custom skyboxes (nebulae, binary stars) or spaceship skins for the projectile launcher!
+
+
+
+Implement an Audio Narrative feature where a voice guides the player on a tour of the system.
+
