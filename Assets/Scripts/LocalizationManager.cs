@@ -14,14 +14,30 @@ public class LocalizationManager : MonoBehaviour
     private void Awake()
     {
         Instance = this;
+
+        // Загружаем сохраненный язык из PlayerPrefs (по умолчанию English = 0)
+        int savedLanguage = PlayerPrefs.GetInt("SelectedLanguage", (int)Language.English);
+        CurrentLanguage = (Language)savedLanguage;
+        GameState.language = CurrentLanguage; // Синхронизируем GameState
+
         LoadTranslations(CurrentLanguage);
         ApplyTranslations();
     }
 
     public void ChangeLanguage(Language lang)
     {
+        // Сейфгард: Если этот язык уже загружен, не делаем повторную работу
+        if (translations != null && translations.Count > 0 && CurrentLanguage == lang)
+        {
+            return;
+        }
+
         LoadTranslations(lang);
         ApplyTranslations();
+
+        // Сохраняем выбор в память устройства
+        PlayerPrefs.SetInt("SelectedLanguage", (int)lang);
+        PlayerPrefs.Save();
     }
 
     private void LoadTranslations(Language lang)

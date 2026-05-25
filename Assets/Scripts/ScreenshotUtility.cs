@@ -54,31 +54,9 @@ public class ScreenshotUtility : MonoBehaviour
     /// </summary>
     void Awake()
     {
-        if (screenShotUtility != null)
-        { // this gameobject must already have been setup in a previous scene, so just destroy this game object
-            Destroy(this.gameObject);
-        }
-        else if (!runOnBuild && !Application.isEditor)
-        { // chose not to work if this is running outside the editor so destroy it
-            Destroy(gameObject);
-        }
-        else
-        { // this is the first time we are setting up the screenshot utility
-          // setup reference to ScreenshotUtility class
-            screenShotUtility = this.GetComponent<ScreenshotUtility>();
-
-            // keep this gameobject around as new scenes load
-            DontDestroyOnLoad(gameObject);
-
-            // get image count from player prefs for indexing of filename
-            m_ImageCount = PlayerPrefs.GetInt(ImageCntKey);
-
-            // if there is not a "Screenshots" directory in the Project folder, create one
-            if (!Directory.Exists("Screenshots"))
-            {
-                Directory.CreateDirectory("Screenshots");
-            }
-        }
+        // Скрипт полностью отключен по запросу пользователя для стабильности на Android
+        this.enabled = false;
+        return;
     }
 
     /// <summary>

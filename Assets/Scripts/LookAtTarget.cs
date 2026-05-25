@@ -97,14 +97,11 @@ public class LookAtTarget : MonoBehaviour {
             Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
 
             // cast a ray to see if it hits any gameObjects
-            RaycastHit[] hits;
-            hits = Physics.RaycastAll(ray);
+            RaycastHit hit;
 
-            // if there are hits
-            if (hits.Length>0)
+            // if there is a hit
+            if (Physics.Raycast(ray, out hit))
             {
-                // get the first object hit
-                RaycastHit hit = hits[0];
                 currentTarget = hit.collider.gameObject;
 
                 //
