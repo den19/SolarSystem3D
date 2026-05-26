@@ -3,6 +3,8 @@ using UnityEngine.SceneManagement;
 
 public class AudioManager : MonoBehaviour
 {
+    private const string SoundEnabledKey = "SoundEnabled";
+
     private static AudioManager instance = null;
     public static AudioManager Instance { get => instance; }
 
@@ -12,6 +14,8 @@ public class AudioManager : MonoBehaviour
     // Компонент для воспроизведения звука
     private AudioSource audioSource;
     private string nextSceneName;
+    private float volumeBeforeMute = 1f;
+    private bool soundEnabled = true;
 
     void Awake()
     {
@@ -24,6 +28,7 @@ public class AudioManager : MonoBehaviour
         {
             instance = this;
             DontDestroyOnLoad(gameObject); // Сохранение экземпляра между сценами
+            ApplySavedSoundSetting();
         }
 
         // Проверяем наличие компонента AudioSource и добавляем, если отсутствует
@@ -31,6 +36,59 @@ public class AudioManager : MonoBehaviour
         if (!audioSource)
         {
             audioSource = gameObject.AddComponent<AudioSource>();
+        }
+    }
+
+    public bool IsSoundEnabled()
+    {
+        return soundEnabled;
+    }
+
+    public void SetSoundEnabled(bool enabled)
+    {
+        if (enabled)
+        {
+            if (!soundEnabled)
+            {
+                AudioListener.volume = volumeBeforeMute;
+            }
+            soundEnabled = true;
+        }
+        else
+        {
+            if (soundEnabled && AudioListener.volume > 0f)
+            {
+                volumeBeforeMute = AudioListener.volume;
+            }
+            AudioListener.volume = 0f;
+            soundEnabled = false;
+        }
+
+        PlayerPrefs.SetInt(SoundEnabledKey, enabled ? 1 : 0);
+        PlayerPrefs.Save();
+    }
+
+    private void ApplySavedSoundSetting()
+    {
+        soundEnabled = PlayerPrefs.GetInt(SoundEnabledKey, 1) == 1;
+        if (soundEnabled)
+        {
+            if (AudioListener.volume <= 0f)
+            {
+                AudioListener.volume = volumeBeforeMute;
+            }
+            else
+            {
+                volumeBeforeMute = AudioListener.volume;
+            }
+        }
+        else
+        {
+            if (AudioListener.volume > 0f)
+            {
+                volumeBeforeMute = AudioListener.volume;
+            }
+            AudioListener.volume = 0f;
         }
     }
 
