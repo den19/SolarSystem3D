@@ -1,0 +1,8 @@
+High-resolution planetary textures included in this folder are sourced from Solar System Scope
+(https://www.solarsystemscope.com/textures), distributed under the Creative Commons Attribution 4.0
+International License (CC BY 4.0). Some derivative files were obtained via Wikimedia Commons uploads
+marked as deriving from Solar System Scope with the same license.
+
+Where required by the license: © INOVE / Solar System Scope — used under CC BY 4.0.
+
+Please retain this notice when redistributing the texture assets.

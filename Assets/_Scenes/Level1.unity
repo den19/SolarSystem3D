@@ -3841,6 +3841,7 @@ GameObject:
   - component: {fileID: 1658091793}
   - component: {fileID: 1658091796}
   - component: {fileID: 1658091797}
+  - component: {fileID: 1658091798}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -4001,6 +4002,20 @@ MonoBehaviour:
   venusCamera: {fileID: 988240629}
   mercuryCamera: {fileID: 1344180348}
   moonCamera: {fileID: 161038382}
+--- !u!114 &1658091798
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1658091792}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4d3c2b1a09f4e8c9d7b6a52431c0dff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  manageLevelNamed: 1
+  levelSceneName: Level1
 --- !u!1 &1731784748
 GameObject:
   m_ObjectHideFlags: 0
