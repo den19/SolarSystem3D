@@ -1,3 +1,4 @@
+using System;
 using SolarSystemApp;
 using TMPro;
 using UnityEngine;
@@ -8,7 +9,12 @@ public class CpuLoadMonitor : MonoBehaviour
     [SerializeField] float updateInterval = 0.75f;
     [SerializeField] bool showUnavailableAsDash = true;
 
-    const string UnavailableLabel = "CPU: --%";
+    const string KeyUnavailable = "CpuLoadUnavailable";
+    const string KeyZero = "CpuLoadZero";
+    const string KeyFormat = "CpuLoadFormat";
+    const string FallbackUnavailable = "CPU: --%";
+    const string FallbackZero = "CPU: 0.0%";
+    const string FallbackFormat = "CPU: {0:F1}%";
 
     TextMeshProUGUI label;
     Image panel;
@@ -22,12 +28,19 @@ public class CpuLoadMonitor : MonoBehaviour
         BuildUi();
         transform.SetAsLastSibling();
         ApplySetting(CpuMonitorSettings.UseCpuMonitor);
-        CpuMonitorSettings.UseCpuMonitorChanged += OnUseCpuMonitorChanged;
         nextUpdateTime = Time.unscaledTime + updateInterval;
     }
 
-    void OnDestroy()
+    void OnEnable()
     {
+        LocalizationManager.OnLanguageChanged += OnLanguageChanged;
+        CpuMonitorSettings.UseCpuMonitorChanged += OnUseCpuMonitorChanged;
+        RefreshDisplay();
+    }
+
+    void OnDisable()
+    {
+        LocalizationManager.OnLanguageChanged -= OnLanguageChanged;
         CpuMonitorSettings.UseCpuMonitorChanged -= OnUseCpuMonitorChanged;
     }
 
@@ -87,7 +100,12 @@ public class CpuLoadMonitor : MonoBehaviour
         label.alignment = TextAlignmentOptions.MidlineRight;
         label.textWrappingMode = TextWrappingModes.NoWrap;
         label.raycastTarget = false;
-        label.text = UnavailableLabel;
+        label.text = GetUnavailableText();
+    }
+
+    void OnLanguageChanged()
+    {
+        RefreshDisplay();
     }
 
     void RefreshDisplay()
@@ -98,13 +116,39 @@ public class CpuLoadMonitor : MonoBehaviour
         float targetFrameTime = GetTargetFrameTime();
         if (targetFrameTime <= 0f || frameCount <= 0)
         {
-            label.text = showUnavailableAsDash ? UnavailableLabel : "CPU: 0.0%";
+            label.text = showUnavailableAsDash ? GetUnavailableText() : GetZeroText();
             return;
         }
 
         float avgFrameTime = accumulatedDelta / frameCount;
         float loadPercent = Mathf.Clamp(avgFrameTime / targetFrameTime * 100f, 0f, 100f);
-        label.text = $"CPU: {loadPercent:F1}%";
+        label.text = FormatLoadText(loadPercent);
+    }
+
+    static string GetUnavailableText() => Translate(KeyUnavailable, FallbackUnavailable);
+
+    static string GetZeroText() => Translate(KeyZero, FallbackZero);
+
+    static string FormatLoadText(float loadPercent)
+    {
+        string format = Translate(KeyFormat, FallbackFormat);
+        try
+        {
+            return string.Format(format, loadPercent);
+        }
+        catch (FormatException)
+        {
+            return string.Format(FallbackFormat, loadPercent);
+        }
+    }
+
+    static string Translate(string key, string fallback)
+    {
+        if (LocalizationManager.Instance == null)
+            return fallback;
+
+        string translation = LocalizationManager.Instance.GetTranslation(key);
+        return string.IsNullOrEmpty(translation) ? fallback : translation;
     }
 
     void OnUseCpuMonitorChanged(bool isOn)
