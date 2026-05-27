@@ -407,7 +407,6 @@ public class PlanetTextureManager : MonoBehaviour
     {
         var canvasRt = GameObject.Find("MainScreenCanvas")?.GetComponent<RectTransform>();
         if (!canvasRt || !_bootSceneOk) return;
-        if (canvasRt.Find("ExtraGraphicsPanel_Runtime")) return;
 
         ExtraGraphicsHud.SpawnHud(canvasRt);
     }
