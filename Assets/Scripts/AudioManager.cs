@@ -4,14 +4,13 @@ using UnityEngine.SceneManagement;
 public class AudioManager : MonoBehaviour
 {
     private const string SoundEnabledKey = "SoundEnabled";
+    private const string MasterVolumeKey = "MasterVolume";
 
     private static AudioManager instance = null;
     public static AudioManager Instance { get => instance; }
 
-    // Публичное поле для задания аудиоклипа
     public AudioClip clickSound;
 
-    // Компонент для воспроизведения звука
     private AudioSource audioSource;
     private string nextSceneName;
     private float volumeBeforeMute = 1f;
@@ -22,16 +21,14 @@ public class AudioManager : MonoBehaviour
         if (instance != null && instance != this)
         {
             //Destroy(gameObject);
-
         }
         else
         {
             instance = this;
-            DontDestroyOnLoad(gameObject); // Сохранение экземпляра между сценами
+            DontDestroyOnLoad(gameObject);
             ApplySavedSoundSetting();
         }
 
-        // Проверяем наличие компонента AudioSource и добавляем, если отсутствует
         audioSource = GetComponent<AudioSource>();
         if (!audioSource)
         {
@@ -44,21 +41,42 @@ public class AudioManager : MonoBehaviour
         return soundEnabled;
     }
 
+    public float GetMasterVolume()
+    {
+        return Mathf.Clamp01(PlayerPrefs.GetFloat(MasterVolumeKey, 1f));
+    }
+
+    public void SetMasterVolume(float volume)
+    {
+        volume = Mathf.Clamp01(volume);
+        volumeBeforeMute = volume;
+        PlayerPrefs.SetFloat(MasterVolumeKey, volume);
+        PlayerPrefs.Save();
+
+        if (soundEnabled)
+        {
+            AudioListener.volume = volume;
+        }
+    }
+
     public void SetSoundEnabled(bool enabled)
     {
         if (enabled)
         {
             if (!soundEnabled)
             {
-                AudioListener.volume = volumeBeforeMute;
+                float volume = GetMasterVolume();
+                volumeBeforeMute = volume;
+                AudioListener.volume = volume;
             }
             soundEnabled = true;
         }
         else
         {
-            if (soundEnabled && AudioListener.volume > 0f)
+            if (soundEnabled)
             {
-                volumeBeforeMute = AudioListener.volume;
+                float current = AudioListener.volume > 0f ? AudioListener.volume : volumeBeforeMute;
+                SetMasterVolume(current);
             }
             AudioListener.volume = 0f;
             soundEnabled = false;
@@ -70,29 +88,19 @@ public class AudioManager : MonoBehaviour
 
     private void ApplySavedSoundSetting()
     {
+        volumeBeforeMute = GetMasterVolume();
         soundEnabled = PlayerPrefs.GetInt(SoundEnabledKey, 1) == 1;
+
         if (soundEnabled)
         {
-            if (AudioListener.volume <= 0f)
-            {
-                AudioListener.volume = volumeBeforeMute;
-            }
-            else
-            {
-                volumeBeforeMute = AudioListener.volume;
-            }
+            AudioListener.volume = volumeBeforeMute;
         }
         else
         {
-            if (AudioListener.volume > 0f)
-            {
-                volumeBeforeMute = AudioListener.volume;
-            }
             AudioListener.volume = 0f;
         }
     }
 
-    // Воспроизводит звук клика
     public void PlaySound()
     {
         if (clickSound != null)
@@ -101,7 +109,6 @@ public class AudioManager : MonoBehaviour
         }
     }
 
-    // Функция для воспроизведения звука и перехода на другую сцену
     public void PlaySoundAndTransition(string sceneName)
     {
         if (clickSound != null)
@@ -109,17 +116,14 @@ public class AudioManager : MonoBehaviour
             audioSource.clip = clickSound;
             audioSource.loop = false;
             audioSource.Play();
-
-            // Запоминаем название следующей сцены
             nextSceneName = sceneName;
         }
         else
         {
-            SceneManager.LoadScene(sceneName); // Если звука нет, загружаем сцену немедленно
+            SceneManager.LoadScene(sceneName);
         }
     }
 
-    // Загружает следующую сцену
     private void LoadNextScene()
     {
         if (!string.IsNullOrEmpty(nextSceneName))
@@ -129,7 +133,6 @@ public class AudioManager : MonoBehaviour
         }
     }
 
-    // Периодически проверяем, закончилось ли воспроизведение звука
     void Update()
     {
         if (!audioSource.isPlaying && !string.IsNullOrEmpty(nextSceneName))
