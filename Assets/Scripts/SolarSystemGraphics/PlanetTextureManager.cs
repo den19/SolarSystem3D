@@ -66,11 +66,7 @@ public class PlanetTextureManager : MonoBehaviour
 
         if (_bootSceneOk)
             BootstrapIfNeeded();
-
-        SpawnUiIfPossible();
     }
-
-    void Start() => SpawnUiIfPossible();
 
     void OnDestroy()
     {
@@ -91,8 +87,6 @@ public class PlanetTextureManager : MonoBehaviour
         _bootSceneOk = !manageLevelNamed || scene.name == levelSceneName;
         if (_bootSceneOk)
             BootstrapIfNeeded();
-
-        SpawnUiIfPossible();
     }
 
     void BootstrapIfNeeded()
@@ -402,12 +396,4 @@ public class PlanetTextureManager : MonoBehaviour
     }
 
     public void SetGraphicsQuality(bool highQuality) => GraphicsSettings.SetUseExtraGraphics(highQuality);
-
-    void SpawnUiIfPossible()
-    {
-        var canvasRt = GameObject.Find("MainScreenCanvas")?.GetComponent<RectTransform>();
-        if (!canvasRt || !_bootSceneOk) return;
-
-        ExtraGraphicsHud.SpawnHud(canvasRt);
-    }
 }
