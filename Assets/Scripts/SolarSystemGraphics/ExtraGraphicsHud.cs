@@ -9,9 +9,14 @@ using UnityEngine.UI;
 public static class ExtraGraphicsHud
 {
     const string HudRootName = "ExtraGraphicsPanel_Runtime";
+    const string LabelOnKey = "ExtraGraphicsHud_On";
+    const string LabelOffKey = "ExtraGraphicsHud_Off";
+    const string LabelOnFallback = "Extra Graphics: ON";
+    const string LabelOffFallback = "Extra Graphics: OFF";
     static Button _toggleButton;
     static Text _label;
     static bool _subscribed;
+    static bool _languageSubscribed;
 
     public static void SpawnHud(RectTransform hostCanvasRt)
     {
@@ -57,16 +62,33 @@ public static class ExtraGraphicsHud
             _subscribed = true;
         }
 
+        if (!_languageSubscribed)
+        {
+            LocalizationManager.OnLanguageChanged += OnLanguageChanged;
+            _languageSubscribed = true;
+        }
+
         ApplyLabel(_label);
     }
 
     static void ApplyLabel(Text label)
     {
         if (!label) return;
-        label.text = GraphicsSettings.UseExtraGraphics ? "Extra Graphics: ON" : "Extra Graphics: OFF";
+        var isExtraGraphicsEnabled = GraphicsSettings.UseExtraGraphics;
+        var key = isExtraGraphicsEnabled ? LabelOnKey : LabelOffKey;
+        var fallback = isExtraGraphicsEnabled ? LabelOnFallback : LabelOffFallback;
+
+        var localizationManager = LocalizationManager.Instance;
+        var localizedText = localizationManager ? localizationManager.GetTranslation(key) : null;
+        label.text = string.IsNullOrEmpty(localizedText) ? fallback : localizedText;
     }
 
     static void OnUseExtraGraphicsChanged(bool _)
+    {
+        ApplyLabel(_label);
+    }
+
+    static void OnLanguageChanged()
     {
         ApplyLabel(_label);
     }
