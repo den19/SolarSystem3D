@@ -1,3 +1,4 @@
+using SolarSystemApp;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -10,19 +11,31 @@ public class CpuLoadMonitor : MonoBehaviour
     const string UnavailableLabel = "CPU: --%";
 
     TextMeshProUGUI label;
+    Image panel;
     float accumulatedDelta;
     int frameCount;
     float nextUpdateTime;
+    bool settingEnabled = true;
 
     void Awake()
     {
         BuildUi();
         transform.SetAsLastSibling();
+        ApplySetting(CpuMonitorSettings.UseCpuMonitor);
+        CpuMonitorSettings.UseCpuMonitorChanged += OnUseCpuMonitorChanged;
         nextUpdateTime = Time.unscaledTime + updateInterval;
+    }
+
+    void OnDestroy()
+    {
+        CpuMonitorSettings.UseCpuMonitorChanged -= OnUseCpuMonitorChanged;
     }
 
     void Update()
     {
+        if (!settingEnabled)
+            return;
+
         accumulatedDelta += Time.unscaledDeltaTime;
         frameCount++;
 
@@ -50,7 +63,7 @@ public class CpuLoadMonitor : MonoBehaviour
         if (GetComponent<CanvasRenderer>() == null)
             gameObject.AddComponent<CanvasRenderer>();
 
-        var panel = GetComponent<Image>();
+        panel = GetComponent<Image>();
         if (panel == null)
             panel = gameObject.AddComponent<Image>();
 
@@ -79,7 +92,7 @@ public class CpuLoadMonitor : MonoBehaviour
 
     void RefreshDisplay()
     {
-        if (label == null)
+        if (!settingEnabled || label == null)
             return;
 
         float targetFrameTime = GetTargetFrameTime();
@@ -92,6 +105,22 @@ public class CpuLoadMonitor : MonoBehaviour
         float avgFrameTime = accumulatedDelta / frameCount;
         float loadPercent = Mathf.Clamp(avgFrameTime / targetFrameTime * 100f, 0f, 100f);
         label.text = $"CPU: {loadPercent:F1}%";
+    }
+
+    void OnUseCpuMonitorChanged(bool isOn)
+    {
+        ApplySetting(isOn);
+    }
+
+    void ApplySetting(bool isOn)
+    {
+        settingEnabled = isOn;
+
+        if (panel != null)
+            panel.enabled = isOn;
+
+        if (label != null)
+            label.gameObject.SetActive(isOn);
     }
 
     static float GetTargetFrameTime()
