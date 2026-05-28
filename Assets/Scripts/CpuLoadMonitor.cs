@@ -96,7 +96,7 @@ public class CpuLoadMonitor : MonoBehaviour
         label.font = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
         label.fontSharedMaterial = Resources.Load<Material>("Fonts & Materials/LiberationSans SDF - Overlay");
         label.fontSize = 15f;
-        label.color = Color.white;
+        label.color = new Color(1f, 0.6078f, 0.451f, 0.1f);
         label.alignment = TextAlignmentOptions.MidlineRight;
         label.textWrappingMode = TextWrappingModes.NoWrap;
         label.raycastTarget = false;
