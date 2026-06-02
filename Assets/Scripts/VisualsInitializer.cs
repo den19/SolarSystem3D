@@ -77,6 +77,9 @@ public class VisualsInitializer : MonoBehaviour
                         orbitCam.minDistance = 1.8f;
                         orbitCam.maxDistance = 15f;
                         orbitCam.distance = 4.5f;
+
+                        if (cam.name == "JupiterCamera" || cam.name == "UranusCamera")
+                            cam.transform.rotation = Quaternion.Euler(32f, 0f, 0f);
                         
                         Debug.Log($"[Visuals] Сенсорное управление MobileOrbitCamera добавлено на детальную камеру: {cam.name} с фокусом на {planetTargetName}");
                     }
