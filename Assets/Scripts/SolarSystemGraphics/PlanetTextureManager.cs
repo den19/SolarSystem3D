@@ -47,6 +47,10 @@ public class PlanetTextureManager : MonoBehaviour
     Renderer _uranusRingSubtle;
     Renderer _uranusRingHdLayer;
 
+    Mesh _jupiterRingMesh;
+    Renderer _jupiterRingSubtle;
+    Renderer _jupiterRingHdLayer;
+
     Material _earthCloudMat;
     Material _venusAtmosphereMat;
     Material _titanHazeMat;
@@ -54,6 +58,9 @@ public class PlanetTextureManager : MonoBehaviour
     const float SaturnRingTiltX = 26.7f;
     const float SaturnRingOuterFactor = 1.8f;
     const int SaturnRingSegments = 192;
+    const float JupiterRingTiltX = 3f;
+    const float JupiterRingOuterFactor = 1.45f;
+    const int JupiterRingSegments = 192;
     const int DefaultRingSegments = 144;
 
     void Awake()
@@ -290,6 +297,39 @@ public class PlanetTextureManager : MonoBehaviour
         SetupRingLayerPair("Uranus", ringAtlas, new Color(0.5f, 0.82f, 1f, 0.28f),
             new Color(0.55f, 0.88f, 1f, 0.58f),
             ref _uranusRingMesh, ref _uranusRingSubtle, ref _uranusRingHdLayer);
+
+        SetupRingLayerPair("Jupiter", ringAtlas, new Color(0.72f, 0.65f, 0.52f, 0.15f),
+            new Color(0.82f, 0.72f, 0.58f, 0.32f),
+            ref _jupiterRingMesh, ref _jupiterRingSubtle, ref _jupiterRingHdLayer);
+    }
+
+    static void GetRingLayerParams(string planetName, out float outerFactor, out int segments, out float tiltX,
+        out bool enhancedPresentation, out float emissionScale)
+    {
+        switch (planetName)
+        {
+            case "Saturn":
+                outerFactor = SaturnRingOuterFactor;
+                segments = SaturnRingSegments;
+                tiltX = SaturnRingTiltX;
+                enhancedPresentation = true;
+                emissionScale = 1f;
+                return;
+            case "Jupiter":
+                outerFactor = JupiterRingOuterFactor;
+                segments = JupiterRingSegments;
+                tiltX = JupiterRingTiltX;
+                enhancedPresentation = true;
+                emissionScale = 0.35f;
+                return;
+            default:
+                outerFactor = 1.6f;
+                segments = DefaultRingSegments;
+                tiltX = 0f;
+                enhancedPresentation = false;
+                emissionScale = 1f;
+                return;
+        }
     }
 
     void SetupRingLayerPair(string planetName, Texture2D ringTex, Color subtleTint, Color vividTint,
@@ -300,10 +340,8 @@ public class PlanetTextureManager : MonoBehaviour
         var planet = GameObject.Find(planetName);
         if (!planet) return;
 
-        bool isSaturn = planetName == "Saturn";
-        float outerFactor = isSaturn ? SaturnRingOuterFactor : 1.6f;
-        int segments = isSaturn ? SaturnRingSegments : DefaultRingSegments;
-        float tiltX = isSaturn ? SaturnRingTiltX : 0f;
+        GetRingLayerParams(planetName, out float outerFactor, out int segments, out float tiltX,
+            out bool enhancedPresentation, out float emissionScale);
 
         const string subtleGo = "ExtraGraphicsPlanetRing_Subtle";
         const string vividGo = "ExtraGraphicsPlanetRing_HD";
@@ -318,8 +356,8 @@ public class PlanetTextureManager : MonoBehaviour
         {
             cachedMesh = RingMeshUtility.BuildAnnulus(inner, outer, segments);
 
-            subtleRendererStorage = CreateRingObject(planet.transform, subtleGo, cachedMesh, ringTex, subtleTint, 2975, isSaturn, tiltX);
-            vividRendererStorage = CreateRingObject(planet.transform, vividGo, cachedMesh, ringTex, vividTint, 2990, isSaturn, tiltX);
+            subtleRendererStorage = CreateRingObject(planet.transform, subtleGo, cachedMesh, ringTex, subtleTint, 2975, enhancedPresentation, emissionScale, tiltX);
+            vividRendererStorage = CreateRingObject(planet.transform, vividGo, cachedMesh, ringTex, vividTint, 2990, enhancedPresentation, emissionScale, tiltX);
 
             ConfigureLitTransparent(subtleRendererStorage.sharedMaterial, 2975);
             ConfigureLitTransparent(vividRendererStorage.sharedMaterial, 2990);
@@ -333,10 +371,10 @@ public class PlanetTextureManager : MonoBehaviour
             RefreshRingMesh(subtleRendererStorage, cachedMesh);
             RefreshRingMesh(vividRendererStorage, cachedMesh);
 
-            if (isSaturn)
+            if (enhancedPresentation)
             {
-                ApplyRingPresentation(subtleRendererStorage, subtleTint, 2975, tiltX);
-                ApplyRingPresentation(vividRendererStorage, vividTint, 2990, tiltX);
+                ApplyRingPresentation(subtleRendererStorage, subtleTint, 2975, tiltX, emissionScale);
+                ApplyRingPresentation(vividRendererStorage, vividTint, 2990, tiltX, emissionScale);
             }
             else
             {
@@ -364,14 +402,14 @@ public class PlanetTextureManager : MonoBehaviour
         ringTransform.localRotation = tiltX != 0f ? Quaternion.Euler(tiltX, 0f, 0f) : Quaternion.identity;
     }
 
-    static void ApplyRingPresentation(Renderer renderer, Color tint, int queue, float tiltX)
+    static void ApplyRingPresentation(Renderer renderer, Color tint, int queue, float tiltX, float emissionScale = 1f)
     {
         if (!renderer) return;
         ApplyRingTransform(renderer.transform, tiltX);
-        ConfigureSaturnRingMaterial(renderer.sharedMaterial, tint, queue);
+        ConfigureSaturnRingMaterial(renderer.sharedMaterial, tint, queue, emissionScale);
     }
 
-    static void ConfigureSaturnRingMaterial(Material mat, Color tint, int queue)
+    static void ConfigureSaturnRingMaterial(Material mat, Color tint, int queue, float emissionScale = 1f)
     {
         if (!mat) return;
         mat.SetColor("_BaseColor", tint);
@@ -379,12 +417,12 @@ public class PlanetTextureManager : MonoBehaviour
         mat.SetFloat("_Metallic", 0.08f);
         mat.SetFloat("_Cull", 0f);
         mat.EnableKeyword("_EMISSION");
-        mat.SetColor("_EmissionColor", new Color(tint.r * 0.2f, tint.g * 0.18f, tint.b * 0.12f));
+        mat.SetColor("_EmissionColor", new Color(tint.r * 0.2f * emissionScale, tint.g * 0.18f * emissionScale, tint.b * 0.12f * emissionScale));
         ConfigureLitTransparent(mat, queue);
     }
 
     static MeshRenderer CreateRingObject(Transform host, string name, Mesh mesh, Texture2D ringTex,
-        Color tint, int queue, bool enhancedPresentation, float tiltX)
+        Color tint, int queue, bool enhancedPresentation, float emissionScale, float tiltX)
     {
         var go = new GameObject(name);
         go.transform.SetParent(host, false);
@@ -399,7 +437,7 @@ public class PlanetTextureManager : MonoBehaviour
         mat.SetTexture("_BaseMap", ringTex);
         mat.SetFloat("_Metallic", 0.08f);
         if (enhancedPresentation)
-            ConfigureSaturnRingMaterial(mat, tint, queue);
+            ConfigureSaturnRingMaterial(mat, tint, queue, emissionScale);
         else
         {
             mat.SetFloat("_Smoothness", 0.35f);
@@ -468,8 +506,8 @@ public class PlanetTextureManager : MonoBehaviour
                 continue;
             }
 
-            bool vivid = ot.Renderer == _saturnRingHdLayer || ot.Renderer == _uranusRingHdLayer;
-            bool subtle = ot.Renderer == _saturnRingSubtle || ot.Renderer == _uranusRingSubtle;
+            bool vivid = ot.Renderer == _saturnRingHdLayer || ot.Renderer == _uranusRingHdLayer || ot.Renderer == _jupiterRingHdLayer;
+            bool subtle = ot.Renderer == _saturnRingSubtle || ot.Renderer == _uranusRingSubtle || ot.Renderer == _jupiterRingSubtle;
             ot.Renderer.enabled = (hq && vivid) || (!hq && subtle);
         }
 
