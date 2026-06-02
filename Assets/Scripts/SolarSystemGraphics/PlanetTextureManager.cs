@@ -50,6 +50,11 @@ public class PlanetTextureManager : MonoBehaviour
     Material _earthCloudMat;
     Material _venusAtmosphereMat;
 
+    const float SaturnRingTiltX = 26.7f;
+    const float SaturnRingOuterFactor = 1.8f;
+    const int SaturnRingSegments = 192;
+    const int DefaultRingSegments = 144;
+
     void Awake()
     {
         if (_instance != null && _instance != this)
@@ -259,8 +264,8 @@ public class PlanetTextureManager : MonoBehaviour
             return;
         }
 
-        SetupRingLayerPair("Saturn", ringAtlas, new Color(1f, 0.96f, 0.82f, 0.62f),
-            new Color(1f, 0.98f, 0.9f, 0.93f),
+        SetupRingLayerPair("Saturn", ringAtlas, new Color(1f, 0.96f, 0.82f, 0.78f),
+            new Color(1f, 0.98f, 0.9f, 0.98f),
             ref _saturnRingMesh, ref _saturnRingSubtle, ref _saturnRingHdLayer);
 
         SetupRingLayerPair("Uranus", ringAtlas, new Color(0.5f, 0.82f, 1f, 0.28f),
@@ -276,20 +281,26 @@ public class PlanetTextureManager : MonoBehaviour
         var planet = GameObject.Find(planetName);
         if (!planet) return;
 
+        bool isSaturn = planetName == "Saturn";
+        float outerFactor = isSaturn ? SaturnRingOuterFactor : 1.6f;
+        int segments = isSaturn ? SaturnRingSegments : DefaultRingSegments;
+        float tiltX = isSaturn ? SaturnRingTiltX : 0f;
+
         const string subtleGo = "ExtraGraphicsPlanetRing_Subtle";
         const string vividGo = "ExtraGraphicsPlanetRing_HD";
 
         subtleRendererStorage = planet.transform.Find(subtleGo)?.GetComponent<MeshRenderer>();
         vividRendererStorage = planet.transform.Find(vividGo)?.GetComponent<MeshRenderer>();
 
+        float inner = RingInnerLocal(planet);
+        float outer = RingOuterLocal(planet, outerFactor);
+
         if (!subtleRendererStorage && !vividRendererStorage)
         {
-            float inner = RingInnerLocal(planet);
-            float outer = RingOuterLocal(planet);
-            cachedMesh = RingMeshUtility.BuildAnnulus(inner, outer, 144);
+            cachedMesh = RingMeshUtility.BuildAnnulus(inner, outer, segments);
 
-            subtleRendererStorage = CreateRingObject(planet.transform, subtleGo, cachedMesh, ringTex, subtleTint, 2975);
-            vividRendererStorage = CreateRingObject(planet.transform, vividGo, cachedMesh, ringTex, vividTint, 2990);
+            subtleRendererStorage = CreateRingObject(planet.transform, subtleGo, cachedMesh, ringTex, subtleTint, 2975, isSaturn, tiltX);
+            vividRendererStorage = CreateRingObject(planet.transform, vividGo, cachedMesh, ringTex, vividTint, 2990, isSaturn, tiltX);
 
             ConfigureLitTransparent(subtleRendererStorage.sharedMaterial, 2975);
             ConfigureLitTransparent(vividRendererStorage.sharedMaterial, 2990);
@@ -297,34 +308,87 @@ public class PlanetTextureManager : MonoBehaviour
             subtleRendererStorage.enabled = false;
             vividRendererStorage.enabled = false;
         }
+        else
+        {
+            cachedMesh = RingMeshUtility.BuildAnnulus(inner, outer, segments);
+            RefreshRingMesh(subtleRendererStorage, cachedMesh);
+            RefreshRingMesh(vividRendererStorage, cachedMesh);
+
+            if (isSaturn)
+            {
+                ApplyRingPresentation(subtleRendererStorage, subtleTint, 2975, tiltX);
+                ApplyRingPresentation(vividRendererStorage, vividTint, 2990, tiltX);
+            }
+            else
+            {
+                ApplyRingTransform(subtleRendererStorage?.transform, tiltX);
+                ApplyRingTransform(vividRendererStorage?.transform, tiltX);
+            }
+        }
 
         OverlayToggles.Add(new OverlayToggle { Renderer = subtleRendererStorage, OnlyWhenHd = false });
         OverlayToggles.Add(new OverlayToggle { Renderer = vividRendererStorage, OnlyWhenHd = false });
     }
 
+    static void RefreshRingMesh(Renderer renderer, Mesh mesh)
+    {
+        if (!renderer || mesh == null) return;
+        var mf = renderer.GetComponent<MeshFilter>();
+        if (mf) mf.sharedMesh = mesh;
+    }
+
+    static void ApplyRingTransform(Transform ringTransform, float tiltX)
+    {
+        if (!ringTransform) return;
+        ringTransform.localPosition = Vector3.zero;
+        ringTransform.localScale = Vector3.one;
+        ringTransform.localRotation = tiltX != 0f ? Quaternion.Euler(tiltX, 0f, 0f) : Quaternion.identity;
+    }
+
+    static void ApplyRingPresentation(Renderer renderer, Color tint, int queue, float tiltX)
+    {
+        if (!renderer) return;
+        ApplyRingTransform(renderer.transform, tiltX);
+        ConfigureSaturnRingMaterial(renderer.sharedMaterial, tint, queue);
+    }
+
+    static void ConfigureSaturnRingMaterial(Material mat, Color tint, int queue)
+    {
+        if (!mat) return;
+        mat.SetColor("_BaseColor", tint);
+        mat.SetFloat("_Smoothness", 0.55f);
+        mat.SetFloat("_Metallic", 0.08f);
+        mat.SetFloat("_Cull", 0f);
+        mat.EnableKeyword("_EMISSION");
+        mat.SetColor("_EmissionColor", new Color(tint.r * 0.2f, tint.g * 0.18f, tint.b * 0.12f));
+        ConfigureLitTransparent(mat, queue);
+    }
+
     static MeshRenderer CreateRingObject(Transform host, string name, Mesh mesh, Texture2D ringTex,
-        Color tint, int queue)
+        Color tint, int queue, bool enhancedPresentation, float tiltX)
     {
         var go = new GameObject(name);
         go.transform.SetParent(host, false);
-        go.transform.localPosition = Vector3.zero;
-        go.transform.localRotation = Quaternion.identity;
-        go.transform.localScale = Vector3.one;
+        ApplyRingTransform(go.transform, tiltX);
 
         var mf = go.AddComponent<MeshFilter>();
         mf.sharedMesh = mesh;
 
         var mr = go.AddComponent<MeshRenderer>();
 
-        Shader lit = Shader.Find("Universal Render Pipeline/Lit");
-        var mat = new Material(lit);
+        var mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
         mat.SetTexture("_BaseMap", ringTex);
-        mat.SetFloat("_Smoothness", 0.35f);
         mat.SetFloat("_Metallic", 0.08f);
-        mat.SetColor("_BaseColor", tint);
-        mr.sharedMaterial = mat;
-        ConfigureLitTransparent(mat, queue);
+        if (enhancedPresentation)
+            ConfigureSaturnRingMaterial(mat, tint, queue);
+        else
+        {
+            mat.SetFloat("_Smoothness", 0.35f);
+            mat.SetColor("_BaseColor", tint);
+            ConfigureLitTransparent(mat, queue);
+        }
 
+        mr.sharedMaterial = mat;
         mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         mr.receiveShadows = true;
         return mr;
@@ -337,11 +401,11 @@ public class PlanetTextureManager : MonoBehaviour
         return r * 1.05f;
     }
 
-    static float RingOuterLocal(GameObject planet)
+    static float RingOuterLocal(GameObject planet, float outerFactor = 1.6f)
     {
         var col = planet.GetComponent<SphereCollider>();
         float r = col ? col.radius : 0.5f;
-        return r * 1.6f;
+        return r * outerFactor;
     }
 
     static void ConfigureLitTransparent(Material mat, int renderQueueOverride)
