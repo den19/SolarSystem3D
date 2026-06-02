@@ -149,6 +149,7 @@ public class VisualsInitializer : MonoBehaviour
         if (camLower.Contains("neptune")) return "Neptune";
         if (camLower.Contains("uranus")) return "Uranus";
         if (camLower.Contains("saturn")) return "Saturn";
+        if (camLower.Contains("titan")) return "Titan";
         if (camLower.Contains("jupiter")) return "Jupiter";
         if (camLower.Contains("venus")) return "Venus";
         if (camLower.Contains("mercury")) return "Mercury";

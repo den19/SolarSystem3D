@@ -29,6 +29,8 @@ public class LookAtTarget : MonoBehaviour {
 
     public GameObject theSaturnGameObject;
 
+    public GameObject theTitanGameObject;
+
     public GameObject theUranusGameObject;
 
     public GameObject theNeptuneGameObject;
@@ -44,6 +46,7 @@ public class LookAtTarget : MonoBehaviour {
     public GameObject venusCamera;    // Детальная камера Венеры
     public GameObject mercuryCamera;    // Детальная камера Меркурия
     public GameObject moonCamera;    // Детальная камера Луны
+    public GameObject titanCamera;    // Детальная камера Титана
 
 
 
@@ -77,6 +80,7 @@ public class LookAtTarget : MonoBehaviour {
         theVenusGameObject.SetActive(false);
         theJupiterGameObject.SetActive(false);
         theSaturnGameObject.SetActive(false);
+        if (theTitanGameObject) theTitanGameObject.SetActive(false);
         theUranusGameObject.SetActive(false);
         theNeptuneGameObject.SetActive(false);
         theSunGameObject.SetActive(false);
@@ -175,6 +179,15 @@ public class LookAtTarget : MonoBehaviour {
 
                     TurnOffMainCamera();
                     TurnOnSaturnCamera();
+                }
+
+                if (currentTarget.name == "Titan")
+                {
+                    MakeAllDescriptionsInvisible();
+                    MakeDescriptionVisible(theTitanGameObject);
+
+                    TurnOffMainCamera();
+                    TurnOnTitanCamera();
                 }
 
                 if (currentTarget.name == "Uranus")
@@ -312,5 +325,15 @@ public class LookAtTarget : MonoBehaviour {
     public void TurnOffMoonCamera()
     {
         moonCamera.SetActive(false);
+    }
+
+    public void TurnOnTitanCamera()
+    {
+        if (titanCamera) titanCamera.SetActive(true);
+    }
+
+    public void TurnOffTitanCamera()
+    {
+        if (titanCamera) titanCamera.SetActive(false);
     }
 }

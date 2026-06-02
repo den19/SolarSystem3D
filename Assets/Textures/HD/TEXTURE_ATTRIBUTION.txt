@@ -6,3 +6,6 @@ marked as deriving from Solar System Scope with the same license.
 Where required by the license: © INOVE / Solar System Scope — used under CC BY 4.0.
 
 Please retain this notice when redistributing the texture assets.
+
+Titan surface map (TitanTexture_8k.jpg): NASA/JPL-Caltech/Space Science Institute, Cassini ISS global
+albedo map PIA19658 (June 2015). U.S. government work / public domain.

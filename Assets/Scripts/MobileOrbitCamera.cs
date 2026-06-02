@@ -236,6 +236,7 @@ public class MobileOrbitCamera : MonoBehaviour
         var venusDesc = globalLookAtScript.theVenusGameObject;
         var jupiterDesc = globalLookAtScript.theJupiterGameObject;
         var saturnDesc = globalLookAtScript.theSaturnGameObject;
+        var titanDesc = globalLookAtScript.theTitanGameObject;
         var uranusDesc = globalLookAtScript.theUranusGameObject;
         var neptuneDesc = globalLookAtScript.theNeptuneGameObject;
 
@@ -247,6 +248,7 @@ public class MobileOrbitCamera : MonoBehaviour
         if (venusDesc) venusDesc.SetActive(planetName == "Venus");
         if (jupiterDesc) jupiterDesc.SetActive(planetName == "Jupiter");
         if (saturnDesc) saturnDesc.SetActive(planetName == "Saturn");
+        if (titanDesc) titanDesc.SetActive(planetName == "Titan");
         if (uranusDesc) uranusDesc.SetActive(planetName == "Uranus");
         if (neptuneDesc) neptuneDesc.SetActive(planetName == "Neptune");
     }
@@ -287,6 +289,7 @@ public class MobileOrbitCamera : MonoBehaviour
         if (planetName == "Venus" && globalLookAtScript.venusCamera) globalLookAtScript.venusCamera.SetActive(active);
         if (planetName == "Jupiter" && globalLookAtScript.jupiterCamera) globalLookAtScript.jupiterCamera.SetActive(active);
         if (planetName == "Saturn" && globalLookAtScript.saturnCamera) globalLookAtScript.saturnCamera.SetActive(active);
+        if (planetName == "Titan" && globalLookAtScript.titanCamera) globalLookAtScript.titanCamera.SetActive(active);
         if (planetName == "Uranus" && globalLookAtScript.uranusCamera) globalLookAtScript.uranusCamera.SetActive(active);
         if (planetName == "Neptune" && globalLookAtScript.neptuneCamera) globalLookAtScript.neptuneCamera.SetActive(active);
     }

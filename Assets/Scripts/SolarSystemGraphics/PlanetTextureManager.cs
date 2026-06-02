@@ -49,6 +49,7 @@ public class PlanetTextureManager : MonoBehaviour
 
     Material _earthCloudMat;
     Material _venusAtmosphereMat;
+    Material _titanHazeMat;
 
     const float SaturnRingTiltX = 26.7f;
     const float SaturnRingOuterFactor = 1.8f;
@@ -83,6 +84,7 @@ public class PlanetTextureManager : MonoBehaviour
 
         if (_earthCloudMat != null) Destroy(_earthCloudMat);
         if (_venusAtmosphereMat != null) Destroy(_venusAtmosphereMat);
+        if (_titanHazeMat != null) Destroy(_titanHazeMat);
     }
 
     void OnSceneLoaded(Scene scene, LoadSceneMode _) => EvaluateSceneBoot(scene);
@@ -109,10 +111,12 @@ public class PlanetTextureManager : MonoBehaviour
         RegisterBodySwap("Uranus", "PlanetGraphicsHD/UranusTexture_HD");
         RegisterBodySwap("Neptune", "PlanetGraphicsHD/NeptuneTexture_HD");
         RegisterBodySwap("Moon", "PlanetGraphicsHD/MoonTexture_HD");
+        RegisterBodySwap("Titan", "PlanetGraphicsHD/TitanTexture_HD");
 
         EnsureSunBloom();
         EnsureEarthCloudOverlay();
         EnsureVenusAtmosphereOverlay();
+        EnsureTitanHazeOverlay();
         EnsurePlanetaryRingLayers();
 
         GraphicsSettings.UseExtraGraphicsChanged -= OnUseExtraGraphicsChanged;
@@ -225,6 +229,21 @@ public class PlanetTextureManager : MonoBehaviour
         BuildOverlaySphere(venus.transform, "ExtraGraphicsVenusAtmosphere", atmosphere,
             new Color(1f, 0.93f, 0.65f, 0.43f), 1.019f,
             mat => { _venusAtmosphereMat = mat; });
+    }
+
+    void EnsureTitanHazeOverlay()
+    {
+        var titan = GameObject.Find("Titan");
+        var atmosphere = Resources.Load<Texture2D>("PlanetTexturesHD/VenusAtmosphere_8k");
+        if (!titan || !atmosphere)
+            return;
+
+        if (titan.transform.Find("ExtraGraphicsTitanHaze"))
+            return;
+
+        BuildOverlaySphere(titan.transform, "ExtraGraphicsTitanHaze", atmosphere,
+            new Color(1f, 0.72f, 0.45f, 0.38f), 1.045f,
+            mat => { _titanHazeMat = mat; });
     }
 
     void BuildOverlaySphere(Transform parent, string childName, Texture2D baseMap,
