@@ -40,10 +40,15 @@ public class LocalizationManager : MonoBehaviour
 
         // Загружаем сохраненный язык из PlayerPrefs (по умолчанию English = 0)
         int savedLanguage = PlayerPrefs.GetInt("SelectedLanguage", (int)Language.English);
+        int maxLanguage = (int)Language.Vietnamese;
+        if (savedLanguage < 0 || savedLanguage > maxLanguage)
+            savedLanguage = (int)Language.English;
+
         CurrentLanguage = (Language)savedLanguage;
         GameState.language = CurrentLanguage; // Синхронизируем GameState
 
         LoadTranslations(CurrentLanguage);
+        LocalizationFontHelper.ApplyFontsForLanguage(CurrentLanguage);
     }
 
     private void OnEnable()
@@ -62,6 +67,8 @@ public class LocalizationManager : MonoBehaviour
         // Автоматически находим новые текстовые объекты в сцене и вешаем на них локализатор
         AutoRegisterLocalizedTexts();
         
+        LocalizationFontHelper.ApplyFontsForLanguage(CurrentLanguage);
+
         // Оповещаем все текстовые объекты о смене сцены и необходимости обновить тексты
         OnLanguageChanged?.Invoke();
     }
@@ -75,7 +82,8 @@ public class LocalizationManager : MonoBehaviour
         }
 
         LoadTranslations(lang);
-        
+        LocalizationFontHelper.ApplyFontsForLanguage(lang);
+
         // Оповещаем все подписанные текстовые объекты о смене языка
         OnLanguageChanged?.Invoke();
 
@@ -137,5 +145,7 @@ public class LocalizationManager : MonoBehaviour
 public enum Language
 {
     English,
-    Russian
+    Russian,
+    Chinese,
+    Vietnamese
 }

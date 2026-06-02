@@ -93,8 +93,11 @@ public class CpuLoadMonitor : MonoBehaviour
         labelRect.offsetMax = new Vector2(-8f, -4f);
 
         label = labelGo.AddComponent<TextMeshProUGUI>();
-        label.font = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
-        label.fontSharedMaterial = Resources.Load<Material>("Fonts & Materials/LiberationSans SDF - Overlay");
+        var lang = LocalizationManager.CurrentLanguage;
+        label.font = LocalizationFontHelper.GetFontForLanguage(lang);
+        var overlay = LocalizationFontHelper.GetOverlayMaterialForLanguage(lang);
+        if (overlay != null)
+            label.fontSharedMaterial = overlay;
         label.fontSize = 15f;
         label.color = new Color(1f, 0.6078f, 0.451f, 0.1f);
         label.alignment = TextAlignmentOptions.MidlineRight;
@@ -105,6 +108,14 @@ public class CpuLoadMonitor : MonoBehaviour
 
     void OnLanguageChanged()
     {
+        if (label != null)
+        {
+            var lang = LocalizationManager.CurrentLanguage;
+            label.font = LocalizationFontHelper.GetFontForLanguage(lang);
+            var overlay = LocalizationFontHelper.GetOverlayMaterialForLanguage(lang);
+            if (overlay != null)
+                label.fontSharedMaterial = overlay;
+        }
         RefreshDisplay();
     }
 
