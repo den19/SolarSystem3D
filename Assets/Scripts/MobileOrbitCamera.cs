@@ -259,12 +259,7 @@ public class MobileOrbitCamera : MonoBehaviour
 
         if (toDetail)
         {
-            // Отключаем главную камеру и включаем детальную
-            globalLookAtScript.TurnOffMainCamera();
-            TriggerDescription(planetName);
-
-            // Активируем нужную детальную камеру
-            SetCameraActive(planetName, true);
+            globalLookAtScript.FocusPlanet(planetName, useDetailCamera: true, showDescription: true);
         }
         else
         {
@@ -292,6 +287,27 @@ public class MobileOrbitCamera : MonoBehaviour
         if (planetName == "Titan" && globalLookAtScript.titanCamera) globalLookAtScript.titanCamera.SetActive(active);
         if (planetName == "Uranus" && globalLookAtScript.uranusCamera) globalLookAtScript.uranusCamera.SetActive(active);
         if (planetName == "Neptune" && globalLookAtScript.neptuneCamera) globalLookAtScript.neptuneCamera.SetActive(active);
+    }
+
+    public void GetOrbitState(out float outX, out float outY, out float outDistance)
+    {
+        outX = x;
+        outY = y;
+        outDistance = distance;
+    }
+
+    public void ApplyOrbitState(float newX, float newY, float newDistance)
+    {
+        x = newX;
+        y = ClampAngle(newY, yMinLimit, yMaxLimit);
+        distance = Mathf.Clamp(newDistance, minDistance, maxDistance);
+
+        if (target == null) return;
+
+        Quaternion rotation = Quaternion.Euler(y, x, 0);
+        Vector3 negDistance = new Vector3(0.0f, 0.0f, -distance);
+        transform.position = rotation * negDistance + target.position;
+        transform.rotation = rotation;
     }
 
     private float ClampAngle(float angle, float min, float max)

@@ -107,106 +107,10 @@ public class LookAtTarget : MonoBehaviour {
             if (Physics.Raycast(ray, out hit))
             {
                 currentTarget = hit.collider.gameObject;
-
-                //
                 Debug.Log("currentTarget.name is " + currentTarget.name);
-                if (currentTarget.name == "Sun")
-                {
-                    MakeAllDescriptionsInvisible();
-                    
-                    MakeDescriptionVisible(theSunGameObject);
-                }
-                if (currentTarget.name == "Earth")
-                {
-                    MakeAllDescriptionsInvisible();
 
-                    TurnOffMainCamera();
-
-                    TurnOnEarthCamera();
-
-                    MakeDescriptionVisible(theEarthGameObject);
-                }
-                if (currentTarget.name == "Moon")
-                {
-                    MakeAllDescriptionsInvisible();
-                    MakeDescriptionVisible(theMoonGameObject);
-
-                    TurnOffMainCamera();
-                    TurnOnMoonCamera();
-
-                }
-                if (currentTarget.name == "Mars")
-                {
-                    MakeAllDescriptionsInvisible();
-
-                    TurnOffMainCamera();
-                    TurnOnMarsCamera();
-
-                    MakeDescriptionVisible(theMarsGameObject);
-                }
-
-                if (currentTarget.name == "Mercury")
-                {
-                    MakeAllDescriptionsInvisible();
-                    MakeDescriptionVisible(theMercuryGameObject);
-
-                    TurnOffMainCamera();
-                    TurnOnMercuryCamera();
-                }
-
-                if (currentTarget.name == "Venus")
-                {
-                    MakeAllDescriptionsInvisible();
-                    MakeDescriptionVisible(theVenusGameObject);
-
-                    TurnOffMainCamera();
-                    TurnOnVenusCamera();
-                }
-
-                if (currentTarget.name == "Jupiter")
-                {
-                    MakeAllDescriptionsInvisible();
-                    MakeDescriptionVisible(theJupiterGameObject);
-
-                    TurnOffMainCamera();
-                    TurnOnJupiterCamera();
-                }
-
-                if (currentTarget.name == "Saturn")
-                {
-                    MakeAllDescriptionsInvisible();
-                    MakeDescriptionVisible(theSaturnGameObject);
-
-                    TurnOffMainCamera();
-                    TurnOnSaturnCamera();
-                }
-
-                if (currentTarget.name == "Titan")
-                {
-                    MakeAllDescriptionsInvisible();
-                    MakeDescriptionVisible(theTitanGameObject);
-
-                    TurnOffMainCamera();
-                    TurnOnTitanCamera();
-                }
-
-                if (currentTarget.name == "Uranus")
-                {
-                    MakeAllDescriptionsInvisible();
-                    MakeDescriptionVisible(theUranusGameObject);
-
-                    TurnOffMainCamera();
-                    TurnOnUranusCamera();
-                }
-
-                if (currentTarget.name == "Neptune")
-                {
-                    MakeAllDescriptionsInvisible();
-                    MakeDescriptionVisible(theNeptuneGameObject);
-                    
-                    TurnOffMainCamera();
-                    TurnOnNeptuneCamera();
-                }
+                bool useDetailCamera = currentTarget.name != "Sun";
+                FocusPlanet(currentTarget.name, useDetailCamera, showDescription: true);
 
                 Debug.Log("defaultTarget changed to "+currentTarget.name);
             }
@@ -231,6 +135,93 @@ public class LookAtTarget : MonoBehaviour {
         }
         
         // Here
+    }
+
+    public void FocusPlanet(string planetName, bool useDetailCamera, bool showDescription = true)
+    {
+        GameObject planetGo = GameObject.Find(planetName);
+        if (planetGo == null)
+        {
+            Debug.LogWarning($"FocusPlanet: '{planetName}' not found in scene.");
+            return;
+        }
+
+        currentTarget = planetGo;
+        MakeAllDescriptionsInvisible();
+        TurnOffAllDetailCameras();
+
+        if (planetName == "Sun" || !useDetailCamera)
+        {
+            TurnOnMainCamera();
+        }
+        else
+        {
+            TurnOffMainCamera();
+            TurnOnDetailCameraForPlanet(planetName);
+        }
+
+        if (showDescription)
+        {
+            ShowDescriptionForPlanet(planetName);
+        }
+    }
+
+    public void TurnOffAllDetailCameras()
+    {
+        if (earthCamera) earthCamera.SetActive(false);
+        if (moonCamera) moonCamera.SetActive(false);
+        if (marsCamera) marsCamera.SetActive(false);
+        if (mercuryCamera) mercuryCamera.SetActive(false);
+        if (venusCamera) venusCamera.SetActive(false);
+        if (jupiterCamera) jupiterCamera.SetActive(false);
+        if (saturnCamera) saturnCamera.SetActive(false);
+        if (titanCamera) titanCamera.SetActive(false);
+        if (uranusCamera) uranusCamera.SetActive(false);
+        if (neptuneCamera) neptuneCamera.SetActive(false);
+    }
+
+    private void ShowDescriptionForPlanet(string planetName)
+    {
+        if (planetName == "Sun" && theSunGameObject) MakeDescriptionVisible(theSunGameObject);
+        else if (planetName == "Earth" && theEarthGameObject) MakeDescriptionVisible(theEarthGameObject);
+        else if (planetName == "Moon" && theMoonGameObject) MakeDescriptionVisible(theMoonGameObject);
+        else if (planetName == "Mars" && theMarsGameObject) MakeDescriptionVisible(theMarsGameObject);
+        else if (planetName == "Mercury" && theMercuryGameObject) MakeDescriptionVisible(theMercuryGameObject);
+        else if (planetName == "Venus" && theVenusGameObject) MakeDescriptionVisible(theVenusGameObject);
+        else if (planetName == "Jupiter" && theJupiterGameObject) MakeDescriptionVisible(theJupiterGameObject);
+        else if (planetName == "Saturn" && theSaturnGameObject) MakeDescriptionVisible(theSaturnGameObject);
+        else if (planetName == "Titan" && theTitanGameObject) MakeDescriptionVisible(theTitanGameObject);
+        else if (planetName == "Uranus" && theUranusGameObject) MakeDescriptionVisible(theUranusGameObject);
+        else if (planetName == "Neptune" && theNeptuneGameObject) MakeDescriptionVisible(theNeptuneGameObject);
+    }
+
+    private void TurnOnDetailCameraForPlanet(string planetName)
+    {
+        if (planetName == "Earth") TurnOnEarthCamera();
+        else if (planetName == "Moon") TurnOnMoonCamera();
+        else if (planetName == "Mars") TurnOnMarsCamera();
+        else if (planetName == "Mercury") TurnOnMercuryCamera();
+        else if (planetName == "Venus") TurnOnVenusCamera();
+        else if (planetName == "Jupiter") TurnOnJupiterCamera();
+        else if (planetName == "Saturn") TurnOnSaturnCamera();
+        else if (planetName == "Titan") TurnOnTitanCamera();
+        else if (planetName == "Uranus") TurnOnUranusCamera();
+        else if (planetName == "Neptune") TurnOnNeptuneCamera();
+    }
+
+    public GameObject GetActiveDetailCamera()
+    {
+        if (earthCamera != null && earthCamera.activeSelf) return earthCamera;
+        if (moonCamera != null && moonCamera.activeSelf) return moonCamera;
+        if (marsCamera != null && marsCamera.activeSelf) return marsCamera;
+        if (mercuryCamera != null && mercuryCamera.activeSelf) return mercuryCamera;
+        if (venusCamera != null && venusCamera.activeSelf) return venusCamera;
+        if (jupiterCamera != null && jupiterCamera.activeSelf) return jupiterCamera;
+        if (saturnCamera != null && saturnCamera.activeSelf) return saturnCamera;
+        if (titanCamera != null && titanCamera.activeSelf) return titanCamera;
+        if (uranusCamera != null && uranusCamera.activeSelf) return uranusCamera;
+        if (neptuneCamera != null && neptuneCamera.activeSelf) return neptuneCamera;
+        return null;
     }
 
     public void TurnOffMarsCamera()
