@@ -67,6 +67,10 @@ public class PlanetTextureManager : MonoBehaviour
     Renderer _jupiterRingSubtle;
     Renderer _jupiterRingHdLayer;
 
+    Mesh _neptuneRingMesh;
+    Renderer _neptuneRingSubtle;
+    Renderer _neptuneRingHdLayer;
+
     Material _earthCloudMat;
     Material _venusAtmosphereMat;
     Material _titanHazeMat;
@@ -80,6 +84,9 @@ public class PlanetTextureManager : MonoBehaviour
     const float UranusRingTiltX = 25f;
     const float UranusRingOuterFactor = 1.72f;
     const int UranusRingSegments = 192;
+    const float NeptuneRingTiltX = 28.3f;
+    const float NeptuneRingOuterFactor = 1.55f;
+    const int NeptuneRingSegments = 192;
 
     static readonly RingBandDescriptor[] JupiterRingBands =
     {
@@ -92,6 +99,15 @@ public class PlanetTextureManager : MonoBehaviour
         new RingBandDescriptor(1.06f, 1.14f),
         new RingBandDescriptor(1.16f, 1.28f),
         new RingBandDescriptor(1.30f, 1.75f),
+    };
+
+    static readonly RingBandDescriptor[] NeptuneRingBands =
+    {
+        new RingBandDescriptor(1.08f, 1.12f),
+        new RingBandDescriptor(1.14f, 1.18f),
+        new RingBandDescriptor(1.20f, 1.26f),
+        new RingBandDescriptor(1.28f, 1.36f),
+        new RingBandDescriptor(1.38f, 1.48f),
     };
 
     void Awake()
@@ -367,6 +383,21 @@ public class PlanetTextureManager : MonoBehaviour
             EmissionScale = 0.6f,
             Bands = UranusRingBands,
         }, ref _uranusRingMesh, ref _uranusRingSubtle, ref _uranusRingHdLayer, saturnTex);
+
+        SetupRingLayerPair(new RingPlanetConfig
+        {
+            PlanetName = "Neptune",
+            TextureResourcePath = "PlanetTexturesHD/NeptuneRing_8k",
+            FallbackTexturePath = saturnFallback,
+            SubtleTint = new Color(0.38f, 0.48f, 0.72f, 0.38f),
+            VividTint = new Color(0.45f, 0.58f, 0.82f, 0.68f),
+            OuterFactor = NeptuneRingOuterFactor,
+            Segments = NeptuneRingSegments,
+            TiltX = NeptuneRingTiltX,
+            EnhancedPresentation = true,
+            EmissionScale = 0.4f,
+            Bands = NeptuneRingBands,
+        }, ref _neptuneRingMesh, ref _neptuneRingSubtle, ref _neptuneRingHdLayer, saturnTex);
     }
 
     static Texture2D LoadRingTexture(RingPlanetConfig config, Texture2D fallback)
@@ -602,8 +633,8 @@ public class PlanetTextureManager : MonoBehaviour
                 continue;
             }
 
-            bool vivid = ot.Renderer == _saturnRingHdLayer || ot.Renderer == _uranusRingHdLayer || ot.Renderer == _jupiterRingHdLayer;
-            bool subtle = ot.Renderer == _saturnRingSubtle || ot.Renderer == _uranusRingSubtle || ot.Renderer == _jupiterRingSubtle;
+            bool vivid = ot.Renderer == _saturnRingHdLayer || ot.Renderer == _uranusRingHdLayer || ot.Renderer == _jupiterRingHdLayer || ot.Renderer == _neptuneRingHdLayer;
+            bool subtle = ot.Renderer == _saturnRingSubtle || ot.Renderer == _uranusRingSubtle || ot.Renderer == _jupiterRingSubtle || ot.Renderer == _neptuneRingSubtle;
             ot.Renderer.enabled = (hq && vivid) || (!hq && subtle);
         }
 

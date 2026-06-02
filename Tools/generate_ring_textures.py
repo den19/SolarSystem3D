@@ -1,4 +1,4 @@
-"""Generate JupiterRing_8k and UranusRing_8k radial ring atlases (U=angle, V=radial)."""
+"""Generate JupiterRing_8k, UranusRing_8k, and NeptuneRing_8k radial ring atlases (U=angle, V=radial)."""
 import math
 import os
 from PIL import Image
@@ -72,11 +72,51 @@ def make_uranus():
     return img
 
 
+def adams_arc_boost(ang):
+    """Three localized bright arcs on the Adams ring (Liberté, Egalité, Fraternité)."""
+    centers = (0.35, 2.45, 4.55)
+    boost = 0.0
+    for c in centers:
+        d = abs(math.atan2(math.sin(ang - c), math.cos(ang - c)))
+        boost = max(boost, math.exp(-(d * d) / 0.018))
+    return 0.55 + 0.45 * boost
+
+
+def make_neptune():
+    # Faint dusty narrow rings + Adams arcs (cool blue-gray)
+    bands = [
+        (0.06, 0.10, 0.42, 0.018),
+        (0.12, 0.16, 0.12, 0.012),
+        (0.18, 0.22, 0.48, 0.016),
+        (0.26, 0.30, 0.14, 0.012),
+        (0.34, 0.40, 0.38, 0.02),
+        (0.44, 0.50, 0.16, 0.014),
+        (0.56, 0.64, 0.32, 0.022),
+        (0.72, 0.88, 0.55, 0.035),
+    ]
+    img = Image.new("RGBA", (W, H))
+    px = img.load()
+    for y in range(H):
+        yn = y / (H - 1)
+        for x in range(W):
+            ang = (x / W) * math.pi * 2.0
+            noise = 0.93 + 0.07 * math.sin(ang * 53.0 + yn * 23.0)
+            a = radial_profile(yn, bands) * noise
+            if yn >= 0.68:
+                a *= adams_arc_boost(ang)
+            r = int(95 * a + 8 * (1 - a))
+            g = int(118 * a + 10 * (1 - a))
+            b = int(165 * a + 14 * (1 - a))
+            px[x, y] = (r, g, b, int(255 * min(1.0, a * 1.1)))
+    return img
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     make_jupiter().save(os.path.join(OUT, "JupiterRing_8k.png"), "PNG")
     make_uranus().save(os.path.join(OUT, "UranusRing_8k.png"), "PNG")
-    print("Wrote JupiterRing_8k.png and UranusRing_8k.png to", OUT)
+    make_neptune().save(os.path.join(OUT, "NeptuneRing_8k.png"), "PNG")
+    print("Wrote JupiterRing_8k.png, UranusRing_8k.png, and NeptuneRing_8k.png to", OUT)
 
 
 if __name__ == "__main__":
