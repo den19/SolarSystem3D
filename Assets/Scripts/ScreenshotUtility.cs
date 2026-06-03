@@ -4,9 +4,8 @@
  *  current resolution.
  * 
  *  Notes:
- *    - Images are stored in a Screenshots folder within the Unity project directory.
- * 
- *    - Images will copied over if player prefs are reset!
+ *    - Editor: images are stored in the project's Screenshots folder.
+ *    - Android: images are stored in Application.persistentDataPath.
  * 
  *    - ScaleFactor - If the resolution is 1024x768, and the scale factor
  *      is 2, the screenshot will be saved as 2048x1536.
@@ -19,70 +18,75 @@
  */
 
 using UnityEngine;
-using System.Collections;
-using System.IO; // included for access to File IO such as Directory class
+using System.IO;
 
 /// <summary>
-/// Handles taking a screenshot of game window.
+/// Handles taking a screenshot of game window on Android and in the Unity Editor.
 /// </summary>
 public class ScreenshotUtility : MonoBehaviour
 {
-    // static reference to ScreenshotUtility so can be called from other scripts directly (not just through gameobject component)
     public static ScreenshotUtility screenShotUtility;
 
     #region Public Variables
-    // Should this run on a build of the game
-    public bool runOnBuild = false;
-    // The key used to take a screenshot
     public string m_ScreenshotKey = "s";
-    // The amount to scale the screenshot
     public int m_ScaleFactor = 1;
     #endregion
 
     #region Private Variables
-    // The number of screenshots taken
-    private int m_ImageCount = 0;
+    private int m_ImageCount;
     #endregion
 
     #region Constants
-    // The key used to get/set the number of images
     private const string ImageCntKey = "IMAGE_CNT";
     #endregion
 
-    /// <summary>
-    /// Lets the screenshot utility persist through scenes.
-    /// </summary>
+    static bool IsSupportedPlatform =>
+        Application.isEditor || Application.platform == RuntimePlatform.Android;
+
     void Awake()
     {
-        // Скрипт полностью отключен по запросу пользователя для стабильности на Android
-        this.enabled = false;
-        return;
+        screenShotUtility = this;
+        m_ImageCount = PlayerPrefs.GetInt(ImageCntKey, 0);
+
+        if (!IsSupportedPlatform)
+            gameObject.SetActive(false);
     }
 
-    /// <summary>
-    /// Called once per frame. Handles the input.
-    /// </summary>
     void Update()
     {
+        if (!Application.isEditor || !IsSupportedPlatform)
+            return;
 
-        // Checks for input
         if (Input.GetKeyDown(m_ScreenshotKey.ToLower()))
-        {
-            // Saves the current image count
-            PlayerPrefs.SetInt(ImageCntKey, ++m_ImageCount);
+            TakeScreenshot();
+    }
 
-            // Adjusts the height and width for the file name
-            int width = Screen.width * m_ScaleFactor;
-            int height = Screen.height * m_ScaleFactor;
+    public void TakeScreenshot()
+    {
+        if (!IsSupportedPlatform)
+            return;
 
-            // Takes the screenshot with filename "Screenshot_WIDTHxHEIGHT_IMAGECOUNT.png"
-            // and save it in the Screenshots folder
-            ScreenCapture.CaptureScreenshot("Screenshots/Screenshot_" +
-                                          +width + "x" + height
-                                          + "_"
-                                          + m_ImageCount
-                                          + ".png",
-                                          m_ScaleFactor);
-        }
+        PlayerPrefs.SetInt(ImageCntKey, ++m_ImageCount);
+
+        int width = Screen.width * m_ScaleFactor;
+        int height = Screen.height * m_ScaleFactor;
+        string fileName = "Screenshot_" + width + "x" + height + "_" + m_ImageCount + ".png";
+        string directory = GetScreenshotDirectory();
+        Directory.CreateDirectory(directory);
+
+        string fullPath = Path.Combine(directory, fileName);
+        ScreenCapture.CaptureScreenshot(fullPath, m_ScaleFactor);
+        Debug.Log("Screenshot saved to: " + fullPath);
+    }
+
+    static string GetScreenshotDirectory()
+    {
+#if UNITY_EDITOR
+        return Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Screenshots");
+#elif UNITY_ANDROID
+        return Application.persistentDataPath;
+#else
+        return Application.persistentDataPath;
+#endif
     }
 }
