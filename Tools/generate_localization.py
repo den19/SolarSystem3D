@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parse Unity localization JSON and generate chinese/vietnamese translations."""
+"""Parse Unity localization JSON and generate chinese/vietnamese/uzbek translations."""
 import json
 import re
 import sys
@@ -128,13 +128,15 @@ def build_language(target_code: str, out_name: str) -> None:
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: generate_localization.py chinese|vietnamese|both")
+        print("Usage: generate_localization.py chinese|vietnamese|uzbek|both|all")
         sys.exit(1)
     cmd = sys.argv[1].lower()
-    if cmd in ("chinese", "both"):
+    if cmd in ("chinese", "both", "all"):
         build_language("zh-CN", "chinese.json")
-    if cmd in ("vietnamese", "both"):
+    if cmd in ("vietnamese", "both", "all"):
         build_language("vi", "vietnamese.json")
+    if cmd in ("uzbek", "all"):
+        build_language("uz", "uzbek.json")
 
 
 if __name__ == "__main__":

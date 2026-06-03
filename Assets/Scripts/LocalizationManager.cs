@@ -40,7 +40,7 @@ public class LocalizationManager : MonoBehaviour
 
         // Загружаем сохраненный язык из PlayerPrefs (по умолчанию English = 0)
         int savedLanguage = PlayerPrefs.GetInt("SelectedLanguage", (int)Language.English);
-        int maxLanguage = (int)Language.Vietnamese;
+        int maxLanguage = (int)Language.Uzbek;
         if (savedLanguage < 0 || savedLanguage > maxLanguage)
             savedLanguage = (int)Language.English;
 
@@ -147,5 +147,6 @@ public enum Language
     English,
     Russian,
     Chinese,
-    Vietnamese
+    Vietnamese,
+    Uzbek
 }

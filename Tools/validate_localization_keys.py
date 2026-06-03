@@ -7,7 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from generate_localization import parse_unity_json
 
 LANG_DIR = Path(__file__).resolve().parents[1] / "Assets" / "Resources" / "Languages"
-FILES = ["english.json", "russian.json", "chinese.json", "vietnamese.json"]
+FILES = ["english.json", "russian.json", "chinese.json", "vietnamese.json", "uzbek.json"]
 
 
 def main():
