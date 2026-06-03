@@ -49,7 +49,7 @@ public class ScreenshotUtility : MonoBehaviour
         m_ImageCount = PlayerPrefs.GetInt(ImageCntKey, 0);
 
         if (!IsSupportedPlatform)
-            gameObject.SetActive(false);
+            enabled = false;
     }
 
     void Update()
