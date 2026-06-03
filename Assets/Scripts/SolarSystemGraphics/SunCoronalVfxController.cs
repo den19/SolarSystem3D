@@ -4,16 +4,18 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// HD-only Sun coronal VFX: procedural surface flicker overlay and timed loop-like CME bursts.
+/// HD-only Sun coronal VFX: procedural sunspots, surface flicker overlay, and timed loop-like CME bursts.
 /// </summary>
 public class SunCoronalVfxController : MonoBehaviour
 {
     const string LevelSceneName = "Level1";
     const string SunObjectName = "Sun";
     const string VfxRootName = "ExtraGraphicsSunCoronalVfx";
+    const string SunspotsObjectName = "ExtraGraphicsSunSunspots";
     const string FlickerObjectName = "ExtraGraphicsSunSurfaceFlicker";
     const string CmeObjectName = "SunCmeLoop";
 
+    const float SunspotsLocalScale = 1.006f;
     const float FlickerLocalScale = 1.012f;
     const float CmeEmitLocalRadius = 0.52f;
     const float LightPulseFraction = 0.08f;
@@ -22,6 +24,7 @@ public class SunCoronalVfxController : MonoBehaviour
     static SunCoronalVfxController _instance;
 
     GameObject _vfxRoot;
+    Renderer _sunspotsRenderer;
     Renderer _flickerRenderer;
     ParticleSystem _cmeParticles;
     Transform _cmeTransform;
@@ -88,6 +91,9 @@ public class SunCoronalVfxController : MonoBehaviour
         if (sunTransform.Find(VfxRootName) != null)
         {
             _vfxRoot = sunTransform.Find(VfxRootName).gameObject;
+            _sunspotsRenderer = _vfxRoot.transform.Find(SunspotsObjectName)?.GetComponent<Renderer>();
+            if (_sunspotsRenderer == null)
+                _sunspotsRenderer = CreateSunspotsOverlay(_vfxRoot.transform);
             _flickerRenderer = _vfxRoot.transform.Find(FlickerObjectName)?.GetComponent<Renderer>();
             _cmeTransform = _vfxRoot.transform.Find(CmeObjectName);
             _cmeParticles = _cmeTransform ? _cmeTransform.GetComponent<ParticleSystem>() : null;
@@ -102,6 +108,7 @@ public class SunCoronalVfxController : MonoBehaviour
         _vfxRoot.transform.localRotation = Quaternion.identity;
         _vfxRoot.transform.localScale = Vector3.one;
 
+        _sunspotsRenderer = CreateSunspotsOverlay(_vfxRoot.transform);
         _flickerRenderer = CreateFlickerOverlay(_vfxRoot.transform);
         CreateCmeLoop(_vfxRoot.transform, out _cmeTransform, out _cmeParticles);
         CacheSunLight(sunTransform);
@@ -114,6 +121,51 @@ public class SunCoronalVfxController : MonoBehaviour
         _sunLight = sunTransform.GetComponent<Light>();
         if (_sunLight)
             _baseLightIntensity = _sunLight.intensity;
+    }
+
+    Renderer CreateSunspotsOverlay(Transform parent)
+    {
+        var sunspots = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        sunspots.name = SunspotsObjectName;
+        sunspots.transform.SetParent(parent, false);
+        sunspots.transform.localPosition = Vector3.zero;
+        sunspots.transform.localRotation = Quaternion.identity;
+        sunspots.transform.localScale = Vector3.one * SunspotsLocalScale;
+
+        var collider = sunspots.GetComponent<Collider>();
+        if (collider)
+            Destroy(collider);
+
+        var renderer = sunspots.GetComponent<MeshRenderer>();
+        var shader = Shader.Find("Custom/SunSunspots");
+        if (shader == null)
+        {
+            Debug.LogWarning("SunCoronalVfxController: Custom/SunSunspots shader not found.");
+            renderer.enabled = false;
+            return renderer;
+        }
+
+        var material = new Material(shader);
+        material.SetColor("_UmbraColor", new Color(0.22f, 0.18f, 0.14f, 1f));
+        material.SetColor("_PenumbraColor", new Color(0.50f, 0.42f, 0.32f, 1f));
+        material.SetFloat("_SpotStrength", 1f);
+        material.SetFloat("_PenumbraNoise", 0.55f);
+        material.SetFloat("_PenumbraGrainSpeed", 0.04f);
+        material.SetFloat("_BreathingAmount", 0.015f);
+        material.SetFloat("_BreathingSpeed", 0.12f);
+
+        material.SetVector("_Spot0Dir", new Vector4(0.7f, 0.3f, 0.64f, 0f));
+        material.SetVector("_Spot0Radii", new Vector4(0.045f, 0.095f, 1.35f, 0f));
+        material.SetVector("_Spot1Dir", new Vector4(-0.52f, 0.58f, 0.62f, 0f));
+        material.SetVector("_Spot1Radii", new Vector4(0.032f, 0.072f, 1.15f, 0f));
+        material.SetVector("_Spot2Dir", new Vector4(0.18f, -0.74f, 0.64f, 0f));
+        material.SetVector("_Spot2Radii", new Vector4(0.014f, 0.028f, 1f, 0f));
+
+        renderer.sharedMaterial = material;
+        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        renderer.receiveShadows = false;
+        renderer.enabled = false;
+        return renderer;
     }
 
     Renderer CreateFlickerOverlay(Transform parent)
@@ -302,6 +354,9 @@ public class SunCoronalVfxController : MonoBehaviour
             RestoreSunLight();
             return;
         }
+
+        if (_sunspotsRenderer)
+            _sunspotsRenderer.enabled = true;
 
         if (_flickerRenderer)
             _flickerRenderer.enabled = true;
