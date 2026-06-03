@@ -1,9 +1,7 @@
-using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.UI;
 
-public class TitleScreenshotTrigger : MonoBehaviour, IPointerClickHandler
+public class CanvasScreenshotTrigger : MonoBehaviour, IPointerClickHandler
 {
     ScreenshotUtility screenshotUtility;
 
@@ -16,15 +14,13 @@ public class TitleScreenshotTrigger : MonoBehaviour, IPointerClickHandler
         }
 
         screenshotUtility = GetComponent<ScreenshotUtility>();
-
-        foreach (var text in GetComponentsInChildren<Text>(true))
-            text.raycastTarget = false;
-        foreach (var tmp in GetComponentsInChildren<TMP_Text>(true))
-            tmp.raycastTarget = false;
     }
 
     public void OnPointerClick(PointerEventData eventData)
     {
+        if (eventData.button != PointerEventData.InputButton.Left)
+            return;
+
         if (screenshotUtility == null)
             return;
 
