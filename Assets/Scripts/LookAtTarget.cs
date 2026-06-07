@@ -48,13 +48,11 @@ public class LookAtTarget : MonoBehaviour {
     public GameObject moonCamera;    // Детальная камера Луны
     public GameObject titanCamera;    // Детальная камера Титана
 
-
-
-    // Start happens once at the beginning of playing. This is a great place to setup the behavior for this gameObject
+    MobileOrbitCamera _mainOrbitCamera;
 
     private void Awake()
     {
-        Input.multiTouchEnabled = true;
+        TouchInputBridge.EnsureInitialized();
     }
 
     void Start () {
@@ -69,6 +67,9 @@ public class LookAtTarget : MonoBehaviour {
             currentTarget = this.gameObject;
             Debug.Log("currentTarget target not specified. Defaulting to parent GameObject");
         }
+
+        if (mainCamera != null)
+            _mainOrbitCamera = mainCamera.GetComponent<MobileOrbitCamera>();
     }
 	
     void MakeAllDescriptionsInvisible()
@@ -94,47 +95,43 @@ public class LookAtTarget : MonoBehaviour {
 
     void Update()
     {
-        // if primary mouse button is pressed
-        if (Input.GetMouseButtonDown(0))
+        if (_mainOrbitCamera == null && mainCamera != null)
+            _mainOrbitCamera = mainCamera.GetComponent<MobileOrbitCamera>();
+
+        bool userControlsOrbit = _mainOrbitCamera != null && _mainOrbitCamera.IsUserControlling;
+        bool touchActive = TouchInputBridge.touchCount > 0;
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+        if (!userControlsOrbit && !touchActive)
         {
-            // determine the ray from the camera to the mousePosition
-            Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-
-            // cast a ray to see if it hits any gameObjects
-            RaycastHit hit;
-
-            // if there is a hit
-            if (Physics.Raycast(ray, out hit))
+            if (Input.GetMouseButtonDown(0))
             {
-                currentTarget = hit.collider.gameObject;
-                Debug.Log("currentTarget.name is " + currentTarget.name);
-
-                bool useDetailCamera = currentTarget.name != "Sun";
-                FocusPlanet(currentTarget.name, useDetailCamera, showDescription: true);
-
-                Debug.Log("defaultTarget changed to "+currentTarget.name);
+                Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+                if (Physics.Raycast(ray, out RaycastHit hit))
+                {
+                    currentTarget = hit.collider.gameObject;
+                    bool useDetailCamera = currentTarget.name != "Sun";
+                    FocusPlanet(currentTarget.name, useDetailCamera, showDescription: true);
+                }
             }
-        } else if (Input.GetMouseButtonDown(1)) // if the second mouse button is pressed
-        {
-            currentTarget = defaultTarget;
-            Debug.Log("defaultTarget changed to " + currentTarget.name);
+            else if (Input.GetMouseButtonDown(1))
+            {
+                currentTarget = defaultTarget;
+            }
         }
+#endif
 
-        // if a currentTarget is set, then look at it
-        
-        if (currentTarget!=null)
+        if (userControlsOrbit || touchActive)
+            return;
+
+        if (currentTarget != null)
         {
-            // transform here refers to the attached gameobject this script is on.
-            // the LookAt function makes a transform point it's Z axis towards another point in space
-            // In this case it is pointing towards the target.transform
             transform.LookAt(currentTarget.transform);
-        } else // reset the look at back to the default
+        }
+        else
         {
             currentTarget = defaultTarget;
-            Debug.Log("defaultTarget changed to " + currentTarget.name);
         }
-        
-        // Here
     }
 
     public void FocusPlanet(string planetName, bool useDetailCamera, bool showDescription = true)

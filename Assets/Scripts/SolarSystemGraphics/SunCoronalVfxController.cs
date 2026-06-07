@@ -18,10 +18,38 @@ public class SunCoronalVfxController : MonoBehaviour
     const float SunspotsLocalScale = 1.006f;
     const float FlickerLocalScale = 1.012f;
     const float CmeEmitLocalRadius = 0.52f;
-    const float LightPulseFraction = 0.08f;
-    const float LightPulseDuration = 0.4f;
+    const string CmeMaterialResourcePath = "SunCmeLoopParticle";
+
+#if UNITY_ANDROID || UNITY_IOS
+    const float CmeStartSizeMin = 0.12f;
+    const float CmeStartSizeMax = 0.28f;
+    const float CmeLengthScale = 1.5f;
+    const float CmeBurstIntervalMin = 9f;
+    const float CmeBurstIntervalMax = 16f;
+    const float CmeInitialDelayMin = 2.5f;
+    const float CmeInitialDelayMax = 5f;
+#else
+    const float CmeStartSizeMin = 0.07f;
+    const float CmeStartSizeMax = 0.16f;
+    const float CmeLengthScale = 1.2f;
+    const float CmeBurstIntervalMin = 14f;
+    const float CmeBurstIntervalMax = 26f;
+    const float CmeInitialDelayMin = 4f;
+    const float CmeInitialDelayMax = 8f;
+#endif
+
+    enum CmeLoopKind
+    {
+        Compact,
+        Arcing,
+        Prominence,
+        Wispy
+    }
 
     static SunCoronalVfxController _instance;
+    static bool _cmeMaterialWarningLogged;
+    static Material _cachedCmeMaterial;
+    static Texture2D _cachedCmeSoftTexture;
 
     GameObject _vfxRoot;
     Renderer _sunspotsRenderer;
@@ -230,15 +258,9 @@ public class SunCoronalVfxController : MonoBehaviour
         main.playOnAwake = false;
         main.simulationSpace = ParticleSystemSimulationSpace.Local;
         main.scalingMode = ParticleSystemScalingMode.Hierarchy;
-        main.maxParticles = 220;
-        main.startLifetime = new ParticleSystem.MinMaxCurve(1.8f, 3.2f);
-        main.startSpeed = new ParticleSystem.MinMaxCurve(0.35f, 0.75f);
-        main.startSize = new ParticleSystem.MinMaxCurve(0.08f, 0.18f);
-        main.startColor = new ParticleSystem.MinMaxGradient(
-            new Color(1f, 0.98f, 0.82f, 1f),
-            new Color(1f, 0.72f, 0.28f, 1f));
+        main.maxParticles = 280;
         main.gravityModifier = 0f;
-        main.duration = 5f;
+        main.duration = 12f;
 
         var emission = ps.emission;
         emission.enabled = true;
@@ -247,93 +269,347 @@ public class SunCoronalVfxController : MonoBehaviour
         var shape = ps.shape;
         shape.enabled = true;
         shape.shapeType = ParticleSystemShapeType.Cone;
-        shape.angle = 12f;
-        shape.radius = 0.035f;
         shape.radiusThickness = 1f;
-        shape.arc = 28f;
         shape.rotation = new Vector3(-90f, 0f, 0f);
+
+        var limitVelocity = ps.limitVelocityOverLifetime;
+        limitVelocity.enabled = true;
+        limitVelocity.dampen = 0.18f;
+        limitVelocity.drag = 0.48f;
+
+        var rotationOverLifetime = ps.rotationOverLifetime;
+        rotationOverLifetime.enabled = true;
+
+        var noise = ps.noise;
+        noise.enabled = true;
+        noise.damping = true;
+        noise.quality = ParticleSystemNoiseQuality.Medium;
+
+        ApplyCmeBurstProfile(ps, CmeLoopKind.Arcing);
+    }
+
+    static void ApplyCmeBurstProfile(ParticleSystem ps, CmeLoopKind kind)
+    {
+        float sizeMin = CmeStartSizeMin;
+        float sizeMax = CmeStartSizeMax;
+        float lifetimeMin = 4f;
+        float lifetimeMax = 7f;
+        float speedMin = 0.08f;
+        float speedMax = 0.2f;
+        float shapeAngle = 10f;
+        float shapeArc = 24f;
+        float shapeRadius = 0.028f;
+        float velocityScale = 0.08f;
+        float lengthScale = CmeLengthScale;
+        float burstMin = 55;
+        float burstMax = 95;
+        float rollDegrees = 360f;
+        float emitRadius = CmeEmitLocalRadius;
+        Color colorA = new(1f, 0.9f, 0.52f, 1f);
+        Color colorB = new(1f, 0.55f, 0.12f, 1f);
+        AnimationCurve arcCurve;
+        AnimationCurve sizeCurve;
+        float noiseStrength = 0.05f;
+        float noiseFrequency = 0.4f;
+        float noiseScroll = 0.12f;
+        float rotationSpeed = 12f;
+
+        switch (kind)
+        {
+            case CmeLoopKind.Compact:
+                lifetimeMin = 3.2f;
+                lifetimeMax = 5.2f;
+                speedMin = 0.1f;
+                speedMax = 0.22f;
+                sizeMin *= 0.92f;
+                sizeMax *= 0.98f;
+                shapeAngle = 7f;
+                shapeArc = 16f;
+                shapeRadius = 0.02f;
+                burstMin = 40;
+                burstMax = 68;
+                velocityScale = 0.07f;
+                lengthScale *= 0.95f;
+                arcCurve = CmeArcCurve(0.18f, 0.04f, -0.1f, -0.28f);
+                sizeCurve = CmeSizeCurve(0.3f, 0.95f, 0.5f);
+                colorA = new Color(1f, 0.86f, 0.42f, 1f);
+                colorB = new Color(1f, 0.5f, 0.1f, 1f);
+                break;
+            case CmeLoopKind.Prominence:
+                lifetimeMin = 5.5f;
+                lifetimeMax = 9f;
+                speedMin = 0.05f;
+                speedMax = 0.12f;
+                sizeMin *= 1.28f;
+                sizeMax *= 1.5f;
+                shapeAngle = 14f;
+                shapeArc = 38f;
+                shapeRadius = 0.04f;
+                burstMin = 28;
+                burstMax = 48;
+                velocityScale = 0.06f;
+                lengthScale *= 1.1f;
+                emitRadius = CmeEmitLocalRadius * 1.04f;
+                arcCurve = CmeArcCurve(0.14f, 0.02f, -0.06f, -0.2f);
+                sizeCurve = CmeSizeCurve(0.25f, 1.05f, 0.62f);
+                colorA = new Color(1f, 0.82f, 0.38f, 1f);
+                colorB = new Color(0.95f, 0.42f, 0.08f, 1f);
+                noiseStrength = 0.04f;
+                noiseFrequency = 0.28f;
+                noiseScroll = 0.08f;
+                rotationSpeed = 8f;
+                break;
+            case CmeLoopKind.Wispy:
+                lifetimeMin = 4.5f;
+                lifetimeMax = 7.5f;
+                speedMin = 0.06f;
+                speedMax = 0.14f;
+                sizeMin *= 0.78f;
+                sizeMax *= 0.92f;
+                shapeAngle = 11f;
+                shapeArc = 32f;
+                shapeRadius = 0.034f;
+                burstMin = 85;
+                burstMax = 130;
+                velocityScale = 0.09f;
+                lengthScale *= 1f;
+                arcCurve = CmeArcCurve(0.12f, 0.01f, -0.08f, -0.22f);
+                sizeCurve = CmeSizeCurve(0.2f, 0.75f, 0.35f);
+                colorA = new Color(1f, 0.92f, 0.58f, 1f);
+                colorB = new Color(1f, 0.62f, 0.18f, 1f);
+                noiseStrength = 0.07f;
+                noiseFrequency = 0.52f;
+                noiseScroll = 0.16f;
+                rotationSpeed = 18f;
+                break;
+            default:
+                lifetimeMin = 4f;
+                lifetimeMax = 6.8f;
+                speedMin = 0.07f;
+                speedMax = 0.17f;
+                shapeAngle = 9f;
+                shapeArc = 26f;
+                shapeRadius = 0.03f;
+                burstMin = 58;
+                burstMax = 92;
+                velocityScale = 0.08f;
+                sizeMin *= 1.12f;
+                sizeMax *= 1.12f;
+                arcCurve = CmeArcCurve(0.16f, 0.03f, -0.08f, -0.24f);
+                sizeCurve = CmeSizeCurve(0.28f, 1f, 0.52f);
+                break;
+        }
+
+        var main = ps.main;
+        main.startLifetime = new ParticleSystem.MinMaxCurve(lifetimeMin, lifetimeMax);
+        main.startSpeed = new ParticleSystem.MinMaxCurve(speedMin, speedMax);
+        main.startSize = new ParticleSystem.MinMaxCurve(sizeMin, sizeMax);
+        main.startColor = new ParticleSystem.MinMaxGradient(colorA, colorB);
+        main.startRotation = new ParticleSystem.MinMaxCurve(-rollDegrees * Mathf.Deg2Rad, rollDegrees * Mathf.Deg2Rad);
+
+        var shape = ps.shape;
+        shape.angle = shapeAngle;
+        shape.arc = shapeArc;
+        shape.radius = shapeRadius;
 
         var velocityOverLifetime = ps.velocityOverLifetime;
         velocityOverLifetime.enabled = true;
         velocityOverLifetime.space = ParticleSystemSimulationSpace.Local;
-        velocityOverLifetime.x = new ParticleSystem.MinMaxCurve(0f, AnimationCurve.Linear(0f, -0.08f, 1f, 0.12f));
-        velocityOverLifetime.y = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(
-            new Keyframe(0f, 0.55f),
-            new Keyframe(0.35f, 0.15f),
-            new Keyframe(0.65f, -0.25f),
-            new Keyframe(1f, -0.55f)));
-        velocityOverLifetime.z = new ParticleSystem.MinMaxCurve(0f, AnimationCurve.Linear(0f, 0.04f, 1f, -0.04f));
-
-        var limitVelocity = ps.limitVelocityOverLifetime;
-        limitVelocity.enabled = true;
-        limitVelocity.dampen = 0.12f;
-        limitVelocity.drag = 0.35f;
+        velocityOverLifetime.x = new ParticleSystem.MinMaxCurve(0f, CmeLateralDriftCurve(kind));
+        velocityOverLifetime.y = new ParticleSystem.MinMaxCurve(1f, arcCurve);
+        velocityOverLifetime.z = new ParticleSystem.MinMaxCurve(0f, CmeDepthDriftCurve(kind));
 
         var sizeOverLifetime = ps.sizeOverLifetime;
         sizeOverLifetime.enabled = true;
-        sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(
-            new Keyframe(0f, 0.35f),
-            new Keyframe(0.25f, 1f),
-            new Keyframe(0.75f, 0.55f),
-            new Keyframe(1f, 0f)));
+        sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, sizeCurve);
 
         var colorOverLifetime = ps.colorOverLifetime;
         colorOverLifetime.enabled = true;
+        colorOverLifetime.color = CmeColorGradient(kind);
+
+        var rotationOverLifetime = ps.rotationOverLifetime;
+        rotationOverLifetime.z = new ParticleSystem.MinMaxCurve(-rotationSpeed, rotationSpeed);
+
+        var noise = ps.noise;
+        noise.strength = noiseStrength;
+        noise.frequency = noiseFrequency;
+        noise.scrollSpeed = noiseScroll;
+
+        var renderer = ps.GetComponent<ParticleSystemRenderer>();
+        if (renderer)
+        {
+            renderer.velocityScale = velocityScale;
+            renderer.lengthScale = lengthScale;
+        }
+
+        _pendingBurstMin = burstMin;
+        _pendingBurstMax = burstMax;
+        _pendingEmitRadius = emitRadius;
+        _pendingLightPulse = kind == CmeLoopKind.Prominence ? 0.1f : kind == CmeLoopKind.Compact ? 0.05f : 0.07f;
+        _pendingLightDuration = kind == CmeLoopKind.Prominence ? 0.75f : 0.55f;
+    }
+
+    static float _pendingBurstMin;
+    static float _pendingBurstMax;
+    static float _pendingEmitRadius;
+    static float _pendingLightPulse;
+    static float _pendingLightDuration;
+
+    static AnimationCurve CmeArcCurve(float rise, float apex, float fallStart, float fallEnd)
+    {
+        return new AnimationCurve(
+            new Keyframe(0f, rise),
+            new Keyframe(0.32f, apex),
+            new Keyframe(0.58f, apex * 0.65f),
+            new Keyframe(0.82f, fallStart),
+            new Keyframe(1f, fallEnd));
+    }
+
+    static AnimationCurve CmeSizeCurve(float start, float peak, float late)
+    {
+        return new AnimationCurve(
+            new Keyframe(0f, start),
+            new Keyframe(0.22f, peak),
+            new Keyframe(0.68f, late),
+            new Keyframe(1f, 0f));
+    }
+
+    static AnimationCurve CmeLateralDriftCurve(CmeLoopKind kind)
+    {
+        float sway = kind == CmeLoopKind.Wispy ? 0.06f : kind == CmeLoopKind.Prominence ? 0.03f : 0.045f;
+        return new AnimationCurve(
+            new Keyframe(0f, -sway * 0.5f),
+            new Keyframe(0.45f, sway),
+            new Keyframe(1f, -sway * 0.35f));
+    }
+
+    static AnimationCurve CmeDepthDriftCurve(CmeLoopKind kind)
+    {
+        float depth = kind == CmeLoopKind.Compact ? 0.02f : 0.035f;
+        return new AnimationCurve(
+            new Keyframe(0f, depth * 0.4f),
+            new Keyframe(0.5f, -depth),
+            new Keyframe(1f, depth * 0.25f));
+    }
+
+    static Gradient CmeColorGradient(CmeLoopKind kind)
+    {
+        Color start;
+        Color mid;
+        Color end;
+        switch (kind)
+        {
+            case CmeLoopKind.Compact:
+                start = new Color(1f, 0.88f, 0.48f);
+                mid = new Color(1f, 0.5f, 0.1f);
+                end = new Color(0.7f, 0.1f, 0.03f);
+                break;
+            case CmeLoopKind.Prominence:
+                start = new Color(1f, 0.84f, 0.4f);
+                mid = new Color(1f, 0.48f, 0.08f);
+                end = new Color(0.65f, 0.08f, 0.02f);
+                break;
+            case CmeLoopKind.Wispy:
+                start = new Color(1f, 0.94f, 0.62f);
+                mid = new Color(1f, 0.6f, 0.16f);
+                end = new Color(0.8f, 0.2f, 0.06f);
+                break;
+            default:
+                start = new Color(1f, 0.9f, 0.52f);
+                mid = new Color(1f, 0.55f, 0.12f);
+                end = new Color(0.75f, 0.12f, 0.04f);
+                break;
+        }
+
         var gradient = new Gradient();
         gradient.SetKeys(
             new[]
             {
-                new GradientColorKey(new Color(1f, 0.98f, 0.85f), 0f),
-                new GradientColorKey(new Color(1f, 0.62f, 0.18f), 0.45f),
-                new GradientColorKey(new Color(0.85f, 0.18f, 0.05f), 1f)
+                new GradientColorKey(start, 0f),
+                new GradientColorKey(mid, 0.42f),
+                new GradientColorKey(end, 1f)
             },
             new[]
             {
                 new GradientAlphaKey(0f, 0f),
-                new GradientAlphaKey(1f, 0.08f),
-                new GradientAlphaKey(0.85f, 0.45f),
+                new GradientAlphaKey(0.9f, 0.1f),
+                new GradientAlphaKey(0.75f, 0.5f),
                 new GradientAlphaKey(0f, 1f)
             });
-        colorOverLifetime.color = gradient;
-
-        var rotationOverLifetime = ps.rotationOverLifetime;
-        rotationOverLifetime.enabled = true;
-        rotationOverLifetime.z = new ParticleSystem.MinMaxCurve(-25f, 25f);
-
-        var noise = ps.noise;
-        noise.enabled = true;
-        noise.strength = 0.08f;
-        noise.frequency = 0.65f;
-        noise.scrollSpeed = 0.35f;
-        noise.damping = true;
+        return gradient;
     }
 
-    static Material CreateCmeParticleMaterial()
+    static Texture2D GetCmeSoftParticleTexture()
     {
-        var shader = Shader.Find("Universal Render Pipeline/Particles/Unlit");
-        if (shader == null)
-            shader = Shader.Find("Particles/Standard Unlit");
+        if (_cachedCmeSoftTexture != null)
+            return _cachedCmeSoftTexture;
 
-        var material = new Material(shader);
-        material.SetColor("_BaseColor", Color.white);
-        if (material.HasProperty("_Surface"))
-            material.SetFloat("_Surface", 1f);
-        if (material.HasProperty("_Blend"))
-            material.SetFloat("_Blend", 2f);
-        if (material.HasProperty("_BaseColorAddSubDiff"))
-            material.SetColor("_BaseColorAddSubDiff", new Color(1f, 0f, 0f, 0f));
-        material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-        material.EnableKeyword("_BLENDMODE_ADD");
-        return material;
+        const int size = 64;
+        _cachedCmeSoftTexture = new Texture2D(size, size, TextureFormat.RGBA32, false)
+        {
+            name = "SunCmeLoopSoft",
+            wrapMode = TextureWrapMode.Clamp,
+            filterMode = FilterMode.Bilinear,
+            hideFlags = HideFlags.HideAndDontSave
+        };
+
+        var pixels = new Color32[size * size];
+        float center = (size - 1) * 0.5f;
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float dx = (x - center) / center;
+                float dy = (y - center) / center;
+                float radial = Mathf.Sqrt(dx * dx + dy * dy);
+                float alpha = Mathf.Clamp01(1f - radial);
+                alpha *= alpha;
+                byte a = (byte)(alpha * 255f);
+                pixels[y * size + x] = new Color32(255, 255, 255, a);
+            }
+        }
+
+        _cachedCmeSoftTexture.SetPixels32(pixels);
+        _cachedCmeSoftTexture.Apply(false, true);
+        return _cachedCmeSoftTexture;
+    }
+
+    static Material LoadCmeParticleMaterial()
+    {
+        if (_cachedCmeMaterial != null)
+            return _cachedCmeMaterial;
+
+        var loaded = Resources.Load<Material>(CmeMaterialResourcePath);
+        if (loaded != null)
+        {
+            _cachedCmeMaterial = new Material(loaded);
+            _cachedCmeMaterial.SetTexture("_BaseMap", GetCmeSoftParticleTexture());
+            return _cachedCmeMaterial;
+        }
+
+        if (!_cmeMaterialWarningLogged)
+        {
+            Debug.LogWarning(
+                $"SunCoronalVfxController: Resources/{CmeMaterialResourcePath} not found; CME particles may be invisible on device.");
+            _cmeMaterialWarningLogged = true;
+        }
+
+        return null;
     }
 
     static void ConfigureCmeRenderer(ParticleSystemRenderer renderer)
     {
         renderer.renderMode = ParticleSystemRenderMode.Stretch;
-        renderer.velocityScale = 0.35f;
-        renderer.lengthScale = 2.4f;
+        renderer.velocityScale = 0.08f;
+        renderer.lengthScale = CmeLengthScale;
         renderer.alignment = ParticleSystemRenderSpace.Velocity;
-        renderer.material = CreateCmeParticleMaterial();
+        renderer.freeformStretching = true;
+        renderer.rotateWithStretchDirection = true;
+
+        var material = LoadCmeParticleMaterial();
+        if (material != null)
+            renderer.sharedMaterial = material;
+
         renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         renderer.receiveShadows = false;
     }
@@ -388,11 +664,11 @@ public class SunCoronalVfxController : MonoBehaviour
 
     IEnumerator CmeBurstLoop()
     {
-        yield return new WaitForSeconds(Random.Range(1.5f, 3f));
+        yield return new WaitForSecondsRealtime(Random.Range(CmeInitialDelayMin, CmeInitialDelayMax));
 
         while (_vfxRoot != null && _vfxRoot.activeInHierarchy && GraphicsSettings.UseExtraGraphics)
         {
-            yield return new WaitForSeconds(Random.Range(5f, 10f));
+            yield return new WaitForSecondsRealtime(Random.Range(CmeBurstIntervalMin, CmeBurstIntervalMax));
             if (_vfxRoot == null || !_vfxRoot.activeInHierarchy || !GraphicsSettings.UseExtraGraphics)
                 yield break;
 
@@ -405,23 +681,28 @@ public class SunCoronalVfxController : MonoBehaviour
         if (_cmeParticles == null || _cmeTransform == null)
             return;
 
-        Vector3 localNormal = Random.onUnitSphere.normalized;
-        _cmeTransform.localPosition = localNormal * CmeEmitLocalRadius;
-        _cmeTransform.localRotation = Quaternion.FromToRotation(Vector3.up, localNormal);
+        var kinds = (CmeLoopKind[])System.Enum.GetValues(typeof(CmeLoopKind));
+        var kind = kinds[Random.Range(0, kinds.Length)];
+        ApplyCmeBurstProfile(_cmeParticles, kind);
 
-        int burstCount = Random.Range(80, 141);
+        Vector3 localNormal = Random.onUnitSphere.normalized;
+        _cmeTransform.localPosition = localNormal * _pendingEmitRadius;
+        var baseRotation = Quaternion.FromToRotation(Vector3.up, localNormal);
+        _cmeTransform.localRotation = baseRotation * Quaternion.AngleAxis(Random.Range(0f, 360f), localNormal);
+
+        int burstCount = Random.Range(Mathf.RoundToInt(_pendingBurstMin), Mathf.RoundToInt(_pendingBurstMax) + 1);
         _cmeParticles.Emit(burstCount);
-        StartCoroutine(PulseSunLight());
+        StartCoroutine(PulseSunLight(_pendingLightPulse, _pendingLightDuration));
     }
 
-    IEnumerator PulseSunLight()
+    IEnumerator PulseSunLight(float pulseFraction, float duration)
     {
         if (_sunLight == null)
             yield break;
 
-        float target = _baseLightIntensity * (1f + LightPulseFraction);
+        float target = _baseLightIntensity * (1f + pulseFraction);
         _sunLight.intensity = target;
-        yield return new WaitForSeconds(LightPulseDuration);
+        yield return new WaitForSecondsRealtime(duration);
 
         RestoreSunLight();
     }

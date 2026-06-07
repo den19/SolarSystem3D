@@ -3,131 +3,106 @@ using UnityEngine;
 public class MobileOrbitCamera : MonoBehaviour
 {
     [Header("Target Tracking")]
-    public Transform target; // Объект вращения (планета или солнце)
-    
+    public Transform target;
+
     [Header("Distance Settings")]
     public float distance = 25f;
     public float minDistance = 2f;
     public float maxDistance = 500f;
-    
+
     [Header("Speed Settings")]
     public float xSpeed = 0.15f;
     public float ySpeed = 0.15f;
     public float zoomSpeed = 0.05f;
-    
+
     [Header("Limits")]
     public float yMinLimit = -85f;
     public float yMaxLimit = 85f;
+
+    [Header("Touch")]
+    public float tapSlopPixels = 15f;
 
     private float x = 0.0f;
     private float y = 0.0f;
 
     private float lastTapTime = 0f;
     private const float doubleTapDelay = 0.3f;
-    
+
     private LookAtTarget globalLookAtScript;
-    private bool isControlled = false;
+    private bool isControlled;
+
+    private Vector2 _activeTouchBeganPosition;
+    private bool _trackTapGesture;
+    private bool _tapGestureCancelled;
+
+    /// <summary>True while the user is touching the screen (orbit or pinch) this frame.</summary>
+    public bool IsUserControlling { get; private set; }
 
     void Start()
     {
+        TouchInputBridge.EnsureInitialized();
+
         Vector3 angles = transform.eulerAngles;
         x = angles.y;
         y = angles.x;
 
-        // Находим главный скрипт отслеживания на сцене
         globalLookAtScript = FindFirstObjectByType<LookAtTarget>();
-        
-        // Автоматически настраиваем начальную дистанцию на основе текущего положения камеры
+
         if (target != null)
         {
             distance = Vector3.Distance(transform.position, target.position);
         }
-        else if (globalLookAtScript != null && this.gameObject.name == "Main Camera")
+        else if (globalLookAtScript != null && gameObject.name == "Main Camera")
         {
-            // Для главной камеры берем текущую выбранную планету в качестве цели
-            target = globalLookAtScript.currentTarget != null ? globalLookAtScript.currentTarget.transform : globalLookAtScript.defaultTarget.transform;
+            target = globalLookAtScript.currentTarget != null
+                ? globalLookAtScript.currentTarget.transform
+                : globalLookAtScript.defaultTarget.transform;
             distance = Vector3.Distance(transform.position, target.position);
         }
     }
 
     void LateUpdate()
     {
-        // Динамически обновляем цель для главной камеры, если она переключилась
-        if (this.gameObject.name == "Main Camera" && globalLookAtScript != null)
+        if (gameObject.name == "Main Camera" && globalLookAtScript != null)
         {
-            if (globalLookAtScript.currentTarget != null && target != globalLookAtScript.currentTarget.transform)
+            if (globalLookAtScript.currentTarget != null &&
+                target != globalLookAtScript.currentTarget.transform)
             {
                 target = globalLookAtScript.currentTarget.transform;
                 distance = Vector3.Distance(transform.position, target.position);
             }
         }
 
-        if (target == null) return;
+        if (target == null)
+            return;
 
         isControlled = false;
+        IsUserControlling = false;
 
-        // ОБРАБОТКА СЕНСОРНОГО ВВОДА (TOUCH)
-        if (Input.touchCount > 0)
+        int touchCount = TouchInputBridge.touchCount;
+        if (touchCount > 0)
         {
             isControlled = true;
+            IsUserControlling = true;
 
-            // --- РЕЖИМ 1: ОДИН ПАЛЕЦ (Вращение по орбите и Тапы) ---
-            if (Input.touchCount == 1)
+            if (touchCount == 1)
             {
-                Touch touch = Input.GetTouch(0);
-
-                // Одиночный / Двойной Тап по экрану
-                if (touch.phase == TouchPhase.Began)
-                {
-                    float timeSinceLastTap = Time.time - lastTapTime;
-                    if (timeSinceLastTap <= doubleTapDelay)
-                    {
-                        OnDoubleTap(touch.position);
-                    }
-                    else
-                    {
-                        OnSingleTap(touch.position);
-                    }
-                    lastTapTime = Time.time;
-                }
-
-                // Плавное вращение при свайпе
-                if (touch.phase == TouchPhase.Moved)
-                {
-                    x += touch.deltaPosition.x * xSpeed;
-                    y -= touch.deltaPosition.y * ySpeed;
-
-                    y = ClampAngle(y, yMinLimit, yMaxLimit);
-                }
+                HandleSingleFingerTouch(TouchInputBridge.GetTouch(0));
             }
-            // --- РЕЖИМ 2: ДВА ПАЛЬЦА (Pinch-to-Zoom) ---
-            else if (Input.touchCount == 2)
+            else if (touchCount == 2)
             {
-                Touch touchZero = Input.GetTouch(0);
-                Touch touchOne = Input.GetTouch(1);
-
-                // Находим позиции пальцев в предыдущем кадре
-                Vector2 touchZeroPrevPos = touchZero.position - touchZero.deltaPosition;
-                Vector2 touchOnePrevPos = touchOne.position - touchOne.deltaPosition;
-
-                // Находим расстояние между пальцами в текущем и предыдущем кадрах
-                float prevTouchDeltaMag = (touchZeroPrevPos - touchOnePrevPos).magnitude;
-                float touchDeltaMag = (touchZero.position - touchOne.position).magnitude;
-
-                // Разница между расстояниями — это величина зума
-                float deltaMagnitudeDiff = prevTouchDeltaMag - touchDeltaMag;
-
-                // Изменяем дистанцию камеры
-                distance += deltaMagnitudeDiff * zoomSpeed;
-                distance = Mathf.Clamp(distance, minDistance, maxDistance);
+                _trackTapGesture = false;
+                HandlePinchZoom(
+                    TouchInputBridge.GetTouch(0),
+                    TouchInputBridge.GetTouch(1));
             }
         }
-        // --- ДЛЯ ТЕСТИРОВАНИЯ В РЕДАКТОРЕ UNITY (МЫШЬ И СВИДОК) ---
         else if (Application.isEditor)
         {
             if (Input.GetMouseButton(0))
             {
                 isControlled = true;
+                IsUserControlling = true;
                 x += Input.GetAxis("Mouse X") * xSpeed * 20f;
                 y -= Input.GetAxis("Mouse Y") * ySpeed * 20f;
                 y = ClampAngle(y, yMinLimit, yMaxLimit);
@@ -137,60 +112,133 @@ public class MobileOrbitCamera : MonoBehaviour
             if (Mathf.Abs(scroll) > 0.01f)
             {
                 isControlled = true;
+                IsUserControlling = true;
                 distance -= scroll * zoomSpeed * 300f;
                 distance = Mathf.Clamp(distance, minDistance, maxDistance);
             }
         }
 
-        // Если камера под управлением (свайп/зум), мы вычисляем её положение вокруг цели
         if (isControlled)
         {
-            Quaternion rotation = Quaternion.Euler(y, x, 0);
-            Vector3 negDistance = new Vector3(0.0f, 0.0f, -distance);
-            Vector3 position = rotation * negDistance + target.position;
-
-            transform.rotation = rotation;
-            transform.position = position;
+            ApplyOrbitTransform();
+        }
+        else if (gameObject.name == "Main Camera")
+        {
+            Vector3 angles = transform.eulerAngles;
+            x = angles.y;
+            y = angles.x;
         }
         else
         {
-            // Если игрок не управляет пальцем, то детальная камера продолжает лететь на жесткой сцепке с планетой,
-            // а главная камера следит за LookAtTarget
-            if (this.gameObject.name == "Main Camera")
+            ApplyOrbitTransform();
+        }
+    }
+
+    void HandleSingleFingerTouch(TouchInputBridge.TouchSample touch)
+    {
+        if (touch.phase == TouchPhase.Began)
+        {
+            SyncOrbitFromTransform();
+            _activeTouchBeganPosition = touch.position;
+            _trackTapGesture = true;
+            _tapGestureCancelled = false;
+        }
+
+        if (_trackTapGesture &&
+            (touch.phase == TouchPhase.Moved || touch.phase == TouchPhase.Stationary))
+        {
+            if ((touch.position - _activeTouchBeganPosition).sqrMagnitude > tapSlopPixels * tapSlopPixels)
+                _tapGestureCancelled = true;
+        }
+
+        if (touch.phase == TouchPhase.Moved || touch.phase == TouchPhase.Stationary)
+        {
+            Vector2 delta = touch.deltaPosition;
+            if (delta.sqrMagnitude > 0.0001f)
             {
-                // Позволяем LookAtTarget плавно направлять камеру, но сохраняем наши углы x и y синхронизированными
-                Vector3 angles = transform.eulerAngles;
-                x = angles.y;
-                y = angles.x;
+                x += delta.x * xSpeed;
+                y -= delta.y * ySpeed;
+                y = ClampAngle(y, yMinLimit, yMaxLimit);
             }
-            else
+        }
+
+        if (_trackTapGesture && (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled))
+        {
+            _trackTapGesture = false;
+            if (!_tapGestureCancelled &&
+                (touch.position - _activeTouchBeganPosition).sqrMagnitude <= tapSlopPixels * tapSlopPixels)
             {
-                // Для детальных камер планет мы сохраняем их орбиту вращения вокруг родителя, если нет инпута
-                Quaternion rotation = Quaternion.Euler(y, x, 0);
-                Vector3 negDistance = new Vector3(0.0f, 0.0f, -distance);
-                transform.position = rotation * negDistance + target.position;
-                transform.rotation = rotation;
+                float timeSinceLastTap = Time.time - lastTapTime;
+                if (timeSinceLastTap <= doubleTapDelay)
+                    OnDoubleTap(touch.position);
+                else
+                    OnSingleTap(touch.position);
+                lastTapTime = Time.time;
             }
         }
     }
 
+    void HandlePinchZoom(TouchInputBridge.TouchSample touchZero, TouchInputBridge.TouchSample touchOne)
+    {
+        Vector2 touchZeroPrevPos = touchZero.position - touchZero.deltaPosition;
+        Vector2 touchOnePrevPos = touchOne.position - touchOne.deltaPosition;
+
+        float prevTouchDeltaMag = (touchZeroPrevPos - touchOnePrevPos).magnitude;
+        float touchDeltaMag = (touchZero.position - touchOne.position).magnitude;
+        float deltaMagnitudeDiff = prevTouchDeltaMag - touchDeltaMag;
+
+        float zoomScale = GetPinchZoomScale();
+        distance += deltaMagnitudeDiff * zoomSpeed * zoomScale;
+        distance = Mathf.Clamp(distance, minDistance, maxDistance);
+    }
+
+    static float GetPinchZoomScale()
+    {
+#if UNITY_ANDROID || UNITY_IOS
+        float dpi = Screen.dpi > 1f ? Screen.dpi : 160f;
+        return Mathf.Max(2f, dpi / 160f);
+#else
+        return 1f;
+#endif
+    }
+
+    void SyncOrbitFromTransform()
+    {
+        if (target == null)
+            return;
+
+        Vector3 offset = transform.position - target.position;
+        distance = offset.magnitude;
+        if (distance < 0.001f)
+            return;
+
+        Quaternion orbitRotation = Quaternion.LookRotation(-offset.normalized, Vector3.up);
+        Vector3 euler = orbitRotation.eulerAngles;
+        x = euler.y;
+        y = euler.x;
+        y = ClampAngle(y, yMinLimit, yMaxLimit);
+    }
+
+    void ApplyOrbitTransform()
+    {
+        Quaternion rotation = Quaternion.Euler(y, x, 0);
+        Vector3 negDistance = new Vector3(0.0f, 0.0f, -distance);
+        Vector3 position = rotation * negDistance + target.position;
+        transform.rotation = rotation;
+        transform.position = position;
+    }
+
     private void OnSingleTap(Vector2 screenPosition)
     {
-        // Обрабатываем клик/тап по планете только для главной камеры
-        if (this.gameObject.name == "Main Camera" && globalLookAtScript != null)
+        if (gameObject.name == "Main Camera" && globalLookAtScript != null)
         {
             Ray ray = Camera.main.ScreenPointToRay(screenPosition);
-            RaycastHit hit;
-
-            if (Physics.Raycast(ray, out hit))
+            if (Physics.Raycast(ray, out RaycastHit hit))
             {
                 GameObject hitObject = hit.collider.gameObject;
-                
-                // Если тапнули по планете, делаем её текущей целью
                 if (hitObject != globalLookAtScript.currentTarget)
                 {
                     globalLookAtScript.currentTarget = hitObject;
-                    // Имитируем логику LookAtTarget для включения описаний планет
                     TriggerDescription(hitObject.name);
                 }
             }
@@ -201,22 +249,16 @@ public class MobileOrbitCamera : MonoBehaviour
     {
         if (globalLookAtScript == null) return;
 
-        // Если двойной тап на главной камере — переключаемся на детальную камеру выбранной планеты
-        if (this.gameObject.name == "Main Camera")
+        if (gameObject.name == "Main Camera")
         {
             Ray ray = Camera.main.ScreenPointToRay(screenPosition);
-            RaycastHit hit;
-
-            if (Physics.Raycast(ray, out hit))
+            if (Physics.Raycast(ray, out RaycastHit hit))
             {
                 GameObject hitObject = hit.collider.gameObject;
                 globalLookAtScript.currentTarget = hitObject;
-                
-                // Переключаемся на детальную камеру
                 TriggerCameraSwitch(hitObject.name, true);
             }
         }
-        // Если двойной тап на детальной камере — возвращаемся к главной камере (выход из фокуса)
         else
         {
             TriggerCameraSwitch(target.gameObject.name, false);
@@ -227,7 +269,6 @@ public class MobileOrbitCamera : MonoBehaviour
     {
         if (globalLookAtScript == null) return;
 
-        // Находим и активируем соответствующее описание
         var sunDesc = globalLookAtScript.theSunGameObject;
         var earthDesc = globalLookAtScript.theEarthGameObject;
         var moonDesc = globalLookAtScript.theMoonGameObject;
@@ -263,11 +304,8 @@ public class MobileOrbitCamera : MonoBehaviour
         }
         else
         {
-            // Возврат к главной камере
             globalLookAtScript.TurnOnMainCamera();
             SetCameraActive(planetName, false);
-            
-            // Сбрасываем цель на дефолтную (например, Солнце или сама камера)
             globalLookAtScript.currentTarget = globalLookAtScript.defaultTarget;
             TriggerDescription("");
         }
@@ -304,10 +342,7 @@ public class MobileOrbitCamera : MonoBehaviour
 
         if (target == null) return;
 
-        Quaternion rotation = Quaternion.Euler(y, x, 0);
-        Vector3 negDistance = new Vector3(0.0f, 0.0f, -distance);
-        transform.position = rotation * negDistance + target.position;
-        transform.rotation = rotation;
+        ApplyOrbitTransform();
     }
 
     private float ClampAngle(float angle, float min, float max)
