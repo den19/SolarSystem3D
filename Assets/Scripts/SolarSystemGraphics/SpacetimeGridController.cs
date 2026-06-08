@@ -94,7 +94,7 @@ public class SpacetimeGridController : MonoBehaviour
             mat.SetColor("_FillColor", new Color(0.06f, 0.12f, 0.24f, 0.16f));
             mat.SetColor("_EmissionColor", new Color(0.18f, 0.42f, 0.75f, 0f));
             mat.SetFloat("_GridDensity", 24f);
-            mat.SetFloat("_LineWidth", 0.045f);
+            mat.SetFloat("_LineWidth", 0.018f);
             mat.SetFloat("_RimBoost", 0.65f);
             mat.renderQueue = 2950;
         }

@@ -6,7 +6,7 @@ Shader "Custom/SpacetimeGrid"
         _FillColor ("Fill Color", Color) = (0.08, 0.14, 0.28, 0.18)
         _EmissionColor ("Emission", Color) = (0.2, 0.45, 0.8, 0)
         _GridDensity ("Grid Density", Range(4, 64)) = 24
-        _LineWidth ("Line Width", Range(0.01, 0.2)) = 0.045
+        _LineWidth ("Line Width", Range(0.005, 0.1)) = 0.018
         _RimBoost ("Slope Rim Boost", Range(0, 2)) = 0.65
     }
     SubShader
@@ -62,7 +62,7 @@ Shader "Custom/SpacetimeGrid"
             {
                 float2 g = uv * density;
                 float2 f = abs(frac(g + 0.5) - 0.5);
-                float2 fw = fwidth(g) * 0.75;
+                float2 fw = fwidth(g) * 0.35;
                 half lx = 1.0 - smoothstep(lineWidth, lineWidth + fw.x, f.x);
                 half lz = 1.0 - smoothstep(lineWidth, lineWidth + fw.y, f.y);
                 return saturate(max(lx, lz));
