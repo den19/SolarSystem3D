@@ -11,6 +11,15 @@ public class SolarSystemScaleController : MonoBehaviour
     const float DefaultMainCamDistance = 45f;
     const float SimulationMaxCameraDistance = 600f;
 
+    public struct OrbitSpec
+    {
+        public string BodyName;
+        public Transform Center;
+        public float Radius;
+        public float PlaneHeight;
+        public bool UseWorldSpace;
+    }
+
     struct BodyBaseline
     {
         public Transform Transform;
@@ -178,16 +187,17 @@ public class SolarSystemScaleController : MonoBehaviour
         if (useReal)
             targetDistance = definition.satelliteOrbitKm * _auToUnity / SolarSystemCatalog.AuKm;
         else
-            targetDistance = baseline.LocalPosition.magnitude;
+            targetDistance = baseline.OrbitDistance;
 
         if (targetDistance < 0.0001f)
-            targetDistance = baseline.LocalPosition.magnitude;
+            targetDistance = baseline.OrbitDistance;
 
-        Vector3 localDir = baseline.LocalPosition.sqrMagnitude > 0.0001f
-            ? baseline.LocalPosition.normalized
-            : Vector3.forward;
+        Vector3 flatDir = Vector3.ProjectOnPlane(baseline.LocalPosition, Vector3.up);
+        if (flatDir.sqrMagnitude < 0.0001f)
+            flatDir = Vector3.forward;
 
-        baseline.Transform.localPosition = localDir * targetDistance;
+        baseline.Transform.localPosition = flatDir.normalized * targetDistance
+            + Vector3.up * baseline.LocalPosition.y;
     }
 
     void ApplySizes()
@@ -257,10 +267,63 @@ public class SolarSystemScaleController : MonoBehaviour
             grid.SetHalfExtent(120f);
     }
 
+    float GetOrbitRadius(BodyBaseline baseline, SolarSystemCatalog.BodyDefinition definition, bool useReal)
+    {
+        if (!string.IsNullOrEmpty(definition.orbitCenterName))
+        {
+            if (useReal)
+                return definition.satelliteOrbitKm * _auToUnity / SolarSystemCatalog.AuKm;
+            return baseline.OrbitDistance;
+        }
+
+        if (useReal)
+            return definition.orbitalRadiusAu * _auToUnity;
+        return baseline.OrbitDistance;
+    }
+
+    List<OrbitSpec> BuildOrbitSpecs()
+    {
+        var specs = new List<OrbitSpec>();
+        bool useReal = ScaleSettings.UseRealDistances;
+
+        for (int i = 0; i < _baselines.Count; i++)
+        {
+            BodyBaseline baseline = _baselines[i];
+            if (baseline.Transform == null)
+                continue;
+
+            if (!SolarSystemCatalog.TryGetBody(baseline.Transform.name, out SolarSystemCatalog.BodyDefinition definition))
+                continue;
+
+            if (definition.objectName == "Sun")
+                continue;
+
+            Transform center = ResolveOrbitCenter(definition);
+            if (center == null)
+                continue;
+
+            float radius = GetOrbitRadius(baseline, definition, useReal);
+            if (radius <= 0.0001f)
+                continue;
+
+            bool isSatellite = !string.IsNullOrEmpty(definition.orbitCenterName);
+            specs.Add(new OrbitSpec
+            {
+                BodyName = definition.objectName,
+                Center = center,
+                Radius = radius,
+                PlaneHeight = baseline.LocalPosition.y,
+                UseWorldSpace = !isSatellite
+            });
+        }
+
+        return specs;
+    }
+
     void RebuildOrbitLines()
     {
         if (_orbitLinesManager != null)
-            _orbitLinesManager.RebuildOrbits();
+            _orbitLinesManager.RebuildOrbits(BuildOrbitSpecs());
     }
 
     void RescaleComets()

@@ -7,17 +7,6 @@ using UnityEngine;
 /// </summary>
 public class OrbitLinesManager : MonoBehaviour
 {
-    static readonly string[] BodyNames =
-    {
-        "Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Moon", "Titan"
-    };
-
-    static readonly Dictionary<string, string> OrbitCenters = new Dictionary<string, string>
-    {
-        { "Moon", "Earth" },
-        { "Titan", "Saturn" }
-    };
-
     [SerializeField] int circleSegments = 96;
     [SerializeField] int ellipseSegments = 128;
     [SerializeField] float lineWidth = 0.08f;
@@ -31,7 +20,6 @@ public class OrbitLinesManager : MonoBehaviour
     {
         _lineMaterial = OrbitLineUtility.CreateOrbitLineMaterial();
         _sun = GameObject.Find("Sun")?.transform;
-        BuildBodyOrbits();
         ApplyVisibility(SimulationViewSettings.ShowOrbitLines);
     }
 
@@ -66,10 +54,19 @@ public class OrbitLinesManager : MonoBehaviour
         line.enabled = _visible;
     }
 
-    public void RebuildOrbits()
+    public void RebuildOrbits(IReadOnlyList<SolarSystemScaleController.OrbitSpec> specs)
     {
         ClearBodyOrbitLines();
-        BuildBodyOrbits();
+
+        if (specs == null)
+        {
+            ApplyVisibility(_visible);
+            return;
+        }
+
+        for (int i = 0; i < specs.Count; i++)
+            BuildOrbitLine(specs[i]);
+
         ApplyVisibility(_visible);
     }
 
@@ -103,38 +100,32 @@ public class OrbitLinesManager : MonoBehaviour
         }
     }
 
-    void BuildBodyOrbits()
+    void BuildOrbitLine(SolarSystemScaleController.OrbitSpec spec)
     {
-        if (_sun == null)
+        if (spec.Center == null || spec.Radius <= 0.0001f)
             return;
 
-        foreach (string bodyName in BodyNames)
+        var lineGo = new GameObject(spec.BodyName + "_OrbitLine");
+        var line = lineGo.AddComponent<LineRenderer>();
+        ConfigureLine(line);
+        line.positionCount = circleSegments + 1;
+
+        if (spec.UseWorldSpace)
         {
-            GameObject bodyGo = GameObject.Find(bodyName);
-            if (bodyGo == null)
-                continue;
-
-            Transform center = _sun;
-            if (OrbitCenters.TryGetValue(bodyName, out string centerName))
-            {
-                GameObject centerGo = GameObject.Find(centerName);
-                if (centerGo != null)
-                    center = centerGo.transform;
-            }
-
-            float radius = Vector3.ProjectOnPlane(bodyGo.transform.position - center.position, Vector3.up).magnitude;
-            if (radius < 0.5f)
-                continue;
-
-            var lineGo = new GameObject(bodyName + "_OrbitLine");
-            lineGo.transform.SetParent(center, false);
-            var line = lineGo.AddComponent<LineRenderer>();
-            ConfigureLine(line);
-            line.useWorldSpace = false;
-            line.positionCount = circleSegments + 1;
-            line.SetPositions(OrbitLineUtility.BuildCircle(circleSegments, radius, Vector3.zero, Vector3.up));
-            _lines.Add(line);
+            lineGo.transform.SetParent(transform, false);
+            line.useWorldSpace = true;
+            Vector3 center = spec.Center.position + Vector3.up * spec.PlaneHeight;
+            line.SetPositions(OrbitLineUtility.BuildCircle(circleSegments, spec.Radius, center, Vector3.up));
         }
+        else
+        {
+            lineGo.transform.SetParent(spec.Center, false);
+            line.useWorldSpace = false;
+            Vector3 center = new Vector3(0f, spec.PlaneHeight, 0f);
+            line.SetPositions(OrbitLineUtility.BuildCircle(circleSegments, spec.Radius, center, Vector3.up));
+        }
+
+        _lines.Add(line);
     }
 
     void ConfigureLine(LineRenderer line)
