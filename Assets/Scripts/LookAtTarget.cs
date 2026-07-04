@@ -72,6 +72,11 @@ public class LookAtTarget : MonoBehaviour {
             _mainOrbitCamera = mainCamera.GetComponent<MobileOrbitCamera>();
     }
 	
+    public void HideAllDescriptions()
+    {
+        MakeAllDescriptionsInvisible();
+    }
+
     void MakeAllDescriptionsInvisible()
     {
         theEarthGameObject.SetActive(false);
