@@ -18,6 +18,11 @@ public class SolarSystemScaleController : MonoBehaviour
         public float Radius;
         public float PlaneHeight;
         public bool UseWorldSpace;
+        public bool UseEllipse;
+        public float SemiMajorAxis;
+        public float Eccentricity;
+        public float InclinationDeg;
+        public float PhaseOffsetRad;
     }
 
     struct BodyBaseline
@@ -62,6 +67,30 @@ public class SolarSystemScaleController : MonoBehaviour
     void OnUseRealDistancesChanged(bool enabled) => ApplyAll();
 
     void OnUseRealSizesChanged(bool enabled) => ApplyAll();
+
+    public void ApplyDistancesOnly()
+    {
+        ApplyDistances();
+    }
+
+    public float GetOrbitSemiMajorAxis(string bodyName)
+    {
+        bool useReal = ScaleSettings.UseRealDistances;
+
+        for (int i = 0; i < _baselines.Count; i++)
+        {
+            BodyBaseline baseline = _baselines[i];
+            if (baseline.Transform == null || baseline.Transform.name != bodyName)
+                continue;
+
+            if (!SolarSystemCatalog.TryGetBody(bodyName, out SolarSystemCatalog.BodyDefinition definition))
+                return 0f;
+
+            return GetOrbitRadius(baseline, definition, useReal);
+        }
+
+        return 0f;
+    }
 
     void CaptureBaselines()
     {
@@ -134,6 +163,9 @@ public class SolarSystemScaleController : MonoBehaviour
 
     void ApplyDistances()
     {
+        if (OrbitSettings.UseRealOrbits)
+            return;
+
         bool useReal = ScaleSettings.UseRealDistances;
 
         for (int i = 0; i < _baselines.Count; i++)
@@ -285,6 +317,7 @@ public class SolarSystemScaleController : MonoBehaviour
     {
         var specs = new List<OrbitSpec>();
         bool useReal = ScaleSettings.UseRealDistances;
+        bool useRealOrbits = OrbitSettings.UseRealOrbits;
 
         for (int i = 0; i < _baselines.Count; i++)
         {
@@ -307,23 +340,65 @@ public class SolarSystemScaleController : MonoBehaviour
                 continue;
 
             bool isSatellite = !string.IsNullOrEmpty(definition.orbitCenterName);
-            specs.Add(new OrbitSpec
+            float planeHeight = baseline.LocalPosition.y;
+
+            var spec = new OrbitSpec
             {
                 BodyName = definition.objectName,
                 Center = center,
                 Radius = radius,
-                PlaneHeight = baseline.LocalPosition.y,
-                UseWorldSpace = !isSatellite
-            });
+                PlaneHeight = planeHeight,
+                UseWorldSpace = !isSatellite,
+                UseEllipse = useRealOrbits,
+                SemiMajorAxis = radius,
+                Eccentricity = definition.orbitalEccentricity,
+                InclinationDeg = definition.orbitalInclinationDeg
+            };
+
+            if (useRealOrbits)
+            {
+                spec.PhaseOffsetRad = ComputeOrbitPhase(
+                    baseline.Transform,
+                    center,
+                    planeHeight,
+                    !isSatellite,
+                    radius,
+                    definition.orbitalEccentricity,
+                    definition.orbitalInclinationDeg);
+            }
+
+            specs.Add(spec);
         }
 
         return specs;
+    }
+
+    static float ComputeOrbitPhase(
+        Transform body,
+        Transform center,
+        float planeHeight,
+        bool useWorldSpace,
+        float semiMajorAxis,
+        float eccentricity,
+        float inclinationDeg)
+    {
+        Vector3 planeOffset = Vector3.up * planeHeight;
+        Vector3 offset = useWorldSpace
+            ? body.position - center.position - planeOffset
+            : body.localPosition - planeOffset;
+
+        return OrbitLineUtility.ComputePhaseFromOffset(offset, semiMajorAxis, eccentricity, inclinationDeg);
     }
 
     void RebuildOrbitLines()
     {
         if (_orbitLinesManager != null)
             _orbitLinesManager.RebuildOrbits(BuildOrbitSpecs());
+    }
+
+    public void RebuildOrbitLinesOnly()
+    {
+        RebuildOrbitLines();
     }
 
     void RescaleComets()

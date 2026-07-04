@@ -66,6 +66,7 @@ public class SimulationViewBootstrap : MonoBehaviour
         cometSystem.Initialize(orbitLines, bodyLabels);
 
         gameObject.AddComponent<SolarSystemScaleController>();
+        gameObject.AddComponent<BodyOrbitSystemController>();
 
         Canvas canvas = null;
         GameObject canvasGo = GameObject.Find("MainScreenCanvas");

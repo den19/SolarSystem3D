@@ -102,27 +102,72 @@ public class OrbitLinesManager : MonoBehaviour
 
     void BuildOrbitLine(SolarSystemScaleController.OrbitSpec spec)
     {
-        if (spec.Center == null || spec.Radius <= 0.0001f)
+        if (spec.Center == null)
             return;
+
+        if (spec.UseEllipse)
+        {
+            if (spec.SemiMajorAxis <= 0.0001f)
+                return;
+        }
+        else if (spec.Radius <= 0.0001f)
+        {
+            return;
+        }
 
         var lineGo = new GameObject(spec.BodyName + "_OrbitLine");
         var line = lineGo.AddComponent<LineRenderer>();
         ConfigureLine(line);
-        line.positionCount = circleSegments + 1;
 
-        if (spec.UseWorldSpace)
+        if (spec.UseEllipse)
         {
-            lineGo.transform.SetParent(transform, false);
-            line.useWorldSpace = true;
-            Vector3 center = spec.Center.position + Vector3.up * spec.PlaneHeight;
-            line.SetPositions(OrbitLineUtility.BuildCircle(circleSegments, spec.Radius, center, Vector3.up));
+            line.positionCount = ellipseSegments + 1;
+
+            if (spec.UseWorldSpace)
+            {
+                lineGo.transform.SetParent(transform, false);
+                line.useWorldSpace = true;
+                Vector3 center = spec.Center.position + Vector3.up * spec.PlaneHeight;
+                line.SetPositions(OrbitLineUtility.BuildEllipse(
+                    ellipseSegments,
+                    spec.SemiMajorAxis,
+                    spec.Eccentricity,
+                    spec.InclinationDeg,
+                    center,
+                    spec.PhaseOffsetRad));
+            }
+            else
+            {
+                lineGo.transform.SetParent(spec.Center, false);
+                line.useWorldSpace = false;
+                Vector3 center = new Vector3(0f, spec.PlaneHeight, 0f);
+                line.SetPositions(OrbitLineUtility.BuildEllipse(
+                    ellipseSegments,
+                    spec.SemiMajorAxis,
+                    spec.Eccentricity,
+                    spec.InclinationDeg,
+                    center,
+                    spec.PhaseOffsetRad));
+            }
         }
         else
         {
-            lineGo.transform.SetParent(spec.Center, false);
-            line.useWorldSpace = false;
-            Vector3 center = new Vector3(0f, spec.PlaneHeight, 0f);
-            line.SetPositions(OrbitLineUtility.BuildCircle(circleSegments, spec.Radius, center, Vector3.up));
+            line.positionCount = circleSegments + 1;
+
+            if (spec.UseWorldSpace)
+            {
+                lineGo.transform.SetParent(transform, false);
+                line.useWorldSpace = true;
+                Vector3 center = spec.Center.position + Vector3.up * spec.PlaneHeight;
+                line.SetPositions(OrbitLineUtility.BuildCircle(circleSegments, spec.Radius, center, Vector3.up));
+            }
+            else
+            {
+                lineGo.transform.SetParent(spec.Center, false);
+                line.useWorldSpace = false;
+                Vector3 center = new Vector3(0f, spec.PlaneHeight, 0f);
+                line.SetPositions(OrbitLineUtility.BuildCircle(circleSegments, spec.Radius, center, Vector3.up));
+            }
         }
 
         _lines.Add(line);

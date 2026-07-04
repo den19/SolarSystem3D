@@ -9,7 +9,7 @@ public static class SidePanelSceneSetup
 {
     const string MenuPath = "Solar System/Setup SidePanel UI";
     const float PanelWidth = 220f;
-    const float PanelHeight = 350f;
+    const float PanelHeight = 392f;
     const float RowHeight = 34f;
     const float RowSpacing = 8f;
     static readonly (string rowName, string labelName)[] ToggleRows =
@@ -20,7 +20,8 @@ public static class SidePanelSceneSetup
         ("SidePanelMinimapLabel_Row", "SidePanelMinimapLabel"),
         ("SidePanelUiLabel_Row", "SidePanelUiLabel"),
         ("SidePanelRealDistancesLabel_Row", "SidePanelRealDistancesLabel"),
-        ("SidePanelRealSizesLabel_Row", "SidePanelRealSizesLabel")
+        ("SidePanelRealSizesLabel_Row", "SidePanelRealSizesLabel"),
+        ("SidePanelRealOrbitsLabel_Row", "SidePanelRealOrbitsLabel")
     };
 
     [InitializeOnLoadMethod]
@@ -162,6 +163,7 @@ public static class SidePanelSceneSetup
         Toggle uiToggle = null;
         Toggle realDistancesToggle = null;
         Toggle realSizesToggle = null;
+        Toggle realOrbitsToggle = null;
 
         for (int i = 0; i < ToggleRows.Length; i++)
         {
@@ -178,6 +180,7 @@ public static class SidePanelSceneSetup
                 case "SidePanelUiLabel_Row": uiToggle = toggle; break;
                 case "SidePanelRealDistancesLabel_Row": realDistancesToggle = toggle; break;
                 case "SidePanelRealSizesLabel_Row": realSizesToggle = toggle; break;
+                case "SidePanelRealOrbitsLabel_Row": realOrbitsToggle = toggle; break;
             }
         }
 
@@ -191,7 +194,11 @@ public static class SidePanelSceneSetup
         serializedController.FindProperty("uiToggle").objectReferenceValue = uiToggle;
         serializedController.FindProperty("realDistancesToggle").objectReferenceValue = realDistancesToggle;
         serializedController.FindProperty("realSizesToggle").objectReferenceValue = realSizesToggle;
+        serializedController.FindProperty("realOrbitsToggle").objectReferenceValue = realOrbitsToggle;
         serializedController.ApplyModifiedPropertiesWithoutUndo();
+
+        if (realOrbitsToggle != null)
+            realOrbitsToggle.isOn = false;
 
         return controller;
     }
