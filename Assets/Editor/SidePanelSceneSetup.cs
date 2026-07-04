@@ -8,10 +8,14 @@ using UnityEngine.UI;
 public static class SidePanelSceneSetup
 {
     const string MenuPath = "Solar System/Setup SidePanel UI";
+    const string GearIconPath = "Assets/Icons/icons8-settings-256.png";
     const float PanelWidth = 220f;
     const float PanelHeight = 392f;
     const float RowHeight = 34f;
     const float RowSpacing = 8f;
+    const float MenuButtonSize = 44f;
+    const float IconPadding = 4f;
+    static readonly Color IconColor = new Color(0.85f, 0.92f, 1f, 1f);
     static readonly (string rowName, string labelName)[] ToggleRows =
     {
         ("SidePanelOrbitsLabel_Row", "SidePanelOrbitsLabel"),
@@ -85,7 +89,10 @@ public static class SidePanelSceneSetup
     {
         Transform existing = canvasTransform.Find("SidePanelMenuButton");
         if (existing != null)
+        {
+            UpgradeMenuButton(existing);
             return existing.GetComponent<Button>();
+        }
 
         var buttonGo = new GameObject("SidePanelMenuButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
         buttonGo.layer = LayerMask.NameToLayer("UI");
@@ -96,31 +103,81 @@ public static class SidePanelSceneSetup
         rect.anchorMax = new Vector2(1f, 1f);
         rect.pivot = new Vector2(1f, 1f);
         rect.anchoredPosition = new Vector2(-16f, -16f);
-        rect.sizeDelta = new Vector2(44f, 44f);
+        rect.sizeDelta = new Vector2(MenuButtonSize, MenuButtonSize);
 
+        StyleMenuButton(buttonGo);
+        EnsureMenuButtonIcon(buttonGo.transform);
+
+        return buttonGo.GetComponent<Button>();
+    }
+
+    static void UpgradeMenuButton(Transform button)
+    {
+        var rect = button.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(1f, 1f);
+        rect.anchorMax = new Vector2(1f, 1f);
+        rect.pivot = new Vector2(1f, 1f);
+        rect.anchoredPosition = new Vector2(-16f, -16f);
+        rect.sizeDelta = new Vector2(MenuButtonSize, MenuButtonSize);
+
+        StyleMenuButton(button.gameObject);
+        EnsureMenuButtonIcon(button);
+
+        Transform label = button.Find("Label");
+        if (label != null)
+            Object.DestroyImmediate(label.gameObject);
+    }
+
+    static void StyleMenuButton(GameObject buttonGo)
+    {
         var image = buttonGo.GetComponent<Image>();
-        image.color = new Color(0f, 0f, 0f, 0.65f);
-
-        var labelGo = new GameObject("Label", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
-        labelGo.layer = buttonGo.layer;
-        labelGo.transform.SetParent(buttonGo.transform, false);
-
-        var labelRect = labelGo.GetComponent<RectTransform>();
-        labelRect.anchorMin = Vector2.zero;
-        labelRect.anchorMax = Vector2.one;
-        labelRect.offsetMin = Vector2.zero;
-        labelRect.offsetMax = Vector2.zero;
-
-        var label = labelGo.GetComponent<Text>();
-        label.text = "\u2630";
-        label.fontSize = 24;
-        label.alignment = TextAnchor.MiddleCenter;
-        label.color = new Color(0.85f, 0.92f, 1f, 1f);
-        label.raycastTarget = false;
+        image.sprite = null;
+        image.color = Color.clear;
+        image.raycastTarget = true;
 
         var button = buttonGo.GetComponent<Button>();
-        button.targetGraphic = image;
-        return button;
+        var colors = button.colors;
+        colors.normalColor = Color.white;
+        colors.highlightedColor = new Color(0.78f, 0.88f, 1f, 1f);
+        colors.pressedColor = new Color(0.65f, 0.78f, 0.95f, 1f);
+        colors.selectedColor = colors.highlightedColor;
+        button.colors = colors;
+    }
+
+    static void EnsureMenuButtonIcon(Transform button)
+    {
+        Transform iconTransform = button.Find("Icon");
+        GameObject iconGo;
+        if (iconTransform != null)
+        {
+            iconGo = iconTransform.gameObject;
+        }
+        else
+        {
+            iconGo = new GameObject("Icon", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            iconGo.layer = button.gameObject.layer;
+            iconGo.transform.SetParent(button, false);
+        }
+
+        var iconRect = iconGo.GetComponent<RectTransform>();
+        iconRect.anchorMin = Vector2.zero;
+        iconRect.anchorMax = Vector2.one;
+        iconRect.offsetMin = new Vector2(IconPadding, IconPadding);
+        iconRect.offsetMax = new Vector2(-IconPadding, -IconPadding);
+
+        var iconImage = iconGo.GetComponent<Image>();
+        iconImage.sprite = LoadGearIconSprite();
+        iconImage.color = IconColor;
+        iconImage.preserveAspect = true;
+        iconImage.raycastTarget = false;
+
+        var buttonComponent = button.GetComponent<Button>();
+        buttonComponent.targetGraphic = iconImage;
+    }
+
+    static Sprite LoadGearIconSprite()
+    {
+        return AssetDatabase.LoadAssetAtPath<Sprite>(GearIconPath);
     }
 
     static SimulationSidePanelController EnsurePanel(Transform canvasTransform, Button menuButton)
