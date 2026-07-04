@@ -54,6 +54,40 @@ public class OrbitLinesManager : MonoBehaviour
         line.enabled = _visible;
     }
 
+    public void RegisterCometCircle(float radius, float phaseOffsetRad)
+    {
+        if (_sun == null || radius <= 0.0001f)
+            return;
+
+        var lineGo = new GameObject("CometOrbitLine");
+        lineGo.transform.SetParent(transform, false);
+        var line = lineGo.AddComponent<LineRenderer>();
+        ConfigureLine(line);
+        line.positionCount = circleSegments + 1;
+
+        Vector3[] points = OrbitLineUtility.BuildCircle(circleSegments, radius, _sun.position, Vector3.up);
+        if (Mathf.Abs(phaseOffsetRad) > 0.0001f)
+            RotateCirclePoints(points, _sun.position, phaseOffsetRad);
+
+        line.SetPositions(points);
+        _lines.Add(line);
+        line.enabled = _visible;
+    }
+
+    static void RotateCirclePoints(Vector3[] points, Vector3 center, float angleRad)
+    {
+        float cos = Mathf.Cos(angleRad);
+        float sin = Mathf.Sin(angleRad);
+
+        for (int i = 0; i < points.Length; i++)
+        {
+            Vector3 offset = points[i] - center;
+            float x = offset.x * cos - offset.z * sin;
+            float z = offset.x * sin + offset.z * cos;
+            points[i] = center + new Vector3(x, offset.y, z);
+        }
+    }
+
     public void RebuildOrbits(IReadOnlyList<SolarSystemScaleController.OrbitSpec> specs)
     {
         ClearBodyOrbitLines();

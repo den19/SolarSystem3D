@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// Static catalog of the five shortest-period periodic comets used in clean view mode.
+/// Static catalog of the ten shortest-period periodic comets used in clean view mode.
 /// </summary>
 public static class CometCatalog
 {
@@ -73,6 +73,61 @@ public static class CometCatalog
             inclinationDeg = 4.4f,
             simPeriodSec = 34f,
             phaseOffsetRad = 4.9f
+        },
+        new CometDefinition
+        {
+            objectName = "Comet_GriggSkjellerup",
+            labelKey = "CometGriggSkjellerupLabel",
+            semiMajorAxis = 105f,
+            semiMajorAxisAu = 2.54f,
+            eccentricity = 0.65f,
+            inclinationDeg = 22.2f,
+            simPeriodSec = 22f,
+            phaseOffsetRad = 5.5f
+        },
+        new CometDefinition
+        {
+            objectName = "Comet_DArrest",
+            labelKey = "CometDArrestLabel",
+            semiMajorAxis = 135f,
+            semiMajorAxisAu = 3.49f,
+            eccentricity = 0.61f,
+            inclinationDeg = 10.5f,
+            simPeriodSec = 28f,
+            phaseOffsetRad = 0.8f
+        },
+        new CometDefinition
+        {
+            objectName = "Comet_Wirtanen",
+            labelKey = "CometWirtanenLabel",
+            semiMajorAxis = 140f,
+            semiMajorAxisAu = 3.09f,
+            eccentricity = 0.41f,
+            inclinationDeg = 11.4f,
+            simPeriodSec = 30f,
+            phaseOffsetRad = 2.0f
+        },
+        new CometDefinition
+        {
+            objectName = "Comet_Borrelly",
+            labelKey = "CometBorrellyLabel",
+            semiMajorAxis = 155f,
+            semiMajorAxisAu = 3.61f,
+            eccentricity = 0.62f,
+            inclinationDeg = 30.3f,
+            simPeriodSec = 33f,
+            phaseOffsetRad = 3.2f
+        },
+        new CometDefinition
+        {
+            objectName = "Comet_Howell",
+            labelKey = "CometHowellLabel",
+            semiMajorAxis = 152f,
+            semiMajorAxisAu = 3.54f,
+            eccentricity = 0.49f,
+            inclinationDeg = 4.8f,
+            simPeriodSec = 31f,
+            phaseOffsetRad = 4.1f
         }
     };
 }

@@ -1,8 +1,9 @@
 using System.Collections.Generic;
+using SolarSystemApp;
 using UnityEngine;
 
 /// <summary>
-/// Spawns the five periodic comets used in clean view mode.
+/// Spawns the ten periodic comets used in clean view mode.
 /// </summary>
 public class CometSystemController : MonoBehaviour
 {
@@ -12,6 +13,8 @@ public class CometSystemController : MonoBehaviour
     Transform _sun;
     OrbitLinesManager _orbitLinesManager;
     BodyLabelManager _bodyLabelManager;
+    Material _trailMaterial;
+    float _cachedAuToUnity;
     readonly List<CometOrbitController> _cometOrbits = new List<CometOrbitController>();
     readonly List<(CometCatalog.CometDefinition definition, float baselineSemiMajorAxis)> _cometDefinitions =
         new List<(CometCatalog.CometDefinition, float)>();
@@ -24,6 +27,10 @@ public class CometSystemController : MonoBehaviour
         _bodyLabelManager = bodyLabelManager;
         _sun = GameObject.Find("Sun")?.transform;
 
+        if (cometSurfaceMaterial == null)
+            cometSurfaceMaterial = CreateDefaultCometMaterial();
+        _trailMaterial = CreateTrailMaterial();
+
         var rootGo = new GameObject("CometsRoot");
         _cometsRoot = rootGo.transform;
         _cometsRoot.SetParent(transform, false);
@@ -31,6 +38,30 @@ public class CometSystemController : MonoBehaviour
 
         foreach (CometCatalog.CometDefinition definition in CometCatalog.Comets)
             SpawnComet(definition);
+
+        OrbitSettings.UseRealOrbitsChanged += OnUseRealOrbitsChanged;
+        ApplyOrbitMode();
+    }
+
+    void OnDestroy()
+    {
+        OrbitSettings.UseRealOrbitsChanged -= OnUseRealOrbitsChanged;
+    }
+
+    void OnUseRealOrbitsChanged(bool enabled) => ApplyOrbitMode();
+
+    void ApplyOrbitMode()
+    {
+        bool useRealOrbits = OrbitSettings.UseRealOrbits;
+
+        for (int i = 0; i < _cometOrbits.Count; i++)
+        {
+            CometOrbitController orbit = _cometOrbits[i];
+            if (orbit != null)
+                orbit.SetUseRealOrbits(useRealOrbits);
+        }
+
+        RebuildCometOrbitLines(_cachedAuToUnity, ScaleSettings.UseRealDistances);
     }
 
     void SpawnComet(CometCatalog.CometDefinition definition)
@@ -46,11 +77,7 @@ public class CometSystemController : MonoBehaviour
 
         var renderer = cometGo.GetComponent<MeshRenderer>();
         if (renderer != null)
-        {
-            if (cometSurfaceMaterial == null)
-                cometSurfaceMaterial = CreateDefaultCometMaterial();
             renderer.sharedMaterial = cometSurfaceMaterial;
-        }
 
         var trail = cometGo.AddComponent<TrailRenderer>();
         trail.time = 4f;
@@ -58,23 +85,14 @@ public class CometSystemController : MonoBehaviour
         trail.endWidth = 0.02f;
         trail.minVertexDistance = 0.05f;
         trail.numCapVertices = 4;
-        trail.material = CreateTrailMaterial();
+        trail.material = _trailMaterial;
         trail.startColor = new Color(0.92f, 0.95f, 0.15f, 0.85f);
         trail.endColor = new Color(0.98f, 0.97f, 0.28f, 0f);
 
         var orbit = cometGo.AddComponent<CometOrbitController>();
-        orbit.Initialize(definition, _sun);
+        orbit.Initialize(definition, _sun, OrbitSettings.UseRealOrbits);
         _cometOrbits.Add(orbit);
         _cometDefinitions.Add((definition, definition.semiMajorAxis));
-
-        if (_orbitLinesManager != null)
-        {
-            _orbitLinesManager.RegisterCometEllipse(
-                definition.semiMajorAxis,
-                definition.eccentricity,
-                definition.inclinationDeg,
-                definition.phaseOffsetRad);
-        }
 
         if (_bodyLabelManager != null)
             _bodyLabelManager.RegisterCometLabel(cometGo.transform, definition.labelKey);
@@ -82,6 +100,8 @@ public class CometSystemController : MonoBehaviour
 
     public void RescaleCometOrbits(float auToUnity)
     {
+        _cachedAuToUnity = auToUnity;
+
         for (int i = 0; i < _cometOrbits.Count; i++)
         {
             CometOrbitController orbit = _cometOrbits[i];
@@ -104,7 +124,7 @@ public class CometSystemController : MonoBehaviour
                 orbit.RestoreSimulationSemiMajorAxis();
         }
 
-        RebuildCometOrbitLines(0f, useRealDistances: false);
+        RebuildCometOrbitLines(_cachedAuToUnity, useRealDistances: false);
     }
 
     void RebuildCometOrbitLines(float auToUnity, bool useRealDistances)
@@ -113,19 +133,29 @@ public class CometSystemController : MonoBehaviour
             return;
 
         _orbitLinesManager.ClearCometOrbitLines();
+        bool useRealOrbits = OrbitSettings.UseRealOrbits;
 
         for (int i = 0; i < _cometDefinitions.Count; i++)
         {
             CometCatalog.CometDefinition definition = _cometDefinitions[i].definition;
-            float semiMajorAxis = useRealDistances
+            float orbitSize = useRealDistances
                 ? definition.semiMajorAxisAu * auToUnity
                 : _cometDefinitions[i].baselineSemiMajorAxis;
 
-            _orbitLinesManager.RegisterCometEllipse(
-                semiMajorAxis,
-                definition.eccentricity,
-                definition.inclinationDeg,
-                definition.phaseOffsetRad);
+            if (useRealOrbits)
+            {
+                _orbitLinesManager.RegisterCometEllipse(
+                    orbitSize,
+                    definition.eccentricity,
+                    definition.inclinationDeg,
+                    definition.phaseOffsetRad);
+            }
+            else
+            {
+                _orbitLinesManager.RegisterCometCircle(
+                    orbitSize,
+                    definition.phaseOffsetRad);
+            }
         }
     }
 

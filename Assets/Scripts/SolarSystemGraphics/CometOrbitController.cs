@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// Moves a comet along an inclined elliptical orbit around the Sun.
+/// Moves a comet along a circular or inclined elliptical orbit around the Sun.
 /// </summary>
 public class CometOrbitController : MonoBehaviour
 {
@@ -10,16 +10,27 @@ public class CometOrbitController : MonoBehaviour
     float _angle;
     float _semiMinorAxis;
     float _simulationSemiMajorAxis;
+    bool _useRealOrbits;
 
     public CometCatalog.CometDefinition Definition => _definition;
 
-    public void Initialize(CometCatalog.CometDefinition definition, Transform sun)
+    public void Initialize(CometCatalog.CometDefinition definition, Transform sun, bool useRealOrbits)
     {
         _definition = definition;
         _sun = sun;
+        _useRealOrbits = useRealOrbits;
         _simulationSemiMajorAxis = definition.semiMajorAxis;
         _angle = definition.phaseOffsetRad;
         RecalculateSemiMinorAxis();
+        UpdatePosition();
+    }
+
+    public void SetUseRealOrbits(bool useRealOrbits)
+    {
+        if (_useRealOrbits == useRealOrbits)
+            return;
+
+        _useRealOrbits = useRealOrbits;
         UpdatePosition();
     }
 
@@ -54,6 +65,17 @@ public class CometOrbitController : MonoBehaviour
 
     void UpdatePosition()
     {
+        if (_sun == null)
+            return;
+
+        if (_useRealOrbits)
+            UpdateEllipticalPosition();
+        else
+            UpdateCircularPosition();
+    }
+
+    void UpdateEllipticalPosition()
+    {
         float inclRad = _definition.inclinationDeg * Mathf.Deg2Rad;
         float cosIncl = Mathf.Cos(inclRad);
         float sinIncl = Mathf.Sin(inclRad);
@@ -69,6 +91,19 @@ public class CometOrbitController : MonoBehaviour
             -Mathf.Sin(_angle) * _definition.semiMajorAxis,
             zFlat * cosIncl * sinIncl,
             Mathf.Cos(_angle) * _semiMinorAxis * cosIncl);
+        if (tangent.sqrMagnitude > 0.0001f)
+            transform.rotation = Quaternion.LookRotation(tangent.normalized, Vector3.up);
+    }
+
+    void UpdateCircularPosition()
+    {
+        float radius = _definition.semiMajorAxis;
+        float x = Mathf.Cos(_angle) * radius;
+        float z = Mathf.Sin(_angle) * radius;
+
+        transform.position = _sun.position + new Vector3(x, 0f, z);
+
+        Vector3 tangent = new Vector3(-Mathf.Sin(_angle), 0f, Mathf.Cos(_angle));
         if (tangent.sqrMagnitude > 0.0001f)
             transform.rotation = Quaternion.LookRotation(tangent.normalized, Vector3.up);
     }
