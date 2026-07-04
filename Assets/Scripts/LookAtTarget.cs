@@ -166,6 +166,13 @@ public class LookAtTarget : MonoBehaviour {
         {
             ShowDescriptionForPlanet(planetName);
         }
+
+        if (planetName == "Sun" || !useDetailCamera)
+        {
+            var scaleController = FindFirstObjectByType<SolarSystemScaleController>();
+            if (scaleController != null)
+                scaleController.RefreshMainCameraLimits();
+        }
     }
 
     public void TurnOffAllDetailCameras()

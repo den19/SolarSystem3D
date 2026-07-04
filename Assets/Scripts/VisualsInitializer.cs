@@ -87,9 +87,9 @@ public class VisualsInitializer : MonoBehaviour
                 else
                 {
                     // Для главной камеры настраиваем более широкий зум
-                    orbitCam.minDistance = 10f;
+                    orbitCam.minDistance = 2.5f;
                     orbitCam.maxDistance = 600f;
-                    orbitCam.distance = 45f;
+                    orbitCam.distance = 8f;
                     
                     Debug.Log($"[Visuals] Сенсорное управление MobileOrbitCamera успешно добавлено на главную камеру: {cam.name}");
                 }

@@ -8,8 +8,10 @@ using UnityEngine;
 public class SolarSystemScaleController : MonoBehaviour
 {
     const float MinPickWorldRadius = 0.12f;
-    const float DefaultMainCamDistance = 45f;
     const float SimulationMaxCameraDistance = 600f;
+    const float MainCamMinDistanceScale = 2.5f;
+    const float MainCamDefaultDistanceScale = 6.5f;
+    const float AbsoluteMinMainCamDistance = 0.4f;
 
     public struct OrbitSpec
     {
@@ -412,7 +414,7 @@ public class SolarSystemScaleController : MonoBehaviour
             _cometSystemController.RescaleCometOrbitsToSimulation();
     }
 
-    void UpdateMainCameraLimits()
+    public void RefreshMainCameraLimits(bool resetDistance = false)
     {
         Camera mainCam = Camera.main;
         if (mainCam == null)
@@ -422,16 +424,52 @@ public class SolarSystemScaleController : MonoBehaviour
         if (orbitCam == null)
             return;
 
+        Transform bodyTransform = ResolveMainCameraTarget();
+        float bodyRadius = GetBodyWorldRadius(bodyTransform);
+        float minDistance = Mathf.Max(AbsoluteMinMainCamDistance, bodyRadius * MainCamMinDistanceScale);
+
         float maxDistance = SimulationMaxCameraDistance;
         if (ScaleSettings.UseRealDistances)
             maxDistance = Mathf.Max(SimulationMaxCameraDistance, SolarSystemCatalog.MaxHeliocentricAu() * _auToUnity * 1.15f);
 
+        float defaultDistance = Mathf.Clamp(
+            bodyRadius * MainCamDefaultDistanceScale,
+            minDistance * 1.5f,
+            maxDistance * 0.5f);
+
+        orbitCam.SetMinDistance(minDistance);
         orbitCam.SetMaxDistance(maxDistance);
 
-        if (ScaleSettings.UseRealDistances)
-        {
-            float safeDistance = Mathf.Clamp(DefaultMainCamDistance, orbitCam.minDistance, maxDistance * 0.5f);
-            orbitCam.ApplyOrbitState(orbitCam.GetOrbitX(), orbitCam.GetOrbitY(), safeDistance);
-        }
+        if (resetDistance)
+            orbitCam.ApplyOrbitState(orbitCam.GetOrbitX(), orbitCam.GetOrbitY(), defaultDistance);
+    }
+
+    void UpdateMainCameraLimits()
+    {
+        RefreshMainCameraLimits(resetDistance: ScaleSettings.UseRealDistances);
+    }
+
+    Transform ResolveMainCameraTarget()
+    {
+        var lookAt = FindFirstObjectByType<LookAtTarget>();
+        if (lookAt != null && lookAt.currentTarget != null)
+            return lookAt.currentTarget.transform;
+
+        if (_sun != null)
+            return _sun;
+
+        return transform;
+    }
+
+    static float GetBodyWorldRadius(Transform body)
+    {
+        if (body == null)
+            return 0.5f;
+
+        var col = body.GetComponent<SphereCollider>();
+        float r = col != null ? col.radius : 0.5f;
+        Vector3 ls = body.lossyScale;
+        float maxScale = Mathf.Max(Mathf.Abs(ls.x), Mathf.Abs(ls.y), Mathf.Abs(ls.z));
+        return r * maxScale;
     }
 }

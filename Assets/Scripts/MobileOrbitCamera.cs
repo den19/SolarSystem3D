@@ -70,6 +70,9 @@ public class MobileOrbitCamera : MonoBehaviour
             {
                 target = globalLookAtScript.currentTarget.transform;
                 distance = Vector3.Distance(transform.position, target.position);
+                var scaleController = FindFirstObjectByType<SolarSystemScaleController>();
+                if (scaleController != null)
+                    scaleController.RefreshMainCameraLimits();
             }
         }
 
@@ -348,6 +351,13 @@ public class MobileOrbitCamera : MonoBehaviour
     public float GetOrbitX() => x;
 
     public float GetOrbitY() => y;
+
+    public void SetMinDistance(float newMinDistance)
+    {
+        minDistance = Mathf.Max(0.1f, newMinDistance);
+        maxDistance = Mathf.Max(minDistance + 1f, maxDistance);
+        distance = Mathf.Clamp(distance, minDistance, maxDistance);
+    }
 
     public void SetMaxDistance(float newMaxDistance)
     {

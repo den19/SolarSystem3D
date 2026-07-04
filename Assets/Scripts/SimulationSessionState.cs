@@ -19,7 +19,7 @@ public static class SimulationSessionState
     public static float TimeScale { get; private set; } = 1f;
     public static float MainCamX { get; private set; }
     public static float MainCamY { get; private set; }
-    public static float MainCamDistance { get; private set; } = 45f;
+    public static float MainCamDistance { get; private set; } = 8f;
     public static float DetailCamX { get; private set; }
     public static float DetailCamY { get; private set; }
     public static float DetailCamDistance { get; private set; } = 4.5f;
@@ -81,7 +81,7 @@ public static class SimulationSessionState
         TimeScale = PlayerPrefs.GetFloat(KeyTimeScale, 1f);
         MainCamX = PlayerPrefs.GetFloat(KeyMainCamX, 0f);
         MainCamY = PlayerPrefs.GetFloat(KeyMainCamY, 0f);
-        MainCamDistance = PlayerPrefs.GetFloat(KeyMainCamDistance, 45f);
+        MainCamDistance = PlayerPrefs.GetFloat(KeyMainCamDistance, 8f);
         DetailCamX = PlayerPrefs.GetFloat(KeyDetailCamX, 0f);
         DetailCamY = PlayerPrefs.GetFloat(KeyDetailCamY, 0f);
         DetailCamDistance = PlayerPrefs.GetFloat(KeyDetailCamDistance, 4.5f);
@@ -148,7 +148,7 @@ public static class SimulationSessionState
     {
         orbitX = 0f;
         orbitY = 0f;
-        orbitDistance = 45f;
+        orbitDistance = 8f;
 
         if (cameraObject == null)
         {
