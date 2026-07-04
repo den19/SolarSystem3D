@@ -9,7 +9,7 @@ public static class SidePanelSceneSetup
 {
     const string MenuPath = "Solar System/Setup SidePanel UI";
     const float PanelWidth = 220f;
-    const float PanelHeight = 272f;
+    const float PanelHeight = 350f;
     const float RowHeight = 34f;
     const float RowSpacing = 8f;
     static readonly (string rowName, string labelName)[] ToggleRows =
@@ -18,7 +18,9 @@ public static class SidePanelSceneSetup
         ("SidePanelGravityGridLabel_Row", "GravityGridLabel"),
         ("SidePanelLabelsLabel_Row", "SidePanelLabelsLabel"),
         ("SidePanelMinimapLabel_Row", "SidePanelMinimapLabel"),
-        ("SidePanelUiLabel_Row", "SidePanelUiLabel")
+        ("SidePanelUiLabel_Row", "SidePanelUiLabel"),
+        ("SidePanelRealDistancesLabel_Row", "SidePanelRealDistancesLabel"),
+        ("SidePanelRealSizesLabel_Row", "SidePanelRealSizesLabel")
     };
 
     [InitializeOnLoadMethod]
@@ -32,10 +34,7 @@ public static class SidePanelSceneSetup
         if (!scene.path.Replace('\\', '/').EndsWith("Assets/_Scenes/Level1.unity"))
             return;
 
-        if (Object.FindFirstObjectByType<SimulationSidePanelController>() != null)
-            return;
-
-        SetupInternal(markSceneDirty: true);
+        SetupInternal(markSceneDirty: Object.FindFirstObjectByType<SimulationSidePanelController>() == null);
     }
 
     [MenuItem(MenuPath)]
@@ -161,17 +160,24 @@ public static class SidePanelSceneSetup
         Toggle labelsToggle = null;
         Toggle minimapToggle = null;
         Toggle uiToggle = null;
+        Toggle realDistancesToggle = null;
+        Toggle realSizesToggle = null;
 
         for (int i = 0; i < ToggleRows.Length; i++)
         {
             Toggle toggle = EnsureToggleRow(panelGo.transform, ToggleRows[i].rowName, ToggleRows[i].labelName, ref y, i);
-            switch (i)
+            if (toggle == null)
+                continue;
+
+            switch (ToggleRows[i].rowName)
             {
-                case 0: orbitsToggle = toggle; break;
-                case 1: gravityGridToggle = toggle; break;
-                case 2: labelsToggle = toggle; break;
-                case 3: minimapToggle = toggle; break;
-                case 4: uiToggle = toggle; break;
+                case "SidePanelOrbitsLabel_Row": orbitsToggle = toggle; break;
+                case "SidePanelGravityGridLabel_Row": gravityGridToggle = toggle; break;
+                case "SidePanelLabelsLabel_Row": labelsToggle = toggle; break;
+                case "SidePanelMinimapLabel_Row": minimapToggle = toggle; break;
+                case "SidePanelUiLabel_Row": uiToggle = toggle; break;
+                case "SidePanelRealDistancesLabel_Row": realDistancesToggle = toggle; break;
+                case "SidePanelRealSizesLabel_Row": realSizesToggle = toggle; break;
             }
         }
 
@@ -183,6 +189,8 @@ public static class SidePanelSceneSetup
         serializedController.FindProperty("labelsToggle").objectReferenceValue = labelsToggle;
         serializedController.FindProperty("minimapToggle").objectReferenceValue = minimapToggle;
         serializedController.FindProperty("uiToggle").objectReferenceValue = uiToggle;
+        serializedController.FindProperty("realDistancesToggle").objectReferenceValue = realDistancesToggle;
+        serializedController.FindProperty("realSizesToggle").objectReferenceValue = realSizesToggle;
         serializedController.ApplyModifiedPropertiesWithoutUndo();
 
         return controller;

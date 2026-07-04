@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -11,6 +12,9 @@ public class CometSystemController : MonoBehaviour
     Transform _sun;
     OrbitLinesManager _orbitLinesManager;
     BodyLabelManager _bodyLabelManager;
+    readonly List<CometOrbitController> _cometOrbits = new List<CometOrbitController>();
+    readonly List<(CometCatalog.CometDefinition definition, float baselineSemiMajorAxis)> _cometDefinitions =
+        new List<(CometCatalog.CometDefinition, float)>();
 
     public Transform CometsRoot => _cometsRoot;
 
@@ -60,6 +64,8 @@ public class CometSystemController : MonoBehaviour
 
         var orbit = cometGo.AddComponent<CometOrbitController>();
         orbit.Initialize(definition, _sun);
+        _cometOrbits.Add(orbit);
+        _cometDefinitions.Add((definition, definition.semiMajorAxis));
 
         if (_orbitLinesManager != null)
         {
@@ -72,6 +78,55 @@ public class CometSystemController : MonoBehaviour
 
         if (_bodyLabelManager != null)
             _bodyLabelManager.RegisterCometLabel(cometGo.transform, definition.labelKey);
+    }
+
+    public void RescaleCometOrbits(float auToUnity)
+    {
+        for (int i = 0; i < _cometOrbits.Count; i++)
+        {
+            CometOrbitController orbit = _cometOrbits[i];
+            if (orbit == null)
+                continue;
+
+            float realAxis = orbit.Definition.semiMajorAxisAu * auToUnity;
+            orbit.SetSemiMajorAxis(realAxis);
+        }
+
+        RebuildCometOrbitLines(auToUnity, useRealDistances: true);
+    }
+
+    public void RescaleCometOrbitsToSimulation()
+    {
+        for (int i = 0; i < _cometOrbits.Count; i++)
+        {
+            CometOrbitController orbit = _cometOrbits[i];
+            if (orbit != null)
+                orbit.RestoreSimulationSemiMajorAxis();
+        }
+
+        RebuildCometOrbitLines(0f, useRealDistances: false);
+    }
+
+    void RebuildCometOrbitLines(float auToUnity, bool useRealDistances)
+    {
+        if (_orbitLinesManager == null)
+            return;
+
+        _orbitLinesManager.ClearCometOrbitLines();
+
+        for (int i = 0; i < _cometDefinitions.Count; i++)
+        {
+            CometCatalog.CometDefinition definition = _cometDefinitions[i].definition;
+            float semiMajorAxis = useRealDistances
+                ? definition.semiMajorAxisAu * auToUnity
+                : _cometDefinitions[i].baselineSemiMajorAxis;
+
+            _orbitLinesManager.RegisterCometEllipse(
+                semiMajorAxis,
+                definition.eccentricity,
+                definition.inclinationDeg,
+                definition.phaseOffsetRad);
+        }
     }
 
     static Material CreateDefaultCometMaterial()

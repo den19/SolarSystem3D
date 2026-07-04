@@ -10,6 +10,7 @@ public static class CometCatalog
         public string objectName;
         public string labelKey;
         public float semiMajorAxis;
+        public float semiMajorAxisAu;
         public float eccentricity;
         public float inclinationDeg;
         public float simPeriodSec;
@@ -23,6 +24,7 @@ public static class CometCatalog
             objectName = "Comet_Encke",
             labelKey = "CometEnckeLabel",
             semiMajorAxis = 115f,
+            semiMajorAxisAu = 2.21f,
             eccentricity = 0.85f,
             inclinationDeg = 11.8f,
             simPeriodSec = 18f,
@@ -33,6 +35,7 @@ public static class CometCatalog
             objectName = "Comet_Honda",
             labelKey = "CometHondaMrkosPajdusakovaLabel",
             semiMajorAxis = 125f,
+            semiMajorAxisAu = 2.58f,
             eccentricity = 0.83f,
             inclinationDeg = 12.9f,
             simPeriodSec = 24f,
@@ -43,6 +46,7 @@ public static class CometCatalog
             objectName = "Comet_TGK",
             labelKey = "CometTgkLabel",
             semiMajorAxis = 130f,
+            semiMajorAxisAu = 2.75f,
             eccentricity = 0.82f,
             inclinationDeg = 9.2f,
             simPeriodSec = 26f,
@@ -53,6 +57,7 @@ public static class CometCatalog
             objectName = "Comet_Wild2",
             labelKey = "CometWild2Label",
             semiMajorAxis = 145f,
+            semiMajorAxisAu = 3.45f,
             eccentricity = 0.54f,
             inclinationDeg = 3.2f,
             simPeriodSec = 32f,
@@ -63,6 +68,7 @@ public static class CometCatalog
             objectName = "Comet_Kopff",
             labelKey = "CometKopffLabel",
             semiMajorAxis = 150f,
+            semiMajorAxisAu = 3.65f,
             eccentricity = 0.59f,
             inclinationDeg = 4.4f,
             simPeriodSec = 34f,

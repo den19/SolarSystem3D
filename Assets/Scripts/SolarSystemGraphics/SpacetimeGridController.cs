@@ -62,10 +62,37 @@ public class SpacetimeGridController : MonoBehaviour
 
     void OnUseGravityGridChanged(bool enabled) => ApplySetting(enabled);
 
-    void ApplySetting(bool enabled)
+    public void SetHalfExtent(float extent)
     {
-        if (_meshRenderer != null)
-            _meshRenderer.enabled = enabled;
+        halfExtentX = extent;
+        halfExtentZ = extent;
+        if (_built)
+            RebuildGridMesh();
+    }
+
+    void RebuildGridMesh()
+    {
+        if (_mesh != null)
+            Destroy(_mesh);
+
+        CacheBodies();
+
+        int segments = mobileSegments;
+#if !UNITY_ANDROID && !UNITY_IOS
+        segments = desktopSegments;
+#endif
+
+        _mesh = GravityGridMeshUtility.BuildFlatGrid(halfExtentX, halfExtentZ, segments, segments);
+        _baseVertices = _mesh.vertices;
+        _workingVertices = new Vector3[_baseVertices.Length];
+
+        if (_meshFilter == null)
+            _meshFilter = gameObject.GetComponent<MeshFilter>();
+        if (_meshFilter == null)
+            _meshFilter = gameObject.AddComponent<MeshFilter>();
+        _meshFilter.sharedMesh = _mesh;
+
+        DeformMesh();
     }
 
     void BuildGrid()
@@ -97,6 +124,12 @@ public class SpacetimeGridController : MonoBehaviour
         transform.position = new Vector3(0f, baseY, 0f);
         _built = true;
         DeformMesh();
+    }
+
+    void ApplySetting(bool enabled)
+    {
+        if (_meshRenderer != null)
+            _meshRenderer.enabled = enabled;
     }
 
     Material CreateGridMaterial()

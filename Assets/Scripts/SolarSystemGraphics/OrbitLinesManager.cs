@@ -66,6 +66,43 @@ public class OrbitLinesManager : MonoBehaviour
         line.enabled = _visible;
     }
 
+    public void RebuildOrbits()
+    {
+        ClearBodyOrbitLines();
+        BuildBodyOrbits();
+        ApplyVisibility(_visible);
+    }
+
+    public void ClearCometOrbitLines()
+    {
+        for (int i = _lines.Count - 1; i >= 0; i--)
+        {
+            if (_lines[i] == null)
+                continue;
+
+            if (_lines[i].gameObject.name == "CometOrbitLine")
+            {
+                Destroy(_lines[i].gameObject);
+                _lines.RemoveAt(i);
+            }
+        }
+    }
+
+    void ClearBodyOrbitLines()
+    {
+        for (int i = _lines.Count - 1; i >= 0; i--)
+        {
+            if (_lines[i] == null)
+                continue;
+
+            if (_lines[i].gameObject.name.EndsWith("_OrbitLine"))
+            {
+                Destroy(_lines[i].gameObject);
+                _lines.RemoveAt(i);
+            }
+        }
+    }
+
     void BuildBodyOrbits()
     {
         if (_sun == null)

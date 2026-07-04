@@ -13,6 +13,7 @@ public class BodyLabelManager : MonoBehaviour
         public Transform target;
         public string labelKey;
         public float verticalOffset;
+        public float baselineTargetScale;
         public TextMeshPro label;
     }
 
@@ -58,6 +59,7 @@ public class BodyLabelManager : MonoBehaviour
             target = cometTransform,
             labelKey = labelKey,
             verticalOffset = verticalOffset,
+            baselineTargetScale = cometTransform.lossyScale.x,
             label = CreateLabelObject(cometTransform.name + "_Label", labelKey)
         });
         RefreshEntryText(_entries[_entries.Count - 1]);
@@ -82,6 +84,7 @@ public class BodyLabelManager : MonoBehaviour
                 target = bodyGo.transform,
                 labelKey = labelKey,
                 verticalOffset = offset,
+                baselineTargetScale = bodyGo.transform.lossyScale.x,
                 label = CreateLabelObject(bodyName + "_OrbitLabel", labelKey)
             });
         }
@@ -120,10 +123,20 @@ public class BodyLabelManager : MonoBehaviour
             if (entry.target == null || entry.label == null)
                 continue;
 
-            Vector3 worldPos = entry.target.position + Vector3.up * entry.verticalOffset;
+            Vector3 worldPos = entry.target.position + Vector3.up * GetEffectiveOffset(entry);
             entry.label.transform.position = worldPos;
             entry.label.transform.rotation = Quaternion.LookRotation(_mainCamera.transform.forward, _mainCamera.transform.up);
         }
+    }
+
+    static float GetEffectiveOffset(LabelEntry entry)
+    {
+        if (!ScaleSettings.UseRealSizes || entry.target == null)
+            return entry.verticalOffset;
+
+        float baselineScale = Mathf.Max(0.0001f, entry.baselineTargetScale);
+        float scaleRatio = entry.target.lossyScale.x / baselineScale;
+        return entry.verticalOffset * scaleRatio;
     }
 
     void RefreshAllTexts()

@@ -9,6 +9,7 @@ public class CometOrbitController : MonoBehaviour
     Transform _sun;
     float _angle;
     float _semiMinorAxis;
+    float _simulationSemiMajorAxis;
 
     public CometCatalog.CometDefinition Definition => _definition;
 
@@ -16,9 +17,30 @@ public class CometOrbitController : MonoBehaviour
     {
         _definition = definition;
         _sun = sun;
+        _simulationSemiMajorAxis = definition.semiMajorAxis;
         _angle = definition.phaseOffsetRad;
-        _semiMinorAxis = definition.semiMajorAxis * Mathf.Sqrt(Mathf.Max(0f, 1f - definition.eccentricity * definition.eccentricity));
+        RecalculateSemiMinorAxis();
         UpdatePosition();
+    }
+
+    public void SetSemiMajorAxis(float semiMajorAxis)
+    {
+        _definition.semiMajorAxis = semiMajorAxis;
+        RecalculateSemiMinorAxis();
+        UpdatePosition();
+    }
+
+    public void RestoreSimulationSemiMajorAxis()
+    {
+        _definition.semiMajorAxis = _simulationSemiMajorAxis;
+        RecalculateSemiMinorAxis();
+        UpdatePosition();
+    }
+
+    void RecalculateSemiMinorAxis()
+    {
+        _semiMinorAxis = _definition.semiMajorAxis *
+            Mathf.Sqrt(Mathf.Max(0f, 1f - _definition.eccentricity * _definition.eccentricity));
     }
 
     void Update()

@@ -345,6 +345,16 @@ public class MobileOrbitCamera : MonoBehaviour
         ApplyOrbitTransform();
     }
 
+    public float GetOrbitX() => x;
+
+    public float GetOrbitY() => y;
+
+    public void SetMaxDistance(float newMaxDistance)
+    {
+        maxDistance = Mathf.Max(minDistance + 1f, newMaxDistance);
+        distance = Mathf.Clamp(distance, minDistance, maxDistance);
+    }
+
     private float ClampAngle(float angle, float min, float max)
     {
         if (angle < -360F) angle += 360F;

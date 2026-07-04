@@ -18,6 +18,8 @@ public class SimulationSidePanelController : MonoBehaviour
     [SerializeField] Toggle labelsToggle;
     [SerializeField] Toggle minimapToggle;
     [SerializeField] Toggle uiToggle;
+    [SerializeField] Toggle realDistancesToggle;
+    [SerializeField] Toggle realSizesToggle;
 
     bool isInitializing;
     bool isPanelOpen;
@@ -65,6 +67,10 @@ public class SimulationSidePanelController : MonoBehaviour
             minimapToggle = FindToggle("SidePanelMinimapLabel_Row");
         if (uiToggle == null)
             uiToggle = FindToggle("SidePanelUiLabel_Row");
+        if (realDistancesToggle == null)
+            realDistancesToggle = FindToggle("SidePanelRealDistancesLabel_Row");
+        if (realSizesToggle == null)
+            realSizesToggle = FindToggle("SidePanelRealSizesLabel_Row");
     }
 
     Toggle FindToggle(string rowName)
@@ -116,11 +122,27 @@ public class SimulationSidePanelController : MonoBehaviour
             uiToggle.onValueChanged.AddListener(OnUiToggleChanged);
         }
 
+        if (realDistancesToggle != null)
+        {
+            realDistancesToggle.SetIsOnWithoutNotify(ScaleSettings.UseRealDistances);
+            realDistancesToggle.onValueChanged.RemoveAllListeners();
+            realDistancesToggle.onValueChanged.AddListener(OnRealDistancesToggleChanged);
+        }
+
+        if (realSizesToggle != null)
+        {
+            realSizesToggle.SetIsOnWithoutNotify(ScaleSettings.UseRealSizes);
+            realSizesToggle.onValueChanged.RemoveAllListeners();
+            realSizesToggle.onValueChanged.AddListener(OnRealSizesToggleChanged);
+        }
+
         SimulationViewSettings.ShowOrbitLinesChanged += OnOrbitsSettingChanged;
         SimulationViewSettings.ShowBodyLabelsChanged += OnLabelsSettingChanged;
         SimulationViewSettings.ShowMinimapChanged += OnMinimapSettingChanged;
         SimulationViewSettings.ShowSimulationUiChanged += OnUiSettingChanged;
         GravityGridSettings.UseGravityGridChanged += OnGravityGridSettingChanged;
+        ScaleSettings.UseRealDistancesChanged += OnRealDistancesSettingChanged;
+        ScaleSettings.UseRealSizesChanged += OnRealSizesSettingChanged;
 
         yield return new WaitForEndOfFrame();
         isInitializing = false;
@@ -133,6 +155,8 @@ public class SimulationSidePanelController : MonoBehaviour
         SimulationViewSettings.ShowMinimapChanged -= OnMinimapSettingChanged;
         SimulationViewSettings.ShowSimulationUiChanged -= OnUiSettingChanged;
         GravityGridSettings.UseGravityGridChanged -= OnGravityGridSettingChanged;
+        ScaleSettings.UseRealDistancesChanged -= OnRealDistancesSettingChanged;
+        ScaleSettings.UseRealSizesChanged -= OnRealSizesSettingChanged;
 
         if (menuButton != null)
             menuButton.onClick.RemoveListener(TogglePanel);
@@ -168,6 +192,18 @@ public class SimulationSidePanelController : MonoBehaviour
         SimulationViewSettings.SetShowSimulationUi(isOn);
     }
 
+    void OnRealDistancesToggleChanged(bool isOn)
+    {
+        if (isInitializing) return;
+        ScaleSettings.SetUseRealDistances(isOn);
+    }
+
+    void OnRealSizesToggleChanged(bool isOn)
+    {
+        if (isInitializing) return;
+        ScaleSettings.SetUseRealSizes(isOn);
+    }
+
     void OnOrbitsSettingChanged(bool isOn)
     {
         if (orbitsToggle != null)
@@ -196,6 +232,18 @@ public class SimulationSidePanelController : MonoBehaviour
     {
         if (uiToggle != null)
             uiToggle.SetIsOnWithoutNotify(isOn);
+    }
+
+    void OnRealDistancesSettingChanged(bool isOn)
+    {
+        if (realDistancesToggle != null)
+            realDistancesToggle.SetIsOnWithoutNotify(isOn);
+    }
+
+    void OnRealSizesSettingChanged(bool isOn)
+    {
+        if (realSizesToggle != null)
+            realSizesToggle.SetIsOnWithoutNotify(isOn);
     }
 
     public void TogglePanel()
