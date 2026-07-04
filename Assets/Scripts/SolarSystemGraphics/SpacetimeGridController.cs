@@ -7,10 +7,15 @@ using UnityEngine;
 /// </summary>
 public class SpacetimeGridController : MonoBehaviour
 {
+    const string GridMaterialResourcePath = "SpacetimeGrid";
+    const string GridShaderName = "Custom/SpacetimeGrid";
+
     static readonly string[] BodyNames =
     {
         "Sun", "Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Moon", "Titan"
     };
+
+    static bool _shaderMissingWarningLogged;
 
     [SerializeField] float halfExtentX = 120f;
     [SerializeField] float halfExtentZ = 120f;
@@ -85,36 +90,75 @@ public class SpacetimeGridController : MonoBehaviour
         if (_meshRenderer == null)
             _meshRenderer = gameObject.AddComponent<MeshRenderer>();
 
-        var shader = Shader.Find("Custom/SpacetimeGrid");
-        Material mat;
-        if (shader != null)
-        {
-            mat = new Material(shader);
-            mat.SetColor("_GridColor", new Color(0.45f, 0.78f, 1f, 0.88f));
-            mat.SetColor("_FillColor", new Color(0.06f, 0.12f, 0.24f, 0.16f));
-            mat.SetColor("_EmissionColor", new Color(0.18f, 0.42f, 0.75f, 0f));
-            mat.SetFloat("_GridDensity", 24f);
-            mat.SetFloat("_LineWidth", 0.018f);
-            mat.SetFloat("_RimBoost", 0.65f);
-            mat.renderQueue = 2950;
-        }
-        else
-        {
-            var lit = Shader.Find("Universal Render Pipeline/Lit");
-            mat = new Material(lit);
-            mat.SetFloat("_Surface", 1f);
-            mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-            mat.SetColor("_BaseColor", new Color(0.3f, 0.6f, 1f, 0.35f));
-            mat.renderQueue = 2950;
-        }
-
-        _meshRenderer.sharedMaterial = mat;
+        _meshRenderer.sharedMaterial = CreateGridMaterial();
         _meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         _meshRenderer.receiveShadows = false;
 
         transform.position = new Vector3(0f, baseY, 0f);
         _built = true;
         DeformMesh();
+    }
+
+    Material CreateGridMaterial()
+    {
+        var source = Resources.Load<Material>(GridMaterialResourcePath);
+        Material mat = null;
+
+        if (source != null && source.shader != null && source.shader.name == GridShaderName)
+            mat = new Material(source);
+
+        if (mat == null)
+        {
+            var shader = Shader.Find(GridShaderName);
+            if (shader != null)
+            {
+                mat = new Material(shader);
+                mat.SetColor("_GridColor", new Color(0.45f, 0.78f, 1f, 0.88f));
+                mat.SetColor("_FillColor", new Color(0.06f, 0.12f, 0.24f, 0.16f));
+                mat.SetColor("_EmissionColor", new Color(0.18f, 0.42f, 0.75f, 0f));
+                mat.SetFloat("_GridWorldScale", 0.1f);
+                mat.SetFloat("_LineWidth", 0.018f);
+                mat.SetFloat("_MaxLineAA", 0.05f);
+                mat.SetFloat("_RimBoost", 0.65f);
+            }
+        }
+
+        if (mat == null)
+        {
+            LogShaderMissingOnce();
+            var lit = Shader.Find("Universal Render Pipeline/Lit");
+            mat = new Material(lit);
+            mat.SetFloat("_Surface", 1f);
+            mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            mat.SetColor("_BaseColor", new Color(0.3f, 0.6f, 1f, 0.35f));
+            mat.renderQueue = 2950;
+            return mat;
+        }
+
+        ApplyPlatformMaterialTuning(mat);
+        mat.renderQueue = 2950;
+        return mat;
+    }
+
+    static void ApplyPlatformMaterialTuning(Material mat)
+    {
+#if UNITY_ANDROID || UNITY_IOS
+        mat.SetColor("_FillColor", new Color(0.06f, 0.12f, 0.24f, 0.08f));
+        mat.SetFloat("_MaxLineAA", 0.05f);
+#else
+        mat.SetFloat("_MaxLineAA", 0.08f);
+#endif
+    }
+
+    static void LogShaderMissingOnce()
+    {
+        if (_shaderMissingWarningLogged)
+            return;
+
+        _shaderMissingWarningLogged = true;
+        Debug.LogWarning(
+            "SpacetimeGridController: Custom/SpacetimeGrid shader/material was not found. " +
+            "Gravity grid will render as a solid fallback surface until SpacetimeGrid is included in the build.");
     }
 
     void CacheBodies()
