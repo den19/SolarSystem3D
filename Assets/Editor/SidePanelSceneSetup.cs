@@ -10,7 +10,7 @@ public static class SidePanelSceneSetup
     const string MenuPath = "Solar System/Setup SidePanel UI";
     const string GearIconPath = "Assets/Icons/icons8-settings-256.png";
     const float PanelWidth = 220f;
-    const float PanelHeight = 392f;
+    const float PanelHeight = 434f;
     const float RowHeight = 34f;
     const float RowSpacing = 8f;
     const float MenuButtonSize = 44f;
@@ -27,7 +27,8 @@ public static class SidePanelSceneSetup
         ("SidePanelUiLabel_Row", "SidePanelUiLabel"),
         ("SidePanelRealDistancesLabel_Row", "SidePanelRealDistancesLabel"),
         ("SidePanelRealSizesLabel_Row", "SidePanelRealSizesLabel"),
-        ("SidePanelRealOrbitsLabel_Row", "SidePanelRealOrbitsLabel")
+        ("SidePanelRealOrbitsLabel_Row", "SidePanelRealOrbitsLabel"),
+        ("SidePanelFreeObservationLabel_Row", "SidePanelFreeObservationLabel")
     };
 
     [InitializeOnLoadMethod]
@@ -240,6 +241,7 @@ public static class SidePanelSceneSetup
         Toggle realDistancesToggle = null;
         Toggle realSizesToggle = null;
         Toggle realOrbitsToggle = null;
+        Toggle freeObservationToggle = null;
 
         for (int i = 0; i < ToggleRows.Length; i++)
         {
@@ -257,6 +259,7 @@ public static class SidePanelSceneSetup
                 case "SidePanelRealDistancesLabel_Row": realDistancesToggle = toggle; break;
                 case "SidePanelRealSizesLabel_Row": realSizesToggle = toggle; break;
                 case "SidePanelRealOrbitsLabel_Row": realOrbitsToggle = toggle; break;
+                case "SidePanelFreeObservationLabel_Row": freeObservationToggle = toggle; break;
             }
         }
 
@@ -271,10 +274,13 @@ public static class SidePanelSceneSetup
         serializedController.FindProperty("realDistancesToggle").objectReferenceValue = realDistancesToggle;
         serializedController.FindProperty("realSizesToggle").objectReferenceValue = realSizesToggle;
         serializedController.FindProperty("realOrbitsToggle").objectReferenceValue = realOrbitsToggle;
+        serializedController.FindProperty("freeObservationToggle").objectReferenceValue = freeObservationToggle;
         serializedController.ApplyModifiedPropertiesWithoutUndo();
 
         if (realOrbitsToggle != null)
             realOrbitsToggle.isOn = false;
+        if (freeObservationToggle != null)
+            freeObservationToggle.isOn = false;
 
         return controller;
     }

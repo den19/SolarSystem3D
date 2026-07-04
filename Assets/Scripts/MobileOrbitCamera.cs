@@ -1,4 +1,5 @@
 using UnityEngine;
+using SolarSystemApp;
 
 public class MobileOrbitCamera : MonoBehaviour
 {
@@ -175,7 +176,7 @@ public class MobileOrbitCamera : MonoBehaviour
                 if (timeSinceLastTap <= doubleTapDelay)
                     OnDoubleTap(touch.position);
                 else
-                    OnSingleTap(touch.position);
+                    OnSingleTap(touch.position, touch.fingerId);
                 lastTapTime = Time.time;
             }
         }
@@ -205,7 +206,7 @@ public class MobileOrbitCamera : MonoBehaviour
 #endif
     }
 
-    void SyncOrbitFromTransform()
+    public void SyncOrbitFromTransform()
     {
         if (target == null)
             return;
@@ -231,10 +232,14 @@ public class MobileOrbitCamera : MonoBehaviour
         transform.position = position;
     }
 
-    private void OnSingleTap(Vector2 screenPosition)
+    private void OnSingleTap(Vector2 screenPosition, int fingerId = -1)
     {
         if (gameObject.name == "Main Camera" && globalLookAtScript != null)
         {
+            if (SimulationViewSettings.UseFreeObservation &&
+                globalLookAtScript.TryPlaceMainCameraAtScreenPoint(screenPosition, fingerId))
+                return;
+
             Ray ray = Camera.main.ScreenPointToRay(screenPosition);
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
@@ -242,6 +247,7 @@ public class MobileOrbitCamera : MonoBehaviour
                 if (hitObject != globalLookAtScript.currentTarget)
                 {
                     globalLookAtScript.currentTarget = hitObject;
+                    globalLookAtScript.RecordObservationTarget(hitObject);
                     TriggerDescription(hitObject.name);
                 }
             }

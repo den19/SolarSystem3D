@@ -23,6 +23,7 @@ public class SimulationSidePanelController : MonoBehaviour
     [SerializeField] Toggle realDistancesToggle;
     [SerializeField] Toggle realSizesToggle;
     [SerializeField] Toggle realOrbitsToggle;
+    [SerializeField] Toggle freeObservationToggle;
 
     bool isInitializing;
     bool isPanelOpen;
@@ -77,6 +78,8 @@ public class SimulationSidePanelController : MonoBehaviour
             realSizesToggle = FindToggle("SidePanelRealSizesLabel_Row");
         if (realOrbitsToggle == null)
             realOrbitsToggle = FindToggle("SidePanelRealOrbitsLabel_Row");
+        if (freeObservationToggle == null)
+            freeObservationToggle = FindToggle("SidePanelFreeObservationLabel_Row");
     }
 
     Toggle FindToggle(string rowName)
@@ -180,10 +183,18 @@ public class SimulationSidePanelController : MonoBehaviour
             realOrbitsToggle.onValueChanged.AddListener(OnRealOrbitsToggleChanged);
         }
 
+        if (freeObservationToggle != null)
+        {
+            freeObservationToggle.SetIsOnWithoutNotify(SimulationViewSettings.UseFreeObservation);
+            freeObservationToggle.onValueChanged.RemoveAllListeners();
+            freeObservationToggle.onValueChanged.AddListener(OnFreeObservationToggleChanged);
+        }
+
         SimulationViewSettings.ShowOrbitLinesChanged += OnOrbitsSettingChanged;
         SimulationViewSettings.ShowBodyLabelsChanged += OnLabelsSettingChanged;
         SimulationViewSettings.ShowMinimapChanged += OnMinimapSettingChanged;
         SimulationViewSettings.ShowSimulationUiChanged += OnUiSettingChanged;
+        SimulationViewSettings.UseFreeObservationChanged += OnFreeObservationSettingChanged;
         GravityGridSettings.UseGravityGridChanged += OnGravityGridSettingChanged;
         ScaleSettings.UseRealDistancesChanged += OnRealDistancesSettingChanged;
         ScaleSettings.UseRealSizesChanged += OnRealSizesSettingChanged;
@@ -199,6 +210,7 @@ public class SimulationSidePanelController : MonoBehaviour
         SimulationViewSettings.ShowBodyLabelsChanged -= OnLabelsSettingChanged;
         SimulationViewSettings.ShowMinimapChanged -= OnMinimapSettingChanged;
         SimulationViewSettings.ShowSimulationUiChanged -= OnUiSettingChanged;
+        SimulationViewSettings.UseFreeObservationChanged -= OnFreeObservationSettingChanged;
         GravityGridSettings.UseGravityGridChanged -= OnGravityGridSettingChanged;
         ScaleSettings.UseRealDistancesChanged -= OnRealDistancesSettingChanged;
         ScaleSettings.UseRealSizesChanged -= OnRealSizesSettingChanged;
@@ -256,6 +268,12 @@ public class SimulationSidePanelController : MonoBehaviour
         OrbitSettings.SetUseRealOrbits(isOn);
     }
 
+    void OnFreeObservationToggleChanged(bool isOn)
+    {
+        if (isInitializing) return;
+        SimulationViewSettings.SetUseFreeObservation(isOn);
+    }
+
     void OnOrbitsSettingChanged(bool isOn)
     {
         if (orbitsToggle != null)
@@ -302,6 +320,12 @@ public class SimulationSidePanelController : MonoBehaviour
     {
         if (realOrbitsToggle != null)
             realOrbitsToggle.SetIsOnWithoutNotify(isOn);
+    }
+
+    void OnFreeObservationSettingChanged(bool isOn)
+    {
+        if (freeObservationToggle != null)
+            freeObservationToggle.SetIsOnWithoutNotify(isOn);
     }
 
     public void TogglePanel()

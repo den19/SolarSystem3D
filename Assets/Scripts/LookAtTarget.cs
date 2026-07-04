@@ -2,6 +2,8 @@
 using System.Collections;
 using UnityEngine.UI;
 using System;
+using UnityEngine.EventSystems;
+using SolarSystemApp;
 
 public class LookAtTarget : MonoBehaviour {
 
@@ -49,6 +51,7 @@ public class LookAtTarget : MonoBehaviour {
     public GameObject titanCamera;    // Детальная камера Титана
 
     MobileOrbitCamera _mainOrbitCamera;
+    GameObject lastObservationTarget;
 
     private void Awake()
     {
@@ -111,12 +114,20 @@ public class LookAtTarget : MonoBehaviour {
         {
             if (Input.GetMouseButtonDown(0))
             {
-                Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-                if (Physics.Raycast(ray, out RaycastHit hit))
+                if (SimulationViewSettings.UseFreeObservation)
                 {
-                    currentTarget = hit.collider.gameObject;
-                    bool useDetailCamera = currentTarget.name != "Sun";
-                    FocusPlanet(currentTarget.name, useDetailCamera, showDescription: true);
+                    TryPlaceMainCameraAtScreenPoint(Input.mousePosition);
+                }
+                else
+                {
+                    Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+                    if (Physics.Raycast(ray, out RaycastHit hit))
+                    {
+                        currentTarget = hit.collider.gameObject;
+                        RecordObservationTarget(currentTarget);
+                        bool useDetailCamera = currentTarget.name != "Sun";
+                        FocusPlanet(currentTarget.name, useDetailCamera, showDescription: true);
+                    }
                 }
             }
             else if (Input.GetMouseButtonDown(1))
@@ -149,6 +160,7 @@ public class LookAtTarget : MonoBehaviour {
         }
 
         currentTarget = planetGo;
+        RecordObservationTarget(planetGo);
         MakeAllDescriptionsInvisible();
         TurnOffAllDetailCameras();
 
@@ -335,5 +347,125 @@ public class LookAtTarget : MonoBehaviour {
     public void TurnOffTitanCamera()
     {
         if (titanCamera) titanCamera.SetActive(false);
+    }
+
+    public void RecordObservationTarget(GameObject body)
+    {
+        if (body != null && IsCatalogBody(body))
+            lastObservationTarget = body;
+    }
+
+    public GameObject ResolveObservationTarget()
+    {
+        if (lastObservationTarget != null)
+            return lastObservationTarget;
+
+        if (mainCamera != null)
+        {
+            GameObject nearest = FindNearestCatalogBody(mainCamera.transform.position);
+            if (nearest != null)
+                return nearest;
+        }
+
+        return defaultTarget != null ? defaultTarget : currentTarget;
+    }
+
+    public bool TryPlaceMainCameraAtScreenPoint(Vector2 screenPosition, int pointerId = -1)
+    {
+        if (!SimulationViewSettings.UseFreeObservation || mainCamera == null)
+            return false;
+
+        if (IsPointerOverUi(pointerId))
+            return false;
+
+        if (_mainOrbitCamera == null)
+            _mainOrbitCamera = mainCamera.GetComponent<MobileOrbitCamera>();
+
+        GameObject focus = ResolveObservationTarget();
+        if (focus == null)
+            return false;
+
+        TurnOffAllDetailCameras();
+        TurnOnMainCamera();
+
+        currentTarget = focus;
+
+        Ray ray = mainCamera.ScreenPointToRay(screenPosition);
+        if (!TryGetPlacementPoint(ray, focus.transform.position, out Vector3 worldPoint))
+            return false;
+
+        mainCamera.transform.position = worldPoint;
+        Vector3 toFocus = focus.transform.position - worldPoint;
+        if (toFocus.sqrMagnitude > 0.0001f)
+            mainCamera.transform.rotation = Quaternion.LookRotation(toFocus.normalized, Vector3.up);
+        transform.LookAt(focus.transform);
+
+        if (_mainOrbitCamera != null)
+        {
+            _mainOrbitCamera.target = focus.transform;
+            _mainOrbitCamera.SyncOrbitFromTransform();
+        }
+
+        var scaleController = FindFirstObjectByType<SolarSystemScaleController>();
+        if (scaleController != null)
+            scaleController.RefreshMainCameraLimits();
+
+        return true;
+    }
+
+    static bool IsPointerOverUi(int pointerId)
+    {
+        if (EventSystem.current == null)
+            return false;
+
+        return pointerId >= 0
+            ? EventSystem.current.IsPointerOverGameObject(pointerId)
+            : EventSystem.current.IsPointerOverGameObject();
+    }
+
+    static bool IsCatalogBody(GameObject go)
+    {
+        return go != null && SolarSystemCatalog.TryGetBody(go.name, out _);
+    }
+
+    static GameObject FindNearestCatalogBody(Vector3 fromPoint)
+    {
+        GameObject nearest = null;
+        float minDistSq = float.MaxValue;
+
+        for (int i = 0; i < SolarSystemCatalog.Bodies.Length; i++)
+        {
+            GameObject bodyGo = GameObject.Find(SolarSystemCatalog.Bodies[i].objectName);
+            if (bodyGo == null)
+                continue;
+
+            float distSq = (bodyGo.transform.position - fromPoint).sqrMagnitude;
+            if (distSq < minDistSq)
+            {
+                minDistSq = distSq;
+                nearest = bodyGo;
+            }
+        }
+
+        return nearest;
+    }
+
+    static bool TryGetPlacementPoint(Ray ray, Vector3 focusPosition, out Vector3 worldPoint)
+    {
+        if (Physics.Raycast(ray, out RaycastHit hit))
+        {
+            worldPoint = hit.point;
+            return true;
+        }
+
+        var plane = new Plane(ray.direction, focusPosition);
+        if (plane.Raycast(ray, out float enter))
+        {
+            worldPoint = ray.GetPoint(enter);
+            return true;
+        }
+
+        worldPoint = default;
+        return false;
     }
 }
