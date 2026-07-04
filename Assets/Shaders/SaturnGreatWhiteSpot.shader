@@ -52,18 +52,19 @@ Shader "Custom/SaturnGreatWhiteSpot"
                 float3 normalOS : TEXCOORD0;
             };
 
-            half4 _CoreColor;
-            half4 _EdgeColor;
-            half _SpotStrength;
-            half _Dissipation;
-            half _Turbulence;
-            half _GrainSpeed;
-            half _BreathingAmount;
-            half _BreathingSpeed;
-
-            float _StormCenterLongitude;
-            float _StormLongitudeHalfExtent;
-            float _StormLatitudeHalfExtent;
+            CBUFFER_START(UnityPerMaterial)
+                half4 _CoreColor;
+                half4 _EdgeColor;
+                half _SpotStrength;
+                half _Dissipation;
+                half _Turbulence;
+                half _GrainSpeed;
+                half _BreathingAmount;
+                half _BreathingSpeed;
+                float _StormCenterLongitude;
+                float _StormLongitudeHalfExtent;
+                float _StormLatitudeHalfExtent;
+            CBUFFER_END
 
             float hash33(float3 p)
             {

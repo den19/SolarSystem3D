@@ -14,6 +14,8 @@ public static class SidePanelSceneSetup
     const float RowHeight = 34f;
     const float RowSpacing = 8f;
     const float MenuButtonSize = 44f;
+    const float ButtonGap = 12f;
+    static readonly Vector2 MenuButtonFallbackPosition = new Vector2(-8f, -63f);
     const float IconPadding = 4f;
     static readonly Color IconColor = new Color(0.85f, 0.92f, 1f, 1f);
     static readonly (string rowName, string labelName)[] ToggleRows =
@@ -99,11 +101,8 @@ public static class SidePanelSceneSetup
         buttonGo.transform.SetParent(canvasTransform, false);
 
         var rect = buttonGo.GetComponent<RectTransform>();
-        rect.anchorMin = new Vector2(1f, 1f);
-        rect.anchorMax = new Vector2(1f, 1f);
-        rect.pivot = new Vector2(1f, 1f);
-        rect.anchoredPosition = new Vector2(-16f, -16f);
         rect.sizeDelta = new Vector2(MenuButtonSize, MenuButtonSize);
+        LayoutMenuButtonRelativeToSimControl(canvasTransform, rect);
 
         StyleMenuButton(buttonGo);
         EnsureMenuButtonIcon(buttonGo.transform);
@@ -114,11 +113,8 @@ public static class SidePanelSceneSetup
     static void UpgradeMenuButton(Transform button)
     {
         var rect = button.GetComponent<RectTransform>();
-        rect.anchorMin = new Vector2(1f, 1f);
-        rect.anchorMax = new Vector2(1f, 1f);
-        rect.pivot = new Vector2(1f, 1f);
-        rect.anchoredPosition = new Vector2(-16f, -16f);
         rect.sizeDelta = new Vector2(MenuButtonSize, MenuButtonSize);
+        LayoutMenuButtonRelativeToSimControl(button.parent, rect);
 
         StyleMenuButton(button.gameObject);
         EnsureMenuButtonIcon(button);
@@ -126,6 +122,29 @@ public static class SidePanelSceneSetup
         Transform label = button.Find("Label");
         if (label != null)
             Object.DestroyImmediate(label.gameObject);
+    }
+
+    static void LayoutMenuButtonRelativeToSimControl(Transform canvasTransform, RectTransform menuButtonRect)
+    {
+        menuButtonRect.anchorMin = new Vector2(1f, 1f);
+        menuButtonRect.anchorMax = new Vector2(1f, 1f);
+        menuButtonRect.pivot = new Vector2(1f, 1f);
+
+        if (canvasTransform == null)
+        {
+            menuButtonRect.anchoredPosition = MenuButtonFallbackPosition;
+            return;
+        }
+
+        Transform simControlTransform = canvasTransform.Find("SimulationControlButton");
+        if (simControlTransform == null || !simControlTransform.TryGetComponent(out RectTransform simControlRect))
+        {
+            menuButtonRect.anchoredPosition = MenuButtonFallbackPosition;
+            return;
+        }
+
+        float y = simControlRect.anchoredPosition.y - simControlRect.rect.height - ButtonGap;
+        menuButtonRect.anchoredPosition = new Vector2(simControlRect.anchoredPosition.x, y);
     }
 
     static void StyleMenuButton(GameObject buttonGo)

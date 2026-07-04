@@ -93,5 +93,5 @@ Shader "Custom/PlanetRing"
             ENDHLSL
         }
     }
-    Fallback Off
+    Fallback "Universal Render Pipeline/Lit"
 }

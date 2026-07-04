@@ -10,6 +10,8 @@ public class SimulationSidePanelController : MonoBehaviour
 {
     const float PanelWidth = 220f;
     const float SlideDuration = 0.22f;
+    const float MenuButtonGap = 12f;
+    static readonly Vector2 MenuButtonFallbackPosition = new Vector2(-8f, -63f);
 
     [SerializeField] Button menuButton;
     [SerializeField] RectTransform panelRect;
@@ -31,6 +33,7 @@ public class SimulationSidePanelController : MonoBehaviour
     void Awake()
     {
         ResolveReferences();
+        LayoutMenuButton();
 
         panelClosedX = PanelWidth + 12f;
         panelOpenX = -12f;
@@ -84,6 +87,37 @@ public class SimulationSidePanelController : MonoBehaviour
 
         Transform toggleTransform = row.Find("Toggle");
         return toggleTransform != null ? toggleTransform.GetComponent<Toggle>() : null;
+    }
+
+    void LayoutMenuButton()
+    {
+        if (menuButton == null)
+            return;
+
+        var menuButtonRect = menuButton.GetComponent<RectTransform>();
+        if (menuButtonRect == null)
+            return;
+
+        menuButtonRect.anchorMin = new Vector2(1f, 1f);
+        menuButtonRect.anchorMax = new Vector2(1f, 1f);
+        menuButtonRect.pivot = new Vector2(1f, 1f);
+
+        Transform canvasTransform = transform.parent;
+        if (canvasTransform == null)
+        {
+            menuButtonRect.anchoredPosition = MenuButtonFallbackPosition;
+            return;
+        }
+
+        Transform simControlTransform = canvasTransform.Find("SimulationControlButton");
+        if (simControlTransform == null || !simControlTransform.TryGetComponent(out RectTransform simControlRect))
+        {
+            menuButtonRect.anchoredPosition = MenuButtonFallbackPosition;
+            return;
+        }
+
+        float y = simControlRect.anchoredPosition.y - simControlRect.rect.height - MenuButtonGap;
+        menuButtonRect.anchoredPosition = new Vector2(simControlRect.anchoredPosition.x, y);
     }
 
     IEnumerator Start()

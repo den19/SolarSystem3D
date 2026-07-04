@@ -123,7 +123,10 @@ public class PlanetTextureManager : MonoBehaviour
         EvaluateSceneBoot(SceneManager.GetActiveScene());
 
         _urpLit ??= Shader.Find("Universal Render Pipeline/Lit");
-        _planetRingShader ??= Shader.Find("Custom/PlanetRing");
+        var ringMat = Resources.Load<Material>("PlanetGraphicsHD/PlanetRing");
+        _planetRingShader ??= ringMat != null ? ringMat.shader : Shader.Find("Custom/PlanetRing");
+        if (_planetRingShader != null && !_planetRingShader.isSupported)
+            _planetRingShader = null;
 
         if (_bootSceneOk)
             BootstrapIfNeeded();

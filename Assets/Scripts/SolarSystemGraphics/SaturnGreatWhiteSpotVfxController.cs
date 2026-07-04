@@ -138,21 +138,15 @@ public class SaturnGreatWhiteSpotVfxController : MonoBehaviour
             Destroy(collider);
 
         var renderer = storm.GetComponent<MeshRenderer>();
-        var shader = Shader.Find("Custom/SaturnGreatWhiteSpot");
-        if (shader == null)
+        var template = Resources.Load<Material>("PlanetGraphicsHD/SaturnGreatWhiteSpot");
+        if (template == null || template.shader == null || !template.shader.isSupported)
         {
-            Debug.LogWarning("SaturnGreatWhiteSpotVfxController: Custom/SaturnGreatWhiteSpot shader not found.");
+            Debug.LogWarning("SaturnGreatWhiteSpotVfxController: SaturnGreatWhiteSpot material or shader not available.");
             renderer.enabled = false;
             return renderer;
         }
 
-        var material = new Material(shader);
-        material.SetColor("_CoreColor", new Color(0.97f, 0.94f, 0.88f, 0.72f));
-        material.SetColor("_EdgeColor", new Color(0.82f, 0.78f, 0.72f, 0.28f));
-        material.SetFloat("_Turbulence", 0.55f);
-        material.SetFloat("_GrainSpeed", 0.035f);
-        material.SetFloat("_BreathingAmount", 0.022f);
-        material.SetFloat("_BreathingSpeed", 0.09f);
+        var material = new Material(template);
         ResetStormMaterial(material, 0f);
 
         renderer.sharedMaterial = material;
