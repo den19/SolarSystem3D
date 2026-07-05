@@ -3,7 +3,7 @@ using SolarSystemApp;
 using UnityEngine;
 
 /// <summary>
-/// Hides simulation HUD for clean cosmic view and shows comets when UI is disabled.
+/// Hides simulation HUD for clean cosmic view. Comet visibility is controlled by CometMovementSettings.
 /// </summary>
 public class CleanViewController : MonoBehaviour
 {
@@ -28,16 +28,19 @@ public class CleanViewController : MonoBehaviour
         _lookAtTarget = FindFirstObjectByType<LookAtTarget>();
         _mainCanvas = GameObject.Find(mainCanvasName)?.transform;
         ApplyCleanView(SimulationViewSettings.ShowSimulationUi);
+        ApplyCometMovement(CometMovementSettings.UseCometMovement);
     }
 
     void OnEnable()
     {
         SimulationViewSettings.ShowSimulationUiChanged += ApplyCleanView;
+        CometMovementSettings.UseCometMovementChanged += ApplyCometMovement;
     }
 
     void OnDisable()
     {
         SimulationViewSettings.ShowSimulationUiChanged -= ApplyCleanView;
+        CometMovementSettings.UseCometMovementChanged -= ApplyCometMovement;
     }
 
     void ApplyCleanView(bool showSimulationUi)
@@ -47,11 +50,14 @@ public class CleanViewController : MonoBehaviour
         else
             HideSimulationUi();
 
-        if (_cometSystem != null && _cometSystem.CometsRoot != null)
-            _cometSystem.CometsRoot.gameObject.SetActive(!showSimulationUi);
-
         if (!showSimulationUi && _sidePanel != null)
             _sidePanel.ClosePanelImmediate();
+    }
+
+    void ApplyCometMovement(bool enabled)
+    {
+        if (_cometSystem != null && _cometSystem.CometsRoot != null)
+            _cometSystem.CometsRoot.gameObject.SetActive(enabled);
     }
 
     void HideSimulationUi()

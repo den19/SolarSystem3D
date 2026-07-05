@@ -11,6 +11,7 @@ public class SimulationSidePanelController : MonoBehaviour
     const float PanelWidth = 220f;
     const float SlideDuration = 0.22f;
     const float MenuButtonGap = 12f;
+    const float PanelBelowMenuGap = 8f;
     static readonly Vector2 MenuButtonFallbackPosition = new Vector2(-8f, -63f);
 
     [SerializeField] Button menuButton;
@@ -23,6 +24,7 @@ public class SimulationSidePanelController : MonoBehaviour
     [SerializeField] Toggle realDistancesToggle;
     [SerializeField] Toggle realSizesToggle;
     [SerializeField] Toggle realOrbitsToggle;
+    [SerializeField] Toggle cometMovementToggle;
     [SerializeField] Toggle freeObservationToggle;
 
     bool isInitializing;
@@ -33,14 +35,19 @@ public class SimulationSidePanelController : MonoBehaviour
 
     void Awake()
     {
+        SidePanelUiBootstrap.ApplyCompactLayout(transform);
         ResolveReferences();
         LayoutMenuButton();
+        LayoutPanelBelowMenuButton();
 
         panelClosedX = PanelWidth + 12f;
         panelOpenX = -12f;
 
         if (panelRect != null)
-            panelRect.anchoredPosition = new Vector2(panelClosedX, 0f);
+        {
+            float panelY = panelRect.anchoredPosition.y;
+            panelRect.anchoredPosition = new Vector2(panelClosedX, panelY);
+        }
 
         if (menuButton != null)
             menuButton.onClick.AddListener(TogglePanel);
@@ -78,18 +85,15 @@ public class SimulationSidePanelController : MonoBehaviour
             realSizesToggle = FindToggle("SidePanelRealSizesLabel_Row");
         if (realOrbitsToggle == null)
             realOrbitsToggle = FindToggle("SidePanelRealOrbitsLabel_Row");
+        if (cometMovementToggle == null)
+            cometMovementToggle = FindToggle("SidePanelCometMovementLabel_Row");
         if (freeObservationToggle == null)
             freeObservationToggle = FindToggle("SidePanelFreeObservationLabel_Row");
     }
 
     Toggle FindToggle(string rowName)
     {
-        Transform row = transform.Find(rowName);
-        if (row == null)
-            return null;
-
-        Transform toggleTransform = row.Find("Toggle");
-        return toggleTransform != null ? toggleTransform.GetComponent<Toggle>() : null;
+        return SidePanelUiBootstrap.FindToggle(transform, rowName);
     }
 
     void LayoutMenuButton()
@@ -121,6 +125,23 @@ public class SimulationSidePanelController : MonoBehaviour
 
         float y = simControlRect.anchoredPosition.y - simControlRect.rect.height - MenuButtonGap;
         menuButtonRect.anchoredPosition = new Vector2(simControlRect.anchoredPosition.x, y);
+    }
+
+    void LayoutPanelBelowMenuButton()
+    {
+        if (panelRect == null || menuButton == null)
+            return;
+
+        var menuButtonRect = menuButton.GetComponent<RectTransform>();
+        if (menuButtonRect == null)
+            return;
+
+        panelRect.anchorMin = new Vector2(1f, 1f);
+        panelRect.anchorMax = new Vector2(1f, 1f);
+        panelRect.pivot = new Vector2(1f, 1f);
+
+        float y = menuButtonRect.anchoredPosition.y - menuButtonRect.rect.height - PanelBelowMenuGap;
+        panelRect.anchoredPosition = new Vector2(panelRect.anchoredPosition.x, y);
     }
 
     IEnumerator Start()
@@ -183,6 +204,13 @@ public class SimulationSidePanelController : MonoBehaviour
             realOrbitsToggle.onValueChanged.AddListener(OnRealOrbitsToggleChanged);
         }
 
+        if (cometMovementToggle != null)
+        {
+            cometMovementToggle.SetIsOnWithoutNotify(CometMovementSettings.UseCometMovement);
+            cometMovementToggle.onValueChanged.RemoveAllListeners();
+            cometMovementToggle.onValueChanged.AddListener(OnCometMovementToggleChanged);
+        }
+
         if (freeObservationToggle != null)
         {
             freeObservationToggle.SetIsOnWithoutNotify(SimulationViewSettings.UseFreeObservation);
@@ -199,6 +227,7 @@ public class SimulationSidePanelController : MonoBehaviour
         ScaleSettings.UseRealDistancesChanged += OnRealDistancesSettingChanged;
         ScaleSettings.UseRealSizesChanged += OnRealSizesSettingChanged;
         OrbitSettings.UseRealOrbitsChanged += OnRealOrbitsSettingChanged;
+        CometMovementSettings.UseCometMovementChanged += OnCometMovementSettingChanged;
 
         yield return new WaitForEndOfFrame();
         isInitializing = false;
@@ -215,6 +244,7 @@ public class SimulationSidePanelController : MonoBehaviour
         ScaleSettings.UseRealDistancesChanged -= OnRealDistancesSettingChanged;
         ScaleSettings.UseRealSizesChanged -= OnRealSizesSettingChanged;
         OrbitSettings.UseRealOrbitsChanged -= OnRealOrbitsSettingChanged;
+        CometMovementSettings.UseCometMovementChanged -= OnCometMovementSettingChanged;
 
         if (menuButton != null)
             menuButton.onClick.RemoveListener(TogglePanel);
@@ -266,6 +296,12 @@ public class SimulationSidePanelController : MonoBehaviour
     {
         if (isInitializing) return;
         OrbitSettings.SetUseRealOrbits(isOn);
+    }
+
+    void OnCometMovementToggleChanged(bool isOn)
+    {
+        if (isInitializing) return;
+        CometMovementSettings.SetUseCometMovement(isOn);
     }
 
     void OnFreeObservationToggleChanged(bool isOn)
@@ -322,6 +358,12 @@ public class SimulationSidePanelController : MonoBehaviour
             realOrbitsToggle.SetIsOnWithoutNotify(isOn);
     }
 
+    void OnCometMovementSettingChanged(bool isOn)
+    {
+        if (cometMovementToggle != null)
+            cometMovementToggle.SetIsOnWithoutNotify(isOn);
+    }
+
     void OnFreeObservationSettingChanged(bool isOn)
     {
         if (freeObservationToggle != null)
@@ -343,7 +385,7 @@ public class SimulationSidePanelController : MonoBehaviour
 
         isPanelOpen = false;
         if (panelRect != null)
-            panelRect.anchoredPosition = new Vector2(panelClosedX, 0f);
+            panelRect.anchoredPosition = new Vector2(panelClosedX, panelRect.anchoredPosition.y);
     }
 
     void SetPanelOpen(bool open)
@@ -357,7 +399,7 @@ public class SimulationSidePanelController : MonoBehaviour
     IEnumerator SlidePanel(float targetX)
     {
         Vector2 start = panelRect.anchoredPosition;
-        Vector2 end = new Vector2(targetX, 0f);
+        Vector2 end = new Vector2(targetX, start.y);
         float elapsed = 0f;
 
         while (elapsed < SlideDuration)
