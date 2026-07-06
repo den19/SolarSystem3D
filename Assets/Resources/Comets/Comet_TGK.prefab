@@ -247,10 +247,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CometVisualController
   semiMajorAxisAu: 2.5
   eccentricity: 0.5
-  dormantThresholdAu: 5
-  activeThresholdAu: 2
-  outburstPerihelionFactor: 1.3
-  minimumVisualActivity: 0.4
   nucleus: {fileID: 831518469383524855}
   coma: {fileID: 528764847190044952}
   dustTrail: {fileID: 3114454496030247346}

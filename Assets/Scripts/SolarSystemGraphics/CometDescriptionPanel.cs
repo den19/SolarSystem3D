@@ -12,6 +12,7 @@ public class CometDescriptionPanel : MonoBehaviour
     [SerializeField] GameObject panelRoot;
     [SerializeField] TMP_Text titleText;
     [SerializeField] TMP_Text bodyText;
+    [SerializeField] ScrollRect bodyScroll;
     [SerializeField] Button closeButton;
 
     CometInfo _currentInfo;
@@ -103,6 +104,13 @@ public class CometDescriptionPanel : MonoBehaviour
             Language lang = LocalizationManager.CurrentLanguage;
             bodyText.text = _currentInfo.GetDescription(lang);
         }
+
+        if (bodyText != null && bodyScroll != null && bodyScroll.content != null)
+        {
+            bodyText.ForceMeshUpdate();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(bodyScroll.content);
+            bodyScroll.verticalNormalizedPosition = 1f;
+        }
     }
 
     public static CometDescriptionPanel EnsureOnCanvas(Transform canvasTransform)
@@ -153,20 +161,25 @@ public class CometDescriptionPanel : MonoBehaviour
         var titleGo = new GameObject("Title");
         titleGo.transform.SetParent(cardGo.transform, false);
         var titleRect = titleGo.AddComponent<RectTransform>();
-        titleRect.anchorMin = new Vector2(0.04f, 0.88f);
+        titleRect.anchorMin = new Vector2(0.04f, 0.84f);
         titleRect.anchorMax = new Vector2(0.82f, 0.98f);
         titleRect.offsetMin = Vector2.zero;
         titleRect.offsetMax = Vector2.zero;
         panel.titleText = titleGo.AddComponent<TextMeshProUGUI>();
         panel.titleText.fontSize = 22;
+        panel.titleText.fontSizeMin = 14;
+        panel.titleText.fontSizeMax = 22;
+        panel.titleText.enableAutoSizing = true;
         panel.titleText.fontStyle = FontStyles.Bold;
         panel.titleText.color = new Color(0.85f, 0.92f, 1f, 1f);
-        panel.titleText.alignment = TextAlignmentOptions.MidlineLeft;
+        panel.titleText.alignment = TextAlignmentOptions.TopLeft;
+        panel.titleText.textWrappingMode = TextWrappingModes.Normal;
+        panel.titleText.overflowMode = TextOverflowModes.Ellipsis;
 
         var closeGo = new GameObject("CloseButton");
         closeGo.transform.SetParent(cardGo.transform, false);
         var closeRect = closeGo.AddComponent<RectTransform>();
-        closeRect.anchorMin = new Vector2(0.86f, 0.88f);
+        closeRect.anchorMin = new Vector2(0.86f, 0.84f);
         closeRect.anchorMax = new Vector2(0.98f, 0.98f);
         closeRect.offsetMin = Vector2.zero;
         closeRect.offsetMax = Vector2.zero;
@@ -192,12 +205,15 @@ public class CometDescriptionPanel : MonoBehaviour
         scrollGo.transform.SetParent(cardGo.transform, false);
         var scrollRect = scrollGo.AddComponent<RectTransform>();
         scrollRect.anchorMin = new Vector2(0.04f, 0.04f);
-        scrollRect.anchorMax = new Vector2(0.96f, 0.86f);
+        scrollRect.anchorMax = new Vector2(0.96f, 0.82f);
         scrollRect.offsetMin = Vector2.zero;
         scrollRect.offsetMax = Vector2.zero;
 
         var scroll = scrollGo.AddComponent<ScrollRect>();
         scroll.horizontal = false;
+        scroll.movementType = ScrollRect.MovementType.Clamped;
+        scroll.scrollSensitivity = 20f;
+        panel.bodyScroll = scroll;
 
         var viewportGo = new GameObject("Viewport");
         viewportGo.transform.SetParent(scrollGo.transform, false);
@@ -206,7 +222,7 @@ public class CometDescriptionPanel : MonoBehaviour
         viewportRect.anchorMax = Vector2.one;
         viewportRect.offsetMin = Vector2.zero;
         viewportRect.offsetMax = Vector2.zero;
-        viewportGo.AddComponent<Mask>().showMaskGraphic = false;
+        viewportGo.AddComponent<RectMask2D>();
         viewportGo.AddComponent<Image>().color = new Color(1f, 1f, 1f, 0.02f);
         scroll.viewport = viewportRect;
 
@@ -216,8 +232,19 @@ public class CometDescriptionPanel : MonoBehaviour
         contentRect.anchorMin = new Vector2(0f, 1f);
         contentRect.anchorMax = new Vector2(1f, 1f);
         contentRect.pivot = new Vector2(0.5f, 1f);
-        contentRect.sizeDelta = new Vector2(0f, 400f);
+        contentRect.sizeDelta = Vector2.zero;
         scroll.content = contentRect;
+
+        var layoutGroup = contentGo.AddComponent<VerticalLayoutGroup>();
+        layoutGroup.padding = new RectOffset(8, 8, 8, 8);
+        layoutGroup.childAlignment = TextAnchor.UpperLeft;
+        layoutGroup.childControlWidth = true;
+        layoutGroup.childControlHeight = true;
+        layoutGroup.childForceExpandWidth = true;
+        layoutGroup.childForceExpandHeight = false;
+
+        var contentFitter = contentGo.AddComponent<ContentSizeFitter>();
+        contentFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
         var bodyGo = new GameObject("Body");
         bodyGo.transform.SetParent(contentGo.transform, false);
@@ -225,8 +252,10 @@ public class CometDescriptionPanel : MonoBehaviour
         bodyRect.anchorMin = new Vector2(0f, 1f);
         bodyRect.anchorMax = new Vector2(1f, 1f);
         bodyRect.pivot = new Vector2(0.5f, 1f);
-        bodyRect.offsetMin = new Vector2(8f, 0f);
-        bodyRect.offsetMax = new Vector2(-8f, 0f);
+        bodyRect.sizeDelta = Vector2.zero;
+
+        var bodyLayout = bodyGo.AddComponent<LayoutElement>();
+        bodyLayout.flexibleWidth = 1f;
 
         panel.bodyText = bodyGo.AddComponent<TextMeshProUGUI>();
         panel.bodyText.fontSize = 15;
@@ -234,11 +263,6 @@ public class CometDescriptionPanel : MonoBehaviour
         panel.bodyText.alignment = TextAlignmentOptions.TopLeft;
         panel.bodyText.textWrappingMode = TextWrappingModes.Normal;
         panel.bodyText.richText = true;
-
-        var fitter = bodyGo.AddComponent<ContentSizeFitter>();
-        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-        var contentFitter = contentGo.AddComponent<ContentSizeFitter>();
-        contentFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
         panel.WireCloseButton();
         rootGo.SetActive(false);

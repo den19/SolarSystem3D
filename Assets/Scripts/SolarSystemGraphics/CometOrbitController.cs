@@ -16,6 +16,18 @@ public class CometOrbitController : MonoBehaviour
 
     public float OrbitAngle => _angle;
 
+    public float PerihelionAu => _definition.semiMajorAxisAu * (1f - _definition.eccentricity);
+
+    public float GetHeliocentricDistanceAu()
+    {
+        float a = _definition.semiMajorAxisAu;
+        float e = _definition.eccentricity;
+        if (e < 0.001f)
+            return a;
+
+        return a * (1f - e * e) / (1f + e * Mathf.Cos(_angle));
+    }
+
     public void Initialize(CometCatalog.CometDefinition definition, Transform sun, bool useRealOrbits)
     {
         _definition = definition;

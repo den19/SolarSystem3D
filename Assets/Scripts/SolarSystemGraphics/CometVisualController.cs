@@ -13,15 +13,11 @@ public class CometVisualController : MonoBehaviour
         Outburst
     }
 
+    static readonly Color DefaultComaColor = new Color(0.55f, 0.92f, 0.78f, 1f);
+
     [Header("Orbital data (set at spawn)")]
     [SerializeField] float semiMajorAxisAu = 2.5f;
     [SerializeField] float eccentricity = 0.5f;
-
-    [Header("Distance thresholds (AU)")]
-    [SerializeField] float dormantThresholdAu = 5f;
-    [SerializeField] float activeThresholdAu = 2f;
-    [SerializeField] float outburstPerihelionFactor = 1.3f;
-    [SerializeField] float minimumVisualActivity = 0.4f;
 
     [Header("Child references")]
     [SerializeField] Transform nucleus;
@@ -41,6 +37,8 @@ public class CometVisualController : MonoBehaviour
     CometOrbitController _orbit;
     Material _nucleusBaseMaterial;
     Color _nucleusBaseColor = new Color(0.1f, 0.09f, 0.08f, 1f);
+    CometContentData.ContentEntry _profile;
+    bool _profileLoaded;
 
     public void Initialize(CometCatalog.CometDefinition definition, Transform sun, float auToUnity)
     {
@@ -51,9 +49,27 @@ public class CometVisualController : MonoBehaviour
         _perihelionAu = semiMajorAxisAu * (1f - eccentricity);
         _orbit = GetComponent<CometOrbitController>();
 
+        LoadProfile(definition.objectName);
         CacheReferences();
         CacheBaseValues();
         EnsureVisualAssets();
+    }
+
+    void LoadProfile(string objectName)
+    {
+        _profile = CometContentData.Get(objectName);
+        _profileLoaded = !string.IsNullOrEmpty(_profile.id);
+
+        if (!_profileLoaded)
+        {
+            _profile = new CometContentData.ContentEntry
+            {
+                activityStrength = 1f,
+                comaColor = DefaultComaColor,
+                comaMaxScale = 1.5f,
+                dormantThresholdAu = 4f
+            };
+        }
     }
 
     void Start()
@@ -154,6 +170,9 @@ public class CometVisualController : MonoBehaviour
 
     void LateUpdate()
     {
+        if (_orbit == null)
+            _orbit = GetComponent<CometOrbitController>();
+
         if (_sun == null)
         {
             var sunGo = GameObject.Find("Sun");
@@ -167,9 +186,11 @@ public class CometVisualController : MonoBehaviour
         if (scaleController != null)
             _auToUnity = scaleController.AuToUnity;
 
-        float distanceAu = Vector3.Distance(transform.position, _sun.position) / _auToUnity;
+        if (_orbit != null)
+            _perihelionAu = _orbit.PerihelionAu;
+
+        float distanceAu = GetHeliocentricDistanceAu();
         float activity = EvaluateActivity(distanceAu);
-        activity = Mathf.Max(minimumVisualActivity, activity);
         ActivityStage stage = ClassifyStage(distanceAu, activity);
 
         ApplyNucleus(stage);
@@ -178,56 +199,47 @@ public class CometVisualController : MonoBehaviour
         ApplyIonTail(activity, stage, distanceAu);
     }
 
-    float EvaluateActivity(float distanceAu)
+    float GetHeliocentricDistanceAu()
     {
-        float distanceFactor = 0f;
-        if (distanceAu < dormantThresholdAu)
-        {
-            if (distanceAu <= _perihelionAu * outburstPerihelionFactor)
-                distanceFactor = 1f;
-            else if (distanceAu <= activeThresholdAu)
-            {
-                float t = Mathf.InverseLerp(activeThresholdAu, _perihelionAu * outburstPerihelionFactor, distanceAu);
-                distanceFactor = Mathf.Lerp(0.75f, 1f, 1f - t);
-            }
-            else
-            {
-                float developingT = Mathf.InverseLerp(dormantThresholdAu, activeThresholdAu, distanceAu);
-                distanceFactor = Mathf.SmoothStep(0f, 0.7f, 1f - developingT);
-            }
-        }
+        if (_orbit != null)
+            return _orbit.GetHeliocentricDistanceAu();
 
-        float angleFactor = EvaluateOrbitAngleActivity();
-        return Mathf.Clamp01(Mathf.Max(distanceFactor, angleFactor));
+        if (_sun == null)
+            return semiMajorAxisAu;
+
+        return Vector3.Distance(transform.position, _sun.position) / _auToUnity;
     }
 
-    float EvaluateOrbitAngleActivity()
+    float EvaluateActivity(float distanceAu)
     {
-        if (_sun == null)
+        float dormantThreshold = _profile.dormantThresholdAu;
+        if (distanceAu >= dormantThreshold)
             return 0f;
 
-        Vector3 offset = transform.position - _sun.position;
-        if (offset.sqrMagnitude < 0.0001f)
-            return 0f;
+        float q = _perihelionAu;
+        float flux = Mathf.Pow(q / Mathf.Max(distanceAu, q), 2f);
+        float activity = _profile.activityStrength * flux;
 
-        float angle = Mathf.Atan2(offset.z, offset.x);
-        if (_orbit != null)
-            angle = _orbit.OrbitAngle;
-
-        // Near the Sun side of the orbit the comet is most active.
-        float sunSide = (Mathf.Cos(angle) + 1f) * 0.5f;
-        return Mathf.SmoothStep(0.15f, 1f, sunSide);
+        float fade = 1f - Mathf.InverseLerp(dormantThreshold * 0.85f, dormantThreshold, distanceAu);
+        return Mathf.Clamp01(activity * fade);
     }
 
     ActivityStage ClassifyStage(float distanceAu, float activity)
     {
-        if (activity <= 0.05f && distanceAu > dormantThresholdAu)
+        if (activity <= 0.03f)
             return ActivityStage.Dormant;
-        if (distanceAu < _perihelionAu * outburstPerihelionFactor || activity > 0.85f)
+
+        float dormantThreshold = _profile.dormantThresholdAu;
+        float midDistance = Mathf.Lerp(_perihelionAu, dormantThreshold, 0.45f);
+
+        if (distanceAu <= _perihelionAu * 1.15f || activity > 0.85f)
             return ActivityStage.Outburst;
-        if (activity > 0.55f || distanceAu < activeThresholdAu)
+        if (activity > 0.45f || distanceAu < midDistance)
             return ActivityStage.Active;
-        return ActivityStage.Developing;
+        if (distanceAu < dormantThreshold)
+            return ActivityStage.Developing;
+
+        return ActivityStage.Dormant;
     }
 
     void ApplyNucleus(ActivityStage stage)
@@ -253,24 +265,26 @@ public class CometVisualController : MonoBehaviour
         if (coma == null)
             return;
 
-        bool visible = activity > 0.08f;
+        bool visible = activity > 0.03f;
         if (comaRenderer != null)
             comaRenderer.enabled = visible;
 
         if (!visible)
             return;
 
-        float scale = _baseComaScale * Mathf.Lerp(1f, 1.8f, activity);
+        float maxScale = _baseComaScale * _profile.comaMaxScale * 2.5f;
+        float scale = Mathf.Lerp(_baseComaScale * 0.15f, maxScale, activity);
         coma.localScale = Vector3.one * scale;
 
         if (_comaMaterial != null)
         {
-            Color baseColor = new Color(0.55f, 0.92f, 0.78f, Mathf.Lerp(0.18f, 0.55f, activity));
+            Color baseColor = _profile.comaColor;
+            baseColor.a = Mathf.Lerp(0f, 0.7f, activity);
             if (stage == ActivityStage.Outburst)
-                baseColor.a = Mathf.Min(0.65f, baseColor.a * 1.25f);
+                baseColor.a = Mathf.Min(0.85f, baseColor.a * 1.2f);
 
             _comaMaterial.SetColor("_AtmosphereColor", baseColor);
-            _comaMaterial.SetFloat("_SunInfluence", Mathf.Lerp(0.4f, 0.95f, activity));
+            _comaMaterial.SetFloat("_SunInfluence", Mathf.Lerp(0.15f, 0.95f, activity));
         }
     }
 
@@ -279,17 +293,17 @@ public class CometVisualController : MonoBehaviour
         if (dustTrail == null)
             return;
 
-        bool visible = activity > 0.12f;
+        bool visible = activity > 0.08f;
         dustTrail.emitting = visible;
         if (!visible)
             return;
 
-        float widthMul = stage == ActivityStage.Outburst ? 1.25f : 1f;
-        dustTrail.startWidth = _baseDustStartWidth * Mathf.Lerp(0.15f, widthMul, activity);
+        float widthMul = stage == ActivityStage.Outburst ? 1.35f : 1f;
+        dustTrail.startWidth = _baseDustStartWidth * Mathf.Lerp(0.05f, widthMul, activity);
         dustTrail.endWidth = dustTrail.startWidth * 0.05f;
-        dustTrail.time = Mathf.Lerp(0.8f, 2.5f, activity);
+        dustTrail.time = Mathf.Lerp(0.5f, 2.8f, activity);
 
-        Color start = new Color(0.92f, 0.95f, 0.15f, Mathf.Lerp(0.2f, 0.85f, activity));
+        Color start = new Color(0.92f, 0.95f, 0.15f, Mathf.Lerp(0f, 0.9f, activity));
         Color end = new Color(0.98f, 0.97f, 0.28f, 0f);
         dustTrail.startColor = start;
         dustTrail.endColor = end;
@@ -300,7 +314,7 @@ public class CometVisualController : MonoBehaviour
         if (ionTail == null || _sun == null)
             return;
 
-        bool visible = activity > 0.2f;
+        bool visible = activity > 0.12f;
         ionTail.enabled = visible;
         if (!visible)
             return;
@@ -309,11 +323,12 @@ public class CometVisualController : MonoBehaviour
         if (awayFromSun.sqrMagnitude < 0.0001f)
             awayFromSun = -transform.forward;
 
-        float sunProximity = Mathf.InverseLerp(dormantThresholdAu, _perihelionAu, distanceAu);
-        float lengthMul = stage == ActivityStage.Outburst ? 1.35f : 1f;
-        float length = _baseIonLength * Mathf.Lerp(0.45f, lengthMul, activity);
-        float headWidth = _baseIonStartWidth * Mathf.Lerp(0.35f, 1.2f, activity);
-        headWidth *= Mathf.Lerp(0.85f, 1.45f, sunProximity);
+        float dormantThreshold = _profile.dormantThresholdAu;
+        float sunProximity = 1f - Mathf.InverseLerp(_perihelionAu, dormantThreshold, distanceAu);
+        float lengthMul = stage == ActivityStage.Outburst ? 1.4f : 1f;
+        float length = _baseIonLength * Mathf.Lerp(0.2f, lengthMul, activity);
+        float headWidth = _baseIonStartWidth * Mathf.Lerp(0.1f, 1.3f, activity);
+        headWidth *= Mathf.Lerp(0.75f, 1.5f, sunProximity);
 
         ionTail.positionCount = 2;
         ionTail.useWorldSpace = true;
@@ -322,7 +337,7 @@ public class CometVisualController : MonoBehaviour
         ionTail.startWidth = headWidth;
         ionTail.endWidth = headWidth * 0.04f;
 
-        float alpha = Mathf.Lerp(0.55f, 0.98f, activity) * Mathf.Lerp(0.7f, 1f, sunProximity);
+        float alpha = Mathf.Lerp(0f, 0.98f, activity) * Mathf.Lerp(0.6f, 1f, sunProximity);
         ionTail.startColor = new Color(0.35f, 0.72f, 1f, alpha);
         ionTail.endColor = new Color(0.5f, 0.85f, 1f, 0f);
     }
