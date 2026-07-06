@@ -40,25 +40,37 @@ public class CometSystemController : MonoBehaviour
             SpawnComet(definition);
 
         OrbitSettings.UseRealOrbitsChanged += OnUseRealOrbitsChanged;
+        CometMovementSettings.UseCometMovementChanged += OnUseCometMovementChanged;
         ApplyOrbitMode();
     }
 
     void OnDestroy()
     {
         OrbitSettings.UseRealOrbitsChanged -= OnUseRealOrbitsChanged;
+        CometMovementSettings.UseCometMovementChanged -= OnUseCometMovementChanged;
     }
 
     void OnUseRealOrbitsChanged(bool enabled) => ApplyOrbitMode();
 
+    void OnUseCometMovementChanged(bool enabled) => ApplyOrbitMode();
+
+    static bool GetUseRealCometOrbits()
+    {
+        return OrbitSettings.UseRealOrbits && CometMovementSettings.UseCometMovement;
+    }
+
     void ApplyOrbitMode()
     {
-        bool useRealOrbits = OrbitSettings.UseRealOrbits;
+        bool useRealOrbits = GetUseRealCometOrbits();
 
         for (int i = 0; i < _cometOrbits.Count; i++)
         {
             CometOrbitController orbit = _cometOrbits[i];
-            if (orbit != null)
-                orbit.SetUseRealOrbits(useRealOrbits);
+            if (orbit == null)
+                continue;
+
+            orbit.SetUseRealOrbits(useRealOrbits);
+            orbit.RefreshPosition();
         }
 
         RebuildCometOrbitLines(_cachedAuToUnity, ScaleSettings.UseRealDistances);
@@ -90,7 +102,7 @@ public class CometSystemController : MonoBehaviour
         trail.endColor = new Color(0.98f, 0.97f, 0.28f, 0f);
 
         var orbit = cometGo.AddComponent<CometOrbitController>();
-        orbit.Initialize(definition, _sun, OrbitSettings.UseRealOrbits);
+        orbit.Initialize(definition, _sun, GetUseRealCometOrbits());
         _cometOrbits.Add(orbit);
         _cometDefinitions.Add((definition, definition.semiMajorAxis));
 
@@ -133,7 +145,7 @@ public class CometSystemController : MonoBehaviour
             return;
 
         _orbitLinesManager.ClearCometOrbitLines();
-        bool useRealOrbits = OrbitSettings.UseRealOrbits;
+        bool useRealOrbits = GetUseRealCometOrbits();
 
         for (int i = 0; i < _cometDefinitions.Count; i++)
         {

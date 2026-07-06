@@ -48,6 +48,8 @@ public class CometOrbitController : MonoBehaviour
         UpdatePosition();
     }
 
+    public void RefreshPosition() => UpdatePosition();
+
     void RecalculateSemiMinorAxis()
     {
         _semiMinorAxis = _definition.semiMajorAxis *
