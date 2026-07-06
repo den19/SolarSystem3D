@@ -3,7 +3,7 @@ using SolarSystemApp;
 using UnityEngine;
 
 /// <summary>
-/// Applies real-distance and real-size scale modes to celestial bodies in Level1.
+/// Level1 uses scene-authored real proportions; toggles switch to the compressed educational layout.
 /// </summary>
 public class SolarSystemScaleController : MonoBehaviour
 {
@@ -42,7 +42,6 @@ public class SolarSystemScaleController : MonoBehaviour
     float _auToUnity;
 
     public float AuToUnity => _auToUnity;
-    Vector3 _baselineEarthScale;
     Transform _sun;
     OrbitLinesManager _orbitLinesManager;
     CometSystemController _cometSystemController;
@@ -79,8 +78,6 @@ public class SolarSystemScaleController : MonoBehaviour
 
     public float GetOrbitSemiMajorAxis(string bodyName)
     {
-        bool useReal = ScaleSettings.UseRealDistances;
-
         for (int i = 0; i < _baselines.Count; i++)
         {
             BodyBaseline baseline = _baselines[i];
@@ -90,7 +87,7 @@ public class SolarSystemScaleController : MonoBehaviour
             if (!SolarSystemCatalog.TryGetBody(bodyName, out SolarSystemCatalog.BodyDefinition definition))
                 return 0f;
 
-            return GetOrbitRadius(baseline, definition, useReal);
+            return GetOrbitRadius(baseline, definition);
         }
 
         return 0f;
@@ -102,18 +99,12 @@ public class SolarSystemScaleController : MonoBehaviour
 
         GameObject earthGo = GameObject.Find("Earth");
         if (earthGo != null && _sun != null)
-        {
             _auToUnity = Vector3.ProjectOnPlane(earthGo.transform.position - _sun.position, Vector3.up).magnitude;
-            _baselineEarthScale = earthGo.transform.localScale;
-        }
         else
-        {
-            _auToUnity = 22f;
-            _baselineEarthScale = Vector3.one;
-        }
+            _auToUnity = SolarSystemLayout.DefaultAuToUnity;
 
         if (_auToUnity < 0.001f)
-            _auToUnity = 22f;
+            _auToUnity = SolarSystemLayout.DefaultAuToUnity;
 
         for (int i = 0; i < SolarSystemCatalog.Bodies.Length; i++)
         {
@@ -128,6 +119,9 @@ public class SolarSystemScaleController : MonoBehaviour
                 ? Vector3.ProjectOnPlane(bodyTransform.position - orbitCenter.position, Vector3.up).magnitude
                 : 0f;
 
+            if (!string.IsNullOrEmpty(definition.orbitCenterName))
+                orbitDistance = Vector3.ProjectOnPlane(bodyTransform.localPosition, Vector3.up).magnitude;
+
             var collider = bodyGo.GetComponent<SphereCollider>();
             _baselines.Add(new BodyBaseline
             {
@@ -135,7 +129,7 @@ public class SolarSystemScaleController : MonoBehaviour
                 LocalPosition = bodyTransform.localPosition,
                 LocalScale = bodyTransform.localScale,
                 OrbitDistance = orbitDistance,
-                ColliderRadius = collider != null ? collider.radius : 0.5f,
+                ColliderRadius = collider != null ? collider.radius : SolarSystemLayout.StandardColliderRadius,
                 HasCollider = collider != null,
                 OrbitCenterName = definition.orbitCenterName
             });
@@ -170,8 +164,6 @@ public class SolarSystemScaleController : MonoBehaviour
         if (OrbitSettings.UseRealOrbits)
             return;
 
-        bool useReal = ScaleSettings.UseRealDistances;
-
         for (int i = 0; i < _baselines.Count; i++)
         {
             BodyBaseline baseline = _baselines[i];
@@ -183,25 +175,23 @@ public class SolarSystemScaleController : MonoBehaviour
 
             if (!string.IsNullOrEmpty(definition.orbitCenterName))
             {
-                ApplySatelliteDistance(baseline, definition, useReal);
+                ApplySatelliteDistance(baseline, definition);
                 continue;
             }
 
             if (definition.objectName == "Sun")
                 continue;
 
-            ApplyHeliocentricDistance(baseline, definition, useReal);
+            ApplyHeliocentricDistance(baseline, definition);
         }
     }
 
-    void ApplyHeliocentricDistance(BodyBaseline baseline, SolarSystemCatalog.BodyDefinition definition, bool useReal)
+    void ApplyHeliocentricDistance(BodyBaseline baseline, SolarSystemCatalog.BodyDefinition definition)
     {
         if (_sun == null)
             return;
 
-        float targetDistance = useReal
-            ? definition.orbitalRadiusAu * _auToUnity
-            : baseline.OrbitDistance;
+        float targetDistance = GetHeliocentricDistance(baseline, definition);
 
         Vector3 offset = baseline.Transform.position - _sun.position;
         offset.y = baseline.LocalPosition.y;
@@ -217,29 +207,39 @@ public class SolarSystemScaleController : MonoBehaviour
         baseline.Transform.position = _sun.position + direction * targetDistance + Vector3.up * offset.y;
     }
 
-    void ApplySatelliteDistance(BodyBaseline baseline, SolarSystemCatalog.BodyDefinition definition, bool useReal)
+    void ApplySatelliteDistance(BodyBaseline baseline, SolarSystemCatalog.BodyDefinition definition)
     {
-        float targetDistance;
-        if (useReal)
-            targetDistance = definition.satelliteOrbitKm * _auToUnity / SolarSystemCatalog.AuKm;
-        else
-            targetDistance = baseline.OrbitDistance;
-
+        float targetDistance = GetSatelliteDistance(baseline, definition);
         if (targetDistance < 0.0001f)
             targetDistance = baseline.OrbitDistance;
 
-        Vector3 flatDir = Vector3.ProjectOnPlane(baseline.LocalPosition, Vector3.up);
-        if (flatDir.sqrMagnitude < 0.0001f)
-            flatDir = Vector3.forward;
+        if (ScaleSettings.UseRealDistances)
+        {
+            Vector3 flatDir = Vector3.ProjectOnPlane(baseline.LocalPosition, Vector3.up);
+            if (flatDir.sqrMagnitude < 0.0001f)
+                flatDir = Vector3.forward;
 
-        baseline.Transform.localPosition = flatDir.normalized * targetDistance
+            baseline.Transform.localPosition = flatDir.normalized * targetDistance
+                + Vector3.up * baseline.LocalPosition.y;
+            return;
+        }
+
+        if (SolarSystemLayout.TryGetEducational(definition.objectName, out SolarSystemLayout.EducationalEntry edu))
+        {
+            baseline.Transform.localPosition = edu.SatelliteLocalPosition;
+            return;
+        }
+
+        Vector3 direction = Vector3.ProjectOnPlane(baseline.LocalPosition, Vector3.up);
+        if (direction.sqrMagnitude < 0.0001f)
+            direction = Vector3.forward;
+
+        baseline.Transform.localPosition = direction.normalized * targetDistance
             + Vector3.up * baseline.LocalPosition.y;
     }
 
     void ApplySizes()
     {
-        bool useReal = ScaleSettings.UseRealSizes;
-
         for (int i = 0; i < _baselines.Count; i++)
         {
             BodyBaseline baseline = _baselines[i];
@@ -249,16 +249,19 @@ public class SolarSystemScaleController : MonoBehaviour
             if (!SolarSystemCatalog.TryGetBody(baseline.Transform.name, out SolarSystemCatalog.BodyDefinition definition))
                 continue;
 
-            if (useReal)
-            {
-                float scaleFactor = definition.equatorialRadiusKm / SolarSystemCatalog.EarthEquatorialRadiusKm;
-                baseline.Transform.localScale = _baselineEarthScale * scaleFactor;
-            }
-            else
-            {
-                baseline.Transform.localScale = baseline.LocalScale;
-            }
+            baseline.Transform.localScale = GetBodyScale(baseline, definition);
         }
+    }
+
+    Vector3 GetBodyScale(BodyBaseline baseline, SolarSystemCatalog.BodyDefinition definition)
+    {
+        if (ScaleSettings.UseRealSizes)
+            return baseline.LocalScale;
+
+        if (SolarSystemLayout.TryGetEducational(definition.objectName, out SolarSystemLayout.EducationalEntry edu))
+            return edu.Scale;
+
+        return baseline.LocalScale;
     }
 
     void ApplyColliderClamps()
@@ -273,11 +276,14 @@ public class SolarSystemScaleController : MonoBehaviour
             if (collider == null)
                 continue;
 
-            if (!ScaleSettings.UseRealSizes)
+            if (!ScaleSettings.UseRealSizes
+                && SolarSystemLayout.TryGetEducational(baseline.Transform.name, out SolarSystemLayout.EducationalEntry edu))
             {
-                collider.radius = baseline.ColliderRadius;
+                collider.radius = edu.PickColliderRadius;
                 continue;
             }
+
+            collider.radius = baseline.ColliderRadius;
 
             float lossy = Mathf.Max(0.0001f, baseline.Transform.lossyScale.x);
             float meshWorldRadius = 0.5f * lossy;
@@ -286,8 +292,6 @@ public class SolarSystemScaleController : MonoBehaviour
 
             if (worldRadius < MinPickWorldRadius)
                 collider.radius = MinPickWorldRadius / lossy;
-            else
-                collider.radius = baseline.ColliderRadius;
         }
     }
 
@@ -303,24 +307,38 @@ public class SolarSystemScaleController : MonoBehaviour
             grid.SetHalfExtent(120f);
     }
 
-    float GetOrbitRadius(BodyBaseline baseline, SolarSystemCatalog.BodyDefinition definition, bool useReal)
+    float GetHeliocentricDistance(BodyBaseline baseline, SolarSystemCatalog.BodyDefinition definition)
     {
-        if (!string.IsNullOrEmpty(definition.orbitCenterName))
-        {
-            if (useReal)
-                return definition.satelliteOrbitKm * _auToUnity / SolarSystemCatalog.AuKm;
+        if (ScaleSettings.UseRealDistances)
             return baseline.OrbitDistance;
-        }
 
-        if (useReal)
-            return definition.orbitalRadiusAu * _auToUnity;
+        if (SolarSystemLayout.TryGetEducational(definition.objectName, out SolarSystemLayout.EducationalEntry edu))
+            return edu.OrbitDistance;
+
         return baseline.OrbitDistance;
+    }
+
+    float GetSatelliteDistance(BodyBaseline baseline, SolarSystemCatalog.BodyDefinition definition)
+    {
+        if (ScaleSettings.UseRealDistances)
+            return baseline.OrbitDistance;
+
+        if (SolarSystemLayout.TryGetEducational(definition.objectName, out SolarSystemLayout.EducationalEntry edu))
+            return edu.OrbitDistance;
+
+        return baseline.OrbitDistance;
+    }
+
+    float GetOrbitRadius(BodyBaseline baseline, SolarSystemCatalog.BodyDefinition definition)
+    {
+        return !string.IsNullOrEmpty(definition.orbitCenterName)
+            ? GetSatelliteDistance(baseline, definition)
+            : GetHeliocentricDistance(baseline, definition);
     }
 
     List<OrbitSpec> BuildOrbitSpecs()
     {
         var specs = new List<OrbitSpec>();
-        bool useReal = ScaleSettings.UseRealDistances;
         bool useRealOrbits = OrbitSettings.UseRealOrbits;
 
         for (int i = 0; i < _baselines.Count; i++)
@@ -339,7 +357,7 @@ public class SolarSystemScaleController : MonoBehaviour
             if (center == null)
                 continue;
 
-            float radius = GetOrbitRadius(baseline, definition, useReal);
+            float radius = GetOrbitRadius(baseline, definition);
             if (radius <= 0.0001f)
                 continue;
 
@@ -469,7 +487,7 @@ public class SolarSystemScaleController : MonoBehaviour
             return 0.5f;
 
         var col = body.GetComponent<SphereCollider>();
-        float r = col != null ? col.radius : 0.5f;
+        float r = col != null ? col.radius : SolarSystemLayout.StandardColliderRadius;
         Vector3 ls = body.lossyScale;
         float maxScale = Mathf.Max(Mathf.Abs(ls.x), Mathf.Abs(ls.y), Mathf.Abs(ls.z));
         return r * maxScale;

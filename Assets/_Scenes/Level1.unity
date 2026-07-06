@@ -603,7 +603,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 3
+  m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &350135228
 MeshRenderer:
@@ -671,8 +671,8 @@ Transform:
   m_GameObject: {fileID: 350135226}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.05, y: -0.055, z: 1.39}
-  m_LocalScale: {x: 0.2, y: 0.2, z: 0.2}
+  m_LocalPosition: {x: -0.002, y: -0.0022, z: 0.05648}
+  m_LocalScale: {x: 0.2728, y: 0.2728, z: 0.2728}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 161038383}
@@ -760,7 +760,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 6
+  m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &389369869
 MeshRenderer:
@@ -828,8 +828,8 @@ Transform:
   m_GameObject: {fileID: 389369865}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 10.001, y: 0.001, z: -0.79}
-  m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
+  m_LocalPosition: {x: 8.514, y: 0.001, z: -0.672}
+  m_LocalScale: {x: 0.3829, y: 0.3829, z: 0.3829}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1344180349}
@@ -1330,7 +1330,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0.0013975105, w: 0.9999991}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 10, y: 10, z: 10}
+  m_LocalScale: {x: 0.2047, y: 0.2047, z: 0.2047}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -1924,7 +1924,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 1
+  m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &729459213
 MeshRenderer:
@@ -1992,8 +1992,8 @@ Transform:
   m_GameObject: {fileID: 729459208}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 84.99, y: 0.02, z: 0.42417255}
-  m_LocalScale: {x: 4, y: 4, z: 4}
+  m_LocalPosition: {x: 422.18, y: 0.02, z: 2.108}
+  m_LocalScale: {x: 3.981, y: 3.981, z: 3.981}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 811555949}
@@ -5924,7 +5924,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 2
+  m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &1355480358
 MeshRenderer:
@@ -5992,8 +5992,8 @@ Transform:
   m_GameObject: {fileID: 1355480355}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 26, y: 0.001, z: 0.28}
-  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
+  m_LocalPosition: {x: 33.528, y: 0.001, z: 0.361}
+  m_LocalScale: {x: 0.5318, y: 0.5318, z: 0.5318}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 332575166}
@@ -6232,7 +6232,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 3
+  m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &1408646365
 MeshRenderer:
@@ -6300,8 +6300,8 @@ Transform:
   m_GameObject: {fileID: 1408646361}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 15, y: 0.004, z: -0.79}
-  m_LocalScale: {x: 0.7, y: 0.7, z: 0.7}
+  m_LocalPosition: {x: 15.906, y: 0.004, z: -0.837}
+  m_LocalScale: {x: 0.9499, y: 0.9499, z: 0.9499}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 988240630}
@@ -6348,7 +6348,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 0.7
+  m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &1441585110
 MeshRenderer:
@@ -6416,7 +6416,7 @@ Transform:
   m_GameObject: {fileID: 1441585108}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 22.03, y: 0.06, z: 0.42417255}
+  m_LocalPosition: {x: 22, y: 0.06, z: 0.42417255}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -6841,7 +6841,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 1
+  m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &1533993295
 MeshRenderer:
@@ -6909,8 +6909,8 @@ Transform:
   m_GameObject: {fileID: 1533993290}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 42.04, y: 0, z: 0.42417255}
-  m_LocalScale: {x: 5, y: 5, z: 5}
+  m_LocalPosition: {x: 114.466, y: 0, z: 1.154}
+  m_LocalScale: {x: 10.973, y: 10.973, z: 10.973}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 631973229}
@@ -7448,7 +7448,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 1
+  m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &1634796478
 MeshRenderer:
@@ -7516,8 +7516,8 @@ Transform:
   m_GameObject: {fileID: 1634796473}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 98.02, y: 0.03, z: 0.42417255}
-  m_LocalScale: {x: 4, y: 4, z: 4}
+  m_LocalPosition: {x: 661.54, y: 0.03, z: 2.864}
+  m_LocalScale: {x: 3.865, y: 3.865, z: 3.865}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1731784749}
@@ -8220,7 +8220,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 1
+  m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &1952448013
 MeshRenderer:
@@ -8288,8 +8288,8 @@ Transform:
   m_GameObject: {fileID: 1952448008}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 67.03, y: 0.02, z: 0.42417255}
-  m_LocalScale: {x: 5, y: 5, z: 5}
+  m_LocalPosition: {x: 209.814, y: 0.02, z: 1.327}
+  m_LocalScale: {x: 9.14, y: 9.14, z: 9.14}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1072206941}
@@ -8842,8 +8842,8 @@ Transform:
   m_GameObject: {fileID: 2100000001}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 2.5}
-  m_LocalScale: {x: 0.28, y: 0.28, z: 0.28}
+  m_LocalPosition: {x: 0, y: 0, z: 0.1796}
+  m_LocalScale: {x: 0.4041, y: 0.4041, z: 0.4041}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2100000011}
@@ -8925,7 +8925,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 1
+  m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &2100000006
 MonoBehaviour:

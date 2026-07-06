@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 
 /// <summary>
-/// Astronomical reference data for real-distance and real-size scale modes in Level1.
+/// Astronomical reference data and educational layout helpers for Level1 scale modes.
 /// </summary>
 public static class SolarSystemCatalog
 {

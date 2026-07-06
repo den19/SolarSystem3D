@@ -3,7 +3,8 @@ using System;
 namespace SolarSystemApp
 {
     /// <summary>
-    /// Persisted real-distance and real-size toggles for Level1 scale modes.
+    /// Persisted real-distance and real-size toggles for Level1.
+    /// Scene baseline uses physical proportions; toggles off apply the compressed educational layout.
     /// </summary>
     public static class ScaleSettings
     {
@@ -31,8 +32,8 @@ namespace SolarSystemApp
         {
             if (initialized) return;
 
-            useRealDistances = UnityEngine.PlayerPrefs.GetInt(KeyRealDistances, 0) != 0;
-            useRealSizes = UnityEngine.PlayerPrefs.GetInt(KeyRealSizes, 0) != 0;
+            useRealDistances = UnityEngine.PlayerPrefs.GetInt(KeyRealDistances, 1) != 0;
+            useRealSizes = UnityEngine.PlayerPrefs.GetInt(KeyRealSizes, 1) != 0;
             initialized = true;
         }
 

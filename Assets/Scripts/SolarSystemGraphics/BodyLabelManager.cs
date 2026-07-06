@@ -23,13 +23,6 @@ public class BodyLabelManager : MonoBehaviour
         "Sun", "Mercury", "Venus", "Earth", "Moon", "Mars", "Jupiter", "Saturn", "Titan", "Uranus", "Neptune"
     };
 
-    static readonly Dictionary<string, float> BodyOffsets = new Dictionary<string, float>
-    {
-        { "Sun", 3.5f },
-        { "Jupiter", 2.5f },
-        { "Saturn", 2.2f }
-    };
-
     readonly List<LabelEntry> _entries = new List<LabelEntry>();
     Camera _mainCamera;
     bool _visible;
@@ -76,16 +69,12 @@ public class BodyLabelManager : MonoBehaviour
             if (bodyGo == null)
                 continue;
 
-            float offset = 1.5f;
-            if (BodyOffsets.TryGetValue(bodyName, out float customOffset))
-                offset = customOffset;
-
             string labelKey = bodyName + "Header";
             _entries.Add(new LabelEntry
             {
                 target = bodyGo.transform,
                 labelKey = labelKey,
-                verticalOffset = offset,
+                verticalOffset = 1.5f,
                 baselineTargetScale = bodyGo.transform.lossyScale.x,
                 label = CreateLabelObject(bodyName + "_OrbitLabel", labelKey)
             });
@@ -163,12 +152,11 @@ public class BodyLabelManager : MonoBehaviour
 
     static float GetEffectiveOffset(LabelEntry entry)
     {
-        if (!ScaleSettings.UseRealSizes || entry.target == null)
+        if (entry.target == null)
             return entry.verticalOffset;
 
-        float baselineScale = Mathf.Max(0.0001f, entry.baselineTargetScale);
-        float scaleRatio = entry.target.lossyScale.x / baselineScale;
-        return entry.verticalOffset * scaleRatio;
+        float meshRadius = 0.5f * Mathf.Max(0.0001f, entry.target.lossyScale.x);
+        return Mathf.Max(0.15f, meshRadius * 1.4f);
     }
 
     void RefreshAllTexts()
