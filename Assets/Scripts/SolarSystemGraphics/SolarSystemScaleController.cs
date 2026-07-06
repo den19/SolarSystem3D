@@ -320,13 +320,28 @@ public class SolarSystemScaleController : MonoBehaviour
 
     float GetSatelliteDistance(BodyBaseline baseline, SolarSystemCatalog.BodyDefinition definition)
     {
-        if (ScaleSettings.UseRealDistances)
+        if (!ScaleSettings.UseRealDistances)
+        {
+            if (SolarSystemLayout.TryGetEducational(definition.objectName, out SolarSystemLayout.EducationalEntry edu))
+                return edu.OrbitDistance;
+
             return baseline.OrbitDistance;
+        }
 
-        if (SolarSystemLayout.TryGetEducational(definition.objectName, out SolarSystemLayout.EducationalEntry edu))
-            return edu.OrbitDistance;
+        float distance = baseline.OrbitDistance;
+        float minOrbit = GetMinimumSatelliteOrbitLocal(definition.orbitCenterName);
+        if (distance < minOrbit
+            && SolarSystemLayout.TryGetEducational(definition.objectName, out SolarSystemLayout.EducationalEntry fallback))
+            distance = fallback.OrbitDistance;
 
-        return baseline.OrbitDistance;
+        return distance;
+    }
+
+    static float GetMinimumSatelliteOrbitLocal(string orbitCenterName)
+    {
+        const float meshRadius = 0.5f;
+        const float margin = 1.08f;
+        return meshRadius * margin;
     }
 
     float GetOrbitRadius(BodyBaseline baseline, SolarSystemCatalog.BodyDefinition definition)
