@@ -40,6 +40,8 @@ public class SolarSystemScaleController : MonoBehaviour
 
     readonly List<BodyBaseline> _baselines = new List<BodyBaseline>();
     float _auToUnity;
+
+    public float AuToUnity => _auToUnity;
     Vector3 _baselineEarthScale;
     Transform _sun;
     OrbitLinesManager _orbitLinesManager;

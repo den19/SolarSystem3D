@@ -10,7 +10,11 @@ public static class SidePanelUiBootstrap
     public const float RowSpacing = 4f;
     public const float RowStartY = 8f;
     public const float PanelBottomPadding = 8f;
-    public const float PanelWidth = 220f;
+    public const float PanelWidth = 270f;
+    const float LabelMaxAnchorX = 0.82f;
+    const float ToggleMinAnchorX = 0.84f;
+    const float ToggleMaxAnchorX = 0.96f;
+    const int LabelFontSize = 12;
 
     public static readonly (string rowName, string labelName)[] ToggleRows =
     {
@@ -52,6 +56,7 @@ public static class SidePanelUiBootstrap
             else
             {
                 ApplyRowLayout(row, ref y, i);
+                ApplyRowChildLayouts(row, ToggleRows[i].labelName);
             }
         }
 
@@ -85,6 +90,59 @@ public static class SidePanelUiBootstrap
         y += RowHeight + RowSpacing;
     }
 
+    static void ApplyRowChildLayouts(Transform row, string labelName)
+    {
+        if (!string.IsNullOrEmpty(labelName))
+        {
+            Transform label = row.Find(labelName);
+            if (label != null)
+                ApplyLabelLayout(label);
+        }
+        else
+        {
+            foreach (Transform child in row)
+            {
+                if (child.name == "Toggle")
+                    continue;
+
+                ApplyLabelLayout(child);
+            }
+        }
+
+        Transform toggle = row.Find("Toggle");
+        if (toggle != null)
+            ApplyToggleLayout(toggle);
+    }
+
+    public static void ApplyLabelLayout(Transform labelTransform)
+    {
+        if (labelTransform == null || !labelTransform.TryGetComponent(out RectTransform labelRect))
+            return;
+
+        labelRect.anchorMin = new Vector2(0f, 0f);
+        labelRect.anchorMax = new Vector2(LabelMaxAnchorX, 1f);
+        labelRect.offsetMin = new Vector2(8f, 0f);
+        labelRect.offsetMax = Vector2.zero;
+
+        if (labelTransform.TryGetComponent(out Text label))
+        {
+            label.fontSize = LabelFontSize;
+            label.horizontalOverflow = HorizontalWrapMode.Wrap;
+            label.verticalOverflow = VerticalWrapMode.Truncate;
+        }
+    }
+
+    public static void ApplyToggleLayout(Transform toggleTransform)
+    {
+        if (toggleTransform == null || !toggleTransform.TryGetComponent(out RectTransform toggleRect))
+            return;
+
+        toggleRect.anchorMin = new Vector2(ToggleMinAnchorX, 0.15f);
+        toggleRect.anchorMax = new Vector2(ToggleMaxAnchorX, 0.85f);
+        toggleRect.offsetMin = Vector2.zero;
+        toggleRect.offsetMax = Vector2.zero;
+    }
+
     static Transform EnsureToggleRow(Transform panel, string rowName, string labelName, ref float y, int siblingIndex)
     {
         var rowGo = new GameObject(rowName, typeof(RectTransform));
@@ -94,6 +152,7 @@ public static class SidePanelUiBootstrap
         ApplyRowLayout(rowGo.transform, ref y, siblingIndex);
         EnsureLabel(rowGo.transform, labelName);
         EnsureToggle(rowGo.transform, defaultOn: true);
+        ApplyRowChildLayouts(rowGo.transform, labelName);
         return rowGo.transform;
     }
 
@@ -111,14 +170,7 @@ public static class SidePanelUiBootstrap
             labelGo.layer = row.gameObject.layer;
             labelGo.transform.SetParent(row, false);
 
-            var labelRect = labelGo.GetComponent<RectTransform>();
-            labelRect.anchorMin = new Vector2(0f, 0f);
-            labelRect.anchorMax = new Vector2(0.68f, 1f);
-            labelRect.offsetMin = new Vector2(8f, 0f);
-            labelRect.offsetMax = Vector2.zero;
-
             var label = labelGo.GetComponent<Text>();
-            label.fontSize = 13;
             label.alignment = TextAnchor.MiddleLeft;
             label.color = new Color(0.92f, 0.95f, 1f, 1f);
             label.text = labelName;
@@ -137,12 +189,6 @@ public static class SidePanelUiBootstrap
         var toggleGo = new GameObject("Toggle", typeof(RectTransform), typeof(Toggle));
         toggleGo.layer = row.gameObject.layer;
         toggleGo.transform.SetParent(row, false);
-
-        var toggleRect = toggleGo.GetComponent<RectTransform>();
-        toggleRect.anchorMin = new Vector2(0.72f, 0.15f);
-        toggleRect.anchorMax = new Vector2(0.95f, 0.85f);
-        toggleRect.offsetMin = Vector2.zero;
-        toggleRect.offsetMax = Vector2.zero;
 
         var backgroundGo = new GameObject("Background", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         backgroundGo.layer = toggleGo.layer;

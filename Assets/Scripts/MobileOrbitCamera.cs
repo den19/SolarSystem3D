@@ -236,6 +236,17 @@ public class MobileOrbitCamera : MonoBehaviour
     {
         if (gameObject.name == "Main Camera" && globalLookAtScript != null)
         {
+            if (LookAtTarget.IsPointerOverUi(fingerId))
+                return;
+
+            if (SimulationViewSettings.UseFreeObservation)
+            {
+                Ray cometRay = Camera.main.ScreenPointToRay(screenPosition);
+                if (Physics.Raycast(cometRay, out RaycastHit cometHit) &&
+                    globalLookAtScript.TryFocusCometFromHit(cometHit))
+                    return;
+            }
+
             if (SimulationViewSettings.UseFreeObservation &&
                 globalLookAtScript.TryPlaceMainCameraAtScreenPoint(screenPosition, fingerId))
                 return;
@@ -243,6 +254,9 @@ public class MobileOrbitCamera : MonoBehaviour
             Ray ray = Camera.main.ScreenPointToRay(screenPosition);
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
+                if (globalLookAtScript.TryFocusCometFromHit(hit))
+                    return;
+
                 GameObject hitObject = hit.collider.gameObject;
                 if (hitObject != globalLookAtScript.currentTarget)
                 {
@@ -260,9 +274,15 @@ public class MobileOrbitCamera : MonoBehaviour
 
         if (gameObject.name == "Main Camera")
         {
+            if (LookAtTarget.IsPointerOverUi(-1))
+                return;
+
             Ray ray = Camera.main.ScreenPointToRay(screenPosition);
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
+                if (globalLookAtScript.TryFocusCometFromHit(hit))
+                    return;
+
                 GameObject hitObject = hit.collider.gameObject;
                 globalLookAtScript.currentTarget = hitObject;
                 TriggerCameraSwitch(hitObject.name, true);

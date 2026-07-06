@@ -14,6 +14,8 @@ public class CometOrbitController : MonoBehaviour
 
     public CometCatalog.CometDefinition Definition => _definition;
 
+    public float OrbitAngle => _angle;
+
     public void Initialize(CometCatalog.CometDefinition definition, Transform sun, bool useRealOrbits)
     {
         _definition = definition;

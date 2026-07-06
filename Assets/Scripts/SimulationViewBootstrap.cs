@@ -81,6 +81,9 @@ public class SimulationViewBootstrap : MonoBehaviour
         if (sidePanel == null)
             Debug.LogError("SimulationSidePanelController not found on MainScreenCanvas. Add SimulationSidePanel to the scene.");
 
+        if (canvas != null)
+            CometDescriptionPanel.EnsureOnCanvas(canvas.transform);
+
         var cleanView = gameObject.AddComponent<CleanViewController>();
         cleanView.Initialize(cometSystem, sidePanel);
     }

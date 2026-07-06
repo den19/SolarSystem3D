@@ -93,6 +93,9 @@ public class LookAtTarget : MonoBehaviour {
         theUranusGameObject.SetActive(false);
         theNeptuneGameObject.SetActive(false);
         theSunGameObject.SetActive(false);
+
+        if (CometDescriptionPanel.Instance != null)
+            CometDescriptionPanel.Instance.Hide();
     }
 
     void MakeDescriptionVisible(GameObject planet)
@@ -114,15 +117,25 @@ public class LookAtTarget : MonoBehaviour {
         {
             if (Input.GetMouseButtonDown(0))
             {
-                if (SimulationViewSettings.UseFreeObservation)
-                {
-                    TryPlaceMainCameraAtScreenPoint(Input.mousePosition);
-                }
+                if (IsPointerOverUi(-1))
+                    return;
+
+            if (SimulationViewSettings.UseFreeObservation)
+            {
+                Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+                if (Physics.Raycast(ray, out RaycastHit hit) && TryFocusCometFromHit(hit))
+                    return;
+
+                TryPlaceMainCameraAtScreenPoint(Input.mousePosition);
+            }
                 else
                 {
                     Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
                     if (Physics.Raycast(ray, out RaycastHit hit))
                     {
+                        if (TryFocusCometFromHit(hit))
+                            return;
+
                         currentTarget = hit.collider.gameObject;
                         RecordObservationTarget(currentTarget);
                         bool useDetailCamera = currentTarget.name != "Sun";
@@ -185,6 +198,89 @@ public class LookAtTarget : MonoBehaviour {
             if (scaleController != null)
                 scaleController.RefreshMainCameraLimits();
         }
+    }
+
+    public void FocusComet(GameObject comet, bool showDescription = true)
+    {
+        if (comet == null)
+            return;
+
+        var info = comet.GetComponent<CometInfo>();
+        if (info == null)
+            info = comet.GetComponentInParent<CometInfo>();
+        if (info == null)
+            return;
+
+        GameObject cometRoot = info.gameObject;
+        currentTarget = cometRoot;
+        MakeAllDescriptionsInvisible();
+        TurnOffAllDetailCameras();
+        TurnOnMainCamera();
+
+        if (_mainOrbitCamera == null && mainCamera != null)
+            _mainOrbitCamera = mainCamera.GetComponent<MobileOrbitCamera>();
+
+        if (_mainOrbitCamera != null)
+        {
+            _mainOrbitCamera.target = cometRoot.transform;
+            AlignMainCameraBehindComet(cometRoot.transform);
+        }
+
+        var scaleController = FindFirstObjectByType<SolarSystemScaleController>();
+        if (scaleController != null)
+            scaleController.RefreshMainCameraLimits(resetDistance: true);
+
+        if (showDescription)
+            ShowCometDescription(info);
+    }
+
+    public bool TryFocusCometFromHit(RaycastHit hit)
+    {
+        if (hit.collider == null)
+            return false;
+
+        var info = hit.collider.GetComponentInParent<CometInfo>();
+        if (info == null)
+            return false;
+
+        FocusComet(info.gameObject, showDescription: true);
+        return true;
+    }
+
+    void AlignMainCameraBehindComet(Transform comet)
+    {
+        if (_mainOrbitCamera == null || comet == null)
+            return;
+
+        Vector3 forward = comet.forward;
+        if (forward.sqrMagnitude < 0.0001f)
+        {
+            var sun = GameObject.Find("Sun");
+            Vector3 sunPos = sun != null ? sun.transform.position : Vector3.zero;
+            forward = (comet.position - sunPos).normalized;
+        }
+
+        float yaw = Mathf.Atan2(forward.x, forward.z) * Mathf.Rad2Deg;
+        _mainOrbitCamera.ApplyOrbitState(yaw + 180f, 12f, Mathf.Max(_mainOrbitCamera.minDistance, 2.5f));
+    }
+
+    void ShowCometDescription(CometInfo info)
+    {
+        if (info == null)
+            return;
+
+        if (CometDescriptionPanel.Instance == null && myCanvasGameObject != null)
+            CometDescriptionPanel.EnsureOnCanvas(myCanvasGameObject.transform);
+
+        if (CometDescriptionPanel.Instance != null)
+            CometDescriptionPanel.Instance.Show(info);
+    }
+
+    public static bool IsCometObject(GameObject go)
+    {
+        if (go == null)
+            return false;
+        return go.GetComponent<CometInfo>() != null || go.GetComponentInParent<CometInfo>() != null;
     }
 
     public void TurnOffAllDetailCameras()
@@ -413,7 +509,7 @@ public class LookAtTarget : MonoBehaviour {
         return true;
     }
 
-    static bool IsPointerOverUi(int pointerId)
+    public static bool IsPointerOverUi(int pointerId)
     {
         if (EventSystem.current == null)
             return false;

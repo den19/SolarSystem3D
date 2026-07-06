@@ -9,6 +9,7 @@ public static class CometCatalog
     {
         public string objectName;
         public string labelKey;
+        public string prefabResourcePath;
         public float semiMajorAxis;
         public float semiMajorAxisAu;
         public float eccentricity;
@@ -17,12 +18,28 @@ public static class CometCatalog
         public float phaseOffsetRad;
     }
 
+    public static bool TryGetByObjectName(string objectName, out CometDefinition definition)
+    {
+        for (int i = 0; i < Comets.Length; i++)
+        {
+            if (Comets[i].objectName == objectName)
+            {
+                definition = Comets[i];
+                return true;
+            }
+        }
+
+        definition = default;
+        return false;
+    }
+
     public static readonly CometDefinition[] Comets =
     {
         new CometDefinition
         {
             objectName = "Comet_Encke",
             labelKey = "CometEnckeLabel",
+            prefabResourcePath = "Comets/Comet_Encke",
             semiMajorAxis = 115f,
             semiMajorAxisAu = 2.21f,
             eccentricity = 0.85f,
@@ -34,6 +51,7 @@ public static class CometCatalog
         {
             objectName = "Comet_Honda",
             labelKey = "CometHondaMrkosPajdusakovaLabel",
+            prefabResourcePath = "Comets/Comet_Honda",
             semiMajorAxis = 125f,
             semiMajorAxisAu = 2.58f,
             eccentricity = 0.83f,
@@ -45,6 +63,7 @@ public static class CometCatalog
         {
             objectName = "Comet_TGK",
             labelKey = "CometTgkLabel",
+            prefabResourcePath = "Comets/Comet_TGK",
             semiMajorAxis = 130f,
             semiMajorAxisAu = 2.75f,
             eccentricity = 0.82f,
@@ -56,6 +75,7 @@ public static class CometCatalog
         {
             objectName = "Comet_Wild2",
             labelKey = "CometWild2Label",
+            prefabResourcePath = "Comets/Comet_Wild2",
             semiMajorAxis = 145f,
             semiMajorAxisAu = 3.45f,
             eccentricity = 0.54f,
@@ -67,6 +87,7 @@ public static class CometCatalog
         {
             objectName = "Comet_Kopff",
             labelKey = "CometKopffLabel",
+            prefabResourcePath = "Comets/Comet_Kopff",
             semiMajorAxis = 150f,
             semiMajorAxisAu = 3.65f,
             eccentricity = 0.59f,
@@ -78,6 +99,7 @@ public static class CometCatalog
         {
             objectName = "Comet_GriggSkjellerup",
             labelKey = "CometGriggSkjellerupLabel",
+            prefabResourcePath = "Comets/Comet_GriggSkjellerup",
             semiMajorAxis = 105f,
             semiMajorAxisAu = 2.54f,
             eccentricity = 0.65f,
@@ -89,6 +111,7 @@ public static class CometCatalog
         {
             objectName = "Comet_DArrest",
             labelKey = "CometDArrestLabel",
+            prefabResourcePath = "Comets/Comet_DArrest",
             semiMajorAxis = 135f,
             semiMajorAxisAu = 3.49f,
             eccentricity = 0.61f,
@@ -100,6 +123,7 @@ public static class CometCatalog
         {
             objectName = "Comet_Wirtanen",
             labelKey = "CometWirtanenLabel",
+            prefabResourcePath = "Comets/Comet_Wirtanen",
             semiMajorAxis = 140f,
             semiMajorAxisAu = 3.09f,
             eccentricity = 0.41f,
@@ -111,6 +135,7 @@ public static class CometCatalog
         {
             objectName = "Comet_Borrelly",
             labelKey = "CometBorrellyLabel",
+            prefabResourcePath = "Comets/Comet_Borrelly",
             semiMajorAxis = 155f,
             semiMajorAxisAu = 3.61f,
             eccentricity = 0.62f,
@@ -122,6 +147,7 @@ public static class CometCatalog
         {
             objectName = "Comet_Howell",
             labelKey = "CometHowellLabel",
+            prefabResourcePath = "Comets/Comet_Howell",
             semiMajorAxis = 152f,
             semiMajorAxisAu = 3.54f,
             eccentricity = 0.49f,

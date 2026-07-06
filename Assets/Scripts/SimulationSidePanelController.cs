@@ -8,7 +8,7 @@ using UnityEngine.UI;
 /// </summary>
 public class SimulationSidePanelController : MonoBehaviour
 {
-    const float PanelWidth = 220f;
+    const float PanelWidth = SidePanelUiBootstrap.PanelWidth;
     const float SlideDuration = 0.22f;
     const float MenuButtonGap = 12f;
     const float PanelBelowMenuGap = 8f;

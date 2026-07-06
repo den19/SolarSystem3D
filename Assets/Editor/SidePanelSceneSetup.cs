@@ -335,7 +335,10 @@ public static class SidePanelSceneSetup
         y += RowHeight + RowSpacing;
 
         EnsureLabel(rowGo.transform, labelName);
-        return EnsureToggle(rowGo.transform);
+        Toggle toggle = EnsureToggle(rowGo.transform);
+        SidePanelUiBootstrap.ApplyLabelLayout(rowGo.transform.Find(labelName));
+        SidePanelUiBootstrap.ApplyToggleLayout(rowGo.transform.Find("Toggle"));
+        return toggle;
     }
 
     static void EnsureLabel(Transform row, string labelName)
@@ -352,14 +355,7 @@ public static class SidePanelSceneSetup
             labelGo.layer = row.gameObject.layer;
             labelGo.transform.SetParent(row, false);
 
-            var labelRect = labelGo.GetComponent<RectTransform>();
-            labelRect.anchorMin = new Vector2(0f, 0f);
-            labelRect.anchorMax = new Vector2(0.68f, 1f);
-            labelRect.offsetMin = new Vector2(8f, 0f);
-            labelRect.offsetMax = Vector2.zero;
-
             var label = labelGo.GetComponent<Text>();
-            label.fontSize = 13;
             label.alignment = TextAnchor.MiddleLeft;
             label.color = new Color(0.92f, 0.95f, 1f, 1f);
             label.text = labelName;
@@ -378,12 +374,6 @@ public static class SidePanelSceneSetup
         var toggleGo = new GameObject("Toggle", typeof(RectTransform), typeof(Toggle));
         toggleGo.layer = row.gameObject.layer;
         toggleGo.transform.SetParent(row, false);
-
-        var toggleRect = toggleGo.GetComponent<RectTransform>();
-        toggleRect.anchorMin = new Vector2(0.72f, 0.15f);
-        toggleRect.anchorMax = new Vector2(0.95f, 0.85f);
-        toggleRect.offsetMin = Vector2.zero;
-        toggleRect.offsetMax = Vector2.zero;
 
         var backgroundGo = new GameObject("Background", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         backgroundGo.layer = toggleGo.layer;
