@@ -233,6 +233,7 @@ public static class SidePanelSceneSetup
         Toggle realOrbitsToggle = null;
         Toggle cometMovementToggle = null;
         Toggle freeObservationToggle = null;
+        Toggle realSunToggle = null;
 
         for (int i = 0; i < ToggleRows.Length; i++)
         {
@@ -253,6 +254,7 @@ public static class SidePanelSceneSetup
                 case "SidePanelRealOrbitsLabel_Row": realOrbitsToggle = toggle; break;
                 case "SidePanelCometMovementLabel_Row": cometMovementToggle = toggle; break;
                 case "SidePanelFreeObservationLabel_Row": freeObservationToggle = toggle; break;
+                case "SidePanelRealSunLabel_Row": realSunToggle = toggle; break;
             }
         }
 
@@ -270,6 +272,7 @@ public static class SidePanelSceneSetup
         serializedController.FindProperty("realOrbitsToggle").objectReferenceValue = realOrbitsToggle;
         serializedController.FindProperty("cometMovementToggle").objectReferenceValue = cometMovementToggle;
         serializedController.FindProperty("freeObservationToggle").objectReferenceValue = freeObservationToggle;
+        serializedController.FindProperty("realSunToggle").objectReferenceValue = realSunToggle;
         serializedController.ApplyModifiedPropertiesWithoutUndo();
 
         panelRect.sizeDelta = new Vector2(PanelWidth, ComputePanelHeight(ToggleRows.Length));

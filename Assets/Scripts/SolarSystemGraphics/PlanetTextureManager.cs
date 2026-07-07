@@ -137,6 +137,7 @@ public class PlanetTextureManager : MonoBehaviour
         SceneManager.sceneLoaded -= OnSceneLoaded;
 
         GraphicsSettings.UseExtraGraphicsChanged -= OnUseExtraGraphicsChanged;
+        SunAppearanceSettings.UseRealSunChanged -= OnUseRealSunChanged;
 
         ScaleSettings.UseRealSizesChanged -= OnScalePresentationChanged;
         ScaleSettings.UseRealDistancesChanged -= OnScalePresentationChanged;
@@ -185,6 +186,9 @@ public class PlanetTextureManager : MonoBehaviour
 
         GraphicsSettings.UseExtraGraphicsChanged -= OnUseExtraGraphicsChanged;
         GraphicsSettings.UseExtraGraphicsChanged += OnUseExtraGraphicsChanged;
+
+        SunAppearanceSettings.UseRealSunChanged -= OnUseRealSunChanged;
+        SunAppearanceSettings.UseRealSunChanged += OnUseRealSunChanged;
 
         ScaleSettings.UseRealSizesChanged -= OnScalePresentationChanged;
         ScaleSettings.UseRealDistancesChanged -= OnScalePresentationChanged;
@@ -625,6 +629,8 @@ public class PlanetTextureManager : MonoBehaviour
 
     void OnUseExtraGraphicsChanged(bool _) => ApplyAll();
 
+    void OnUseRealSunChanged(bool _) => ApplyAll();
+
     void ApplyAll()
     {
         if (!_wired || !_bootSceneOk) return;
@@ -669,9 +675,22 @@ public class PlanetTextureManager : MonoBehaviour
         if (mr == null)
             return;
 
+        bool realSun = SunAppearanceSettings.UseRealSun;
+
         if (!hq)
         {
             mr.receiveShadows = true;
+            if (!realSun)
+                return;
+
+            var lowMat = mr.material;
+            if (lowMat.HasProperty("_EmissionColor"))
+            {
+                lowMat.EnableKeyword("_EMISSION");
+                lowMat.SetColor("_BaseColor", new Color(1f, 0.82f, 0.35f));
+                lowMat.SetColor("_EmissionColor", new Color(3.2f, 1.6f, 0.25f));
+            }
+
             return;
         }
 
@@ -679,8 +698,16 @@ public class PlanetTextureManager : MonoBehaviour
         if (mat.HasProperty("_EmissionColor"))
         {
             mat.EnableKeyword("_EMISSION");
-            mat.SetColor("_BaseColor", Color.white);
-            mat.SetColor("_EmissionColor", new Color(4.2f, 2.9f, 1.55f));
+            if (realSun)
+            {
+                mat.SetColor("_BaseColor", new Color(1f, 0.82f, 0.35f));
+                mat.SetColor("_EmissionColor", new Color(3.2f, 1.6f, 0.25f));
+            }
+            else
+            {
+                mat.SetColor("_BaseColor", Color.white);
+                mat.SetColor("_EmissionColor", new Color(4.2f, 2.9f, 1.55f));
+            }
         }
 
         if (mat.HasProperty("_Smoothness"))
@@ -691,7 +718,10 @@ public class PlanetTextureManager : MonoBehaviour
         if (_sunBloomRenderer != null)
         {
             var bloomMat = _sunBloomRenderer.material;
-            bloomMat.SetColor("_EmissionColor", new Color(2.4f, 1.55f, 0.9f));
+            if (realSun)
+                bloomMat.SetColor("_EmissionColor", new Color(2.0f, 1.2f, 0.45f));
+            else
+                bloomMat.SetColor("_EmissionColor", new Color(2.4f, 1.55f, 0.9f));
             _sunBloomRenderer.receiveShadows = false;
         }
     }

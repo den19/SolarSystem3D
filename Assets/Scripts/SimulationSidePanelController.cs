@@ -29,6 +29,7 @@ public class SimulationSidePanelController : MonoBehaviour
     [SerializeField] Toggle realOrbitsToggle;
     [SerializeField] Toggle cometMovementToggle;
     [SerializeField] Toggle freeObservationToggle;
+    [SerializeField] Toggle realSunToggle;
 
     bool isInitializing;
     bool isPanelOpen;
@@ -105,6 +106,8 @@ public class SimulationSidePanelController : MonoBehaviour
             cometMovementToggle = FindToggle("SidePanelCometMovementLabel_Row");
         if (freeObservationToggle == null)
             freeObservationToggle = FindToggle("SidePanelFreeObservationLabel_Row");
+        if (realSunToggle == null)
+            realSunToggle = FindToggle("SidePanelRealSunLabel_Row");
     }
 
     Toggle FindToggle(string rowName)
@@ -279,6 +282,13 @@ public class SimulationSidePanelController : MonoBehaviour
             freeObservationToggle.onValueChanged.AddListener(OnFreeObservationToggleChanged);
         }
 
+        if (realSunToggle != null)
+        {
+            realSunToggle.SetIsOnWithoutNotify(SunAppearanceSettings.UseRealSun);
+            realSunToggle.onValueChanged.RemoveAllListeners();
+            realSunToggle.onValueChanged.AddListener(OnRealSunToggleChanged);
+        }
+
         SimulationViewSettings.ShowOrbitLinesChanged += OnOrbitsSettingChanged;
         SimulationViewSettings.ShowBodyLabelsChanged += OnLabelsSettingChanged;
         SimulationViewSettings.ShowMinimapChanged += OnMinimapSettingChanged;
@@ -288,6 +298,7 @@ public class SimulationSidePanelController : MonoBehaviour
         ScaleSettings.ModeChanged += OnScaleModeSettingChanged;
         OrbitSettings.UseRealOrbitsChanged += OnRealOrbitsSettingChanged;
         CometMovementSettings.UseCometMovementChanged += OnCometMovementSettingChanged;
+        SunAppearanceSettings.UseRealSunChanged += OnRealSunSettingChanged;
 
         yield return new WaitForEndOfFrame();
         isInitializing = false;
@@ -305,6 +316,7 @@ public class SimulationSidePanelController : MonoBehaviour
         ScaleSettings.ModeChanged -= OnScaleModeSettingChanged;
         OrbitSettings.UseRealOrbitsChanged -= OnRealOrbitsSettingChanged;
         CometMovementSettings.UseCometMovementChanged -= OnCometMovementSettingChanged;
+        SunAppearanceSettings.UseRealSunChanged -= OnRealSunSettingChanged;
 
         if (menuButton != null)
             menuButton.onClick.RemoveListener(TogglePanel);
@@ -408,6 +420,12 @@ public class SimulationSidePanelController : MonoBehaviour
         SimulationViewSettings.SetUseFreeObservation(isOn);
     }
 
+    void OnRealSunToggleChanged(bool isOn)
+    {
+        if (isInitializing) return;
+        SunAppearanceSettings.SetUseRealSun(isOn);
+    }
+
     void OnOrbitsSettingChanged(bool isOn)
     {
         if (orbitsToggle != null)
@@ -459,6 +477,12 @@ public class SimulationSidePanelController : MonoBehaviour
     {
         if (freeObservationToggle != null)
             freeObservationToggle.SetIsOnWithoutNotify(isOn);
+    }
+
+    void OnRealSunSettingChanged(bool isOn)
+    {
+        if (realSunToggle != null)
+            realSunToggle.SetIsOnWithoutNotify(isOn);
     }
 
     public void TogglePanel()
