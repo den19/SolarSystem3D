@@ -60,4 +60,26 @@ public class LanguageChanger : MonoBehaviour
         }
         GameState.language = lang;
     }
+
+    public void RefreshFromSaved()
+    {
+        if (languageDropdown == null)
+        {
+            return;
+        }
+
+        isInitializing = true;
+
+        int savedLanguage = PlayerPrefs.GetInt("SelectedLanguage", (int)Language.English);
+        int maxLanguage = (int)Language.Uzbek;
+        if (savedLanguage < 0 || savedLanguage > maxLanguage)
+        {
+            savedLanguage = (int)Language.English;
+        }
+
+        languageDropdown.SetValueWithoutNotify(savedLanguage);
+        GameState.language = (Language)savedLanguage;
+
+        isInitializing = false;
+    }
 }

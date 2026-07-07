@@ -117,5 +117,28 @@ namespace SolarSystemApp
             UnityEngine.PlayerPrefs.Save();
             UseFreeObservationChanged?.Invoke(enabled);
         }
+
+        public static void ResetToDefaults()
+        {
+            UnityEngine.PlayerPrefs.DeleteKey(KeyOrbitLines);
+            UnityEngine.PlayerPrefs.DeleteKey(KeyBodyLabels);
+            UnityEngine.PlayerPrefs.DeleteKey(KeyMinimap);
+            UnityEngine.PlayerPrefs.DeleteKey(KeySimulationUi);
+            UnityEngine.PlayerPrefs.DeleteKey(KeyFreeObservation);
+
+            initialized = true;
+            showOrbitLines = true;
+            showBodyLabels = true;
+            showMinimap = true;
+            showSimulationUi = true;
+            useFreeObservation = false;
+
+            UnityEngine.PlayerPrefs.Save();
+            ShowOrbitLinesChanged?.Invoke(showOrbitLines);
+            ShowBodyLabelsChanged?.Invoke(showBodyLabels);
+            ShowMinimapChanged?.Invoke(showMinimap);
+            ShowSimulationUiChanged?.Invoke(showSimulationUi);
+            UseFreeObservationChanged?.Invoke(useFreeObservation);
+        }
     }
 }

@@ -101,6 +101,14 @@ public class AudioManager : MonoBehaviour
         }
     }
 
+    public void ResetToDefaults()
+    {
+        PlayerPrefs.DeleteKey(SoundEnabledKey);
+        PlayerPrefs.DeleteKey(MasterVolumeKey);
+        PlayerPrefs.Save();
+        ApplySavedSoundSetting();
+    }
+
     public void PlaySound()
     {
         if (clickSound != null)

@@ -10,6 +10,7 @@ public static class SolarSystemCatalog
     public const float AuKm = 149597870.7f;
     public const float MoonOrbitKm = 384400f;
     public const float TitanOrbitKm = 1221870f;
+    public const float GanymedeOrbitKm = 1070400f;
 
     public struct BodyDefinition
     {
@@ -108,6 +109,16 @@ public static class SolarSystemCatalog
             satelliteOrbitKm = TitanOrbitKm,
             orbitalEccentricity = 0.029f,
             orbitalInclinationDeg = 0.33f
+        },
+        new BodyDefinition
+        {
+            objectName = "Ganymede",
+            orbitalRadiusAu = 0f,
+            equatorialRadiusKm = 2634.1f,
+            orbitCenterName = "Jupiter",
+            satelliteOrbitKm = GanymedeOrbitKm,
+            orbitalEccentricity = 0.0013f,
+            orbitalInclinationDeg = 0.2f
         }
     };
 

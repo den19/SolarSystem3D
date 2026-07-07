@@ -73,6 +73,32 @@ public static class SimulationSessionState
         PlayerPrefs.Save();
     }
 
+    public static void Clear()
+    {
+        PlayerPrefs.DeleteKey(KeyHasSessionState);
+        PlayerPrefs.DeleteKey(KeySelectedPlanet);
+        PlayerPrefs.DeleteKey(KeyIsDetailCamera);
+        PlayerPrefs.DeleteKey(KeyTimeScale);
+        PlayerPrefs.DeleteKey(KeyMainCamX);
+        PlayerPrefs.DeleteKey(KeyMainCamY);
+        PlayerPrefs.DeleteKey(KeyMainCamDistance);
+        PlayerPrefs.DeleteKey(KeyDetailCamX);
+        PlayerPrefs.DeleteKey(KeyDetailCamY);
+        PlayerPrefs.DeleteKey(KeyDetailCamDistance);
+        PlayerPrefs.Save();
+
+        HasSavedState = false;
+        SelectedPlanetName = "Earth";
+        IsDetailCamera = false;
+        TimeScale = 1f;
+        MainCamX = 0f;
+        MainCamY = 0f;
+        MainCamDistance = 8f;
+        DetailCamX = 0f;
+        DetailCamY = 0f;
+        DetailCamDistance = 4.5f;
+    }
+
     public static void Load()
     {
         HasSavedState = PlayerPrefs.GetInt(KeyHasSessionState, 0) == 1;

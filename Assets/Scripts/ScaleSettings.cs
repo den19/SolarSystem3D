@@ -58,5 +58,19 @@ namespace SolarSystemApp
             UnityEngine.PlayerPrefs.Save();
             UseRealSizesChanged?.Invoke(enabled);
         }
+
+        public static void ResetToDefaults()
+        {
+            UnityEngine.PlayerPrefs.DeleteKey(KeyRealDistances);
+            UnityEngine.PlayerPrefs.DeleteKey(KeyRealSizes);
+
+            initialized = true;
+            useRealDistances = true;
+            useRealSizes = true;
+
+            UnityEngine.PlayerPrefs.Save();
+            UseRealDistancesChanged?.Invoke(useRealDistances);
+            UseRealSizesChanged?.Invoke(useRealSizes);
+        }
     }
 }

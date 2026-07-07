@@ -41,6 +41,17 @@ namespace SolarSystemApp
             UnityEngine.PlayerPrefs.Save();
             UseCpuMonitorChanged?.Invoke(cachedValue);
         }
+
+        public static void ResetToDefaults()
+        {
+            UnityEngine.PlayerPrefs.DeleteKey(PlayerPrefsKey);
+
+            initialized = true;
+            cachedValue = true;
+
+            UnityEngine.PlayerPrefs.Save();
+            UseCpuMonitorChanged?.Invoke(cachedValue);
+        }
     }
 }
 

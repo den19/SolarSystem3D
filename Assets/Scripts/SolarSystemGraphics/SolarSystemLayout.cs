@@ -120,6 +120,16 @@ public static class SolarSystemLayout
                     SatelliteLocalPosition = new Vector3(0f, 0f, 2.5f),
                     PickColliderRadius = 1f
                 }
+            },
+            {
+                "Ganymede",
+                new EducationalEntry
+                {
+                    Scale = new Vector3(0.28f, 0.28f, 0.28f),
+                    OrbitDistance = 2.0f,
+                    SatelliteLocalPosition = new Vector3(0f, 0f, 2.0f),
+                    PickColliderRadius = 1f
+                }
             }
         };
 

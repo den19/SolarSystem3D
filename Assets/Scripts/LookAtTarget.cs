@@ -34,6 +34,8 @@ public class LookAtTarget : MonoBehaviour {
 
     public GameObject theTitanGameObject;
 
+    public GameObject theGanymedeGameObject;
+
     public GameObject theUranusGameObject;
 
     public GameObject theNeptuneGameObject;
@@ -50,6 +52,7 @@ public class LookAtTarget : MonoBehaviour {
     public GameObject mercuryCamera;    // Детальная камера Меркурия
     public GameObject moonCamera;    // Детальная камера Луны
     public GameObject titanCamera;    // Детальная камера Титана
+    public GameObject ganymedeCamera;    // Детальная камера Ганимеда
 
     MobileOrbitCamera _mainOrbitCamera;
     GameObject lastObservationTarget;
@@ -91,6 +94,7 @@ public class LookAtTarget : MonoBehaviour {
         theJupiterGameObject.SetActive(false);
         theSaturnGameObject.SetActive(false);
         if (theTitanGameObject) theTitanGameObject.SetActive(false);
+        if (theGanymedeGameObject) theGanymedeGameObject.SetActive(false);
         theUranusGameObject.SetActive(false);
         theNeptuneGameObject.SetActive(false);
         theSunGameObject.SetActive(false);
@@ -294,6 +298,7 @@ public class LookAtTarget : MonoBehaviour {
         if (jupiterCamera) jupiterCamera.SetActive(false);
         if (saturnCamera) saturnCamera.SetActive(false);
         if (titanCamera) titanCamera.SetActive(false);
+        if (ganymedeCamera) ganymedeCamera.SetActive(false);
         if (uranusCamera) uranusCamera.SetActive(false);
         if (neptuneCamera) neptuneCamera.SetActive(false);
     }
@@ -309,6 +314,7 @@ public class LookAtTarget : MonoBehaviour {
         else if (planetName == "Jupiter" && theJupiterGameObject) MakeDescriptionVisible(theJupiterGameObject);
         else if (planetName == "Saturn" && theSaturnGameObject) MakeDescriptionVisible(theSaturnGameObject);
         else if (planetName == "Titan" && theTitanGameObject) MakeDescriptionVisible(theTitanGameObject);
+        else if (planetName == "Ganymede" && theGanymedeGameObject) MakeDescriptionVisible(theGanymedeGameObject);
         else if (planetName == "Uranus" && theUranusGameObject) MakeDescriptionVisible(theUranusGameObject);
         else if (planetName == "Neptune" && theNeptuneGameObject) MakeDescriptionVisible(theNeptuneGameObject);
     }
@@ -323,6 +329,7 @@ public class LookAtTarget : MonoBehaviour {
         else if (planetName == "Jupiter") TurnOnJupiterCamera();
         else if (planetName == "Saturn") TurnOnSaturnCamera();
         else if (planetName == "Titan") TurnOnTitanCamera();
+        else if (planetName == "Ganymede") TurnOnGanymedeCamera();
         else if (planetName == "Uranus") TurnOnUranusCamera();
         else if (planetName == "Neptune") TurnOnNeptuneCamera();
     }
@@ -337,6 +344,7 @@ public class LookAtTarget : MonoBehaviour {
         if (jupiterCamera != null && jupiterCamera.activeSelf) return jupiterCamera;
         if (saturnCamera != null && saturnCamera.activeSelf) return saturnCamera;
         if (titanCamera != null && titanCamera.activeSelf) return titanCamera;
+        if (ganymedeCamera != null && ganymedeCamera.activeSelf) return ganymedeCamera;
         if (uranusCamera != null && uranusCamera.activeSelf) return uranusCamera;
         if (neptuneCamera != null && neptuneCamera.activeSelf) return neptuneCamera;
         return null;
@@ -444,6 +452,16 @@ public class LookAtTarget : MonoBehaviour {
     public void TurnOffTitanCamera()
     {
         if (titanCamera) titanCamera.SetActive(false);
+    }
+
+    public void TurnOnGanymedeCamera()
+    {
+        if (ganymedeCamera) ganymedeCamera.SetActive(true);
+    }
+
+    public void TurnOffGanymedeCamera()
+    {
+        if (ganymedeCamera) ganymedeCamera.SetActive(false);
     }
 
     public void RecordObservationTarget(GameObject body)

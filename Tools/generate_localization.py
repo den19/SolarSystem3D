@@ -106,6 +106,23 @@ def translate_text(text: str, target: str) -> str:
     return "".join(chunks)
 
 
+def patch_key(key: str, target_code: str, out_name: str) -> None:
+    en = parse_unity_json(ENGLISH)
+    if key not in en:
+        raise ValueError(f"Key {key!r} not found in english.json")
+
+    out_path = LANG_DIR / out_name
+    data = parse_unity_json(out_path)
+    keys = list(data.keys())
+    print(f"Translating {key!r} -> {out_name} ({len(en[key])} chars)")
+    try:
+        data[key] = translate_text(en[key], target_code)
+    except Exception as e:
+        print(f"  Warning: {e}, keeping existing value for {key}")
+    out_path.write_text(serialize_unity_json(data, keys), encoding="utf-8")
+    print(f"Wrote {out_path}")
+
+
 def build_language(target_code: str, out_name: str) -> None:
     en = parse_unity_json(ENGLISH)
     keys = list(en.keys())
@@ -129,7 +146,32 @@ def build_language(target_code: str, out_name: str) -> None:
 def main():
     if len(sys.argv) < 2:
         print("Usage: generate_localization.py chinese|vietnamese|uzbek|both|all")
+        print("       generate_localization.py --key <KeyName> chinese|vietnamese|uzbek|auto")
         sys.exit(1)
+
+    if sys.argv[1] == "--key":
+        if len(sys.argv) < 4:
+            print("Usage: generate_localization.py --key <KeyName> chinese|vietnamese|uzbek|auto")
+            sys.exit(1)
+        key = sys.argv[2]
+        cmd = sys.argv[3].lower()
+        targets = {
+            "chinese": [("zh-CN", "chinese.json")],
+            "vietnamese": [("vi", "vietnamese.json")],
+            "uzbek": [("uz", "uzbek.json")],
+            "auto": [
+                ("zh-CN", "chinese.json"),
+                ("vi", "vietnamese.json"),
+                ("uz", "uzbek.json"),
+            ],
+        }
+        if cmd not in targets:
+            print(f"Unknown target: {cmd}")
+            sys.exit(1)
+        for target_code, out_name in targets[cmd]:
+            patch_key(key, target_code, out_name)
+        return
+
     cmd = sys.argv[1].lower()
     if cmd in ("chinese", "both", "all"):
         build_language("zh-CN", "chinese.json")

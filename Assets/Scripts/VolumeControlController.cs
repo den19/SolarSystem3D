@@ -74,4 +74,26 @@ public class VolumeControlController : MonoBehaviour
             isInitializing = false;
         }
     }
+
+    public void RefreshFromSaved()
+    {
+        if (AudioManager.Instance == null)
+        {
+            return;
+        }
+
+        isInitializing = true;
+
+        if (volumeSlider != null)
+        {
+            volumeSlider.SetValueWithoutNotify(AudioManager.Instance.GetMasterVolume());
+        }
+
+        if (volumeToggle != null)
+        {
+            volumeToggle.SetIsOnWithoutNotify(AudioManager.Instance.IsSoundEnabled());
+        }
+
+        isInitializing = false;
+    }
 }

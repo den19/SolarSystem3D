@@ -37,5 +37,16 @@ namespace SolarSystemApp
             UnityEngine.PlayerPrefs.Save();
             UseCometMovementChanged?.Invoke(enabled);
         }
+
+        public static void ResetToDefaults()
+        {
+            UnityEngine.PlayerPrefs.DeleteKey(KeyCometMovement);
+
+            initialized = true;
+            useCometMovement = true;
+
+            UnityEngine.PlayerPrefs.Save();
+            UseCometMovementChanged?.Invoke(useCometMovement);
+        }
     }
 }

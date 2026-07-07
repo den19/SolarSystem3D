@@ -37,5 +37,16 @@ namespace SolarSystemApp
             UnityEngine.PlayerPrefs.Save();
             UseRealOrbitsChanged?.Invoke(enabled);
         }
+
+        public static void ResetToDefaults()
+        {
+            UnityEngine.PlayerPrefs.DeleteKey(KeyRealOrbits);
+
+            initialized = true;
+            useRealOrbits = false;
+
+            UnityEngine.PlayerPrefs.Save();
+            UseRealOrbitsChanged?.Invoke(useRealOrbits);
+        }
     }
 }
