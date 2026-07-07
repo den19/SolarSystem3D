@@ -4,12 +4,14 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// HD-only Sun coronal VFX: procedural sunspots, surface flicker overlay, and timed loop-like CME bursts.
+/// Sun coronal VFX: procedural sunspots, surface flicker overlay, and timed loop-like CME bursts.
+/// Gated on Real Sun mode (independent of Extra Graphics).
 /// </summary>
 public class SunCoronalVfxController : MonoBehaviour
 {
     const string LevelSceneName = "Level1";
     const string SunObjectName = "Sun";
+    const string SunBloomObjectName = "ExtraGraphicsSunBloom";
     const string VfxRootName = "ExtraGraphicsSunCoronalVfx";
     const string SunspotsObjectName = "ExtraGraphicsSunSunspots";
     const string FlickerObjectName = "ExtraGraphicsSunSurfaceFlicker";
@@ -29,6 +31,7 @@ public class SunCoronalVfxController : MonoBehaviour
     const float CmeBurstIntervalMax = 16f;
     const float CmeInitialDelayMin = 2.5f;
     const float CmeInitialDelayMax = 5f;
+    const float CmeContinuousRate = 8f;
 #else
     const float CmeStartSizeMin = 0.07f;
     const float CmeStartSizeMax = 0.16f;
@@ -37,7 +40,11 @@ public class SunCoronalVfxController : MonoBehaviour
     const float CmeBurstIntervalMax = 26f;
     const float CmeInitialDelayMin = 4f;
     const float CmeInitialDelayMax = 8f;
+    const float CmeContinuousRate = 6f;
 #endif
+
+    const float CmeBurstIntervalScaleRealSun = 0.45f;
+    const float CmeInitialDelayScaleRealSun = 0.5f;
 
     enum CmeLoopKind
     {
@@ -56,6 +63,7 @@ public class SunCoronalVfxController : MonoBehaviour
     Renderer _sunspotsRenderer;
     Renderer _flickerRenderer;
     Renderer _sunBaseRenderer;
+    Renderer _sunBloomRenderer;
     ParticleSystem _cmeParticles;
     Transform _cmeTransform;
     Light _sunLight;
@@ -124,6 +132,7 @@ public class SunCoronalVfxController : MonoBehaviour
 
         _sunTransform = sun.transform;
         _sunBaseRenderer = sun.GetComponent<Renderer>();
+        CacheSunBloomRenderer(sun.transform);
 
         if (!_built || _vfxRoot == null || _vfxRoot.transform.parent != sun.transform)
             BuildSunVfx(sun.transform);
@@ -138,28 +147,47 @@ public class SunCoronalVfxController : MonoBehaviour
         if (!SunAppearanceSettings.UseRealSun || _sunBaseRenderer == null)
             return;
 
-        var mat = _sunBaseRenderer.material;
-        if (mat == null || !mat.HasProperty("_EmissionColor"))
-            return;
+        if (_sunBloomRenderer == null && _sunTransform != null)
+            CacheSunBloomRenderer(_sunTransform);
 
         float t = Time.time;
-        float slow = Mathf.PerlinNoise(t * 0.18f, 0.12f);
-        float fast = Mathf.PerlinNoise(t * 1.35f, 2.7f);
-        float blend = Mathf.Lerp(slow, fast, 0.42f);
+        float n1 = Mathf.PerlinNoise(t * 0.35f, 0f);
+        float n2 = Mathf.PerlinNoise(t * 1.7f, 5.2f);
+        float n3 = Mathf.PerlinNoise(t * 4.5f, 11.3f);
+        float raw = n1 * 0.5f + n2 * 0.35f + n3 * 0.15f;
+        float blend = Mathf.Clamp01((raw - 0.5f) * 2.2f + 0.5f);
 
-        float r = Mathf.Lerp(2.8f, 4.6f, blend);
-        float g = Mathf.Lerp(1.05f, 2.2f, blend);
-        float b = Mathf.Lerp(0.08f, 0.35f, blend);
+        var deep = new Color(1.2f, 0.32f, 0.02f);
+        var bright = new Color(3.0f, 1.25f, 0.08f);
+        var emission = Color.Lerp(deep, bright, blend);
 
-        mat.EnableKeyword("_EMISSION");
-        mat.SetColor("_EmissionColor", new Color(r, g, b));
-        if (mat.HasProperty("_BaseColor"))
-            mat.SetColor("_BaseColor", new Color(1f, Mathf.Lerp(0.72f, 0.9f, blend), Mathf.Lerp(0.2f, 0.45f, blend)));
+        var mat = _sunBaseRenderer.material;
+        if (mat != null && mat.HasProperty("_EmissionColor"))
+        {
+            mat.EnableKeyword("_EMISSION");
+            mat.SetColor("_EmissionColor", emission);
+            if (mat.HasProperty("_BaseColor"))
+                mat.SetColor("_BaseColor", new Color(1f, Mathf.Lerp(0.5f, 0.8f, blend), Mathf.Lerp(0.12f, 0.32f, blend)));
+        }
+
+        if (_sunBloomRenderer != null && _sunBloomRenderer.enabled)
+        {
+            var bloomMat = _sunBloomRenderer.material;
+            if (bloomMat != null && bloomMat.HasProperty("_EmissionColor"))
+            {
+                bloomMat.EnableKeyword("_EMISSION");
+                var bloomDeep = new Color(0.9f, 0.35f, 0.06f);
+                var bloomBright = new Color(1.8f, 0.8f, 0.18f);
+                bloomMat.SetColor("_EmissionColor", Color.Lerp(bloomDeep, bloomBright, blend));
+            }
+        }
     }
 
     IEnumerator RefreshSunVfxScaleNextFrame()
     {
         yield return null;
+        if (_sunTransform != null)
+            CacheSunBloomRenderer(_sunTransform);
         RefreshSunVfxScale();
     }
 
@@ -175,6 +203,7 @@ public class SunCoronalVfxController : MonoBehaviour
             _cmeTransform = _vfxRoot.transform.Find(CmeObjectName);
             _cmeParticles = _cmeTransform ? _cmeTransform.GetComponent<ParticleSystem>() : null;
             CacheSunLight(sunTransform);
+            CacheSunBloomRenderer(sunTransform);
             _built = true;
             return;
         }
@@ -189,8 +218,15 @@ public class SunCoronalVfxController : MonoBehaviour
         _flickerRenderer = CreateFlickerOverlay(_vfxRoot.transform);
         CreateCmeLoop(_vfxRoot.transform, out _cmeTransform, out _cmeParticles);
         CacheSunLight(sunTransform);
+        CacheSunBloomRenderer(sunTransform);
 
         _built = true;
+    }
+
+    void CacheSunBloomRenderer(Transform sunTransform)
+    {
+        var bloomTransform = sunTransform.Find(SunBloomObjectName);
+        _sunBloomRenderer = bloomTransform != null ? bloomTransform.GetComponent<Renderer>() : null;
     }
 
     void CacheSunLight(Transform sunTransform)
@@ -700,65 +736,64 @@ public class SunCoronalVfxController : MonoBehaviour
         renderer.receiveShadows = false;
     }
 
+    static void ApplyRealSunFlickerProfile(Material flickerMat)
+    {
+        if (flickerMat == null)
+            return;
+
+        flickerMat.SetColor("_BaseColor", new Color(1f, 0.7f, 0.25f, 0.5f));
+        flickerMat.SetFloat("_FlickerIntensity", 0.45f);
+        flickerMat.SetFloat("_RimIntensity", 0.75f);
+        flickerMat.SetFloat("_FastSpeed", 6f);
+        flickerMat.SetFloat("_SlowSpeed", 0.6f);
+    }
+
+    void SetCmeContinuousEmission(bool active)
+    {
+        if (_cmeParticles == null)
+            return;
+
+        var emission = _cmeParticles.emission;
+        emission.rateOverTime = active ? CmeContinuousRate : 0f;
+    }
+
     void ApplyHdState()
     {
         if (!_built || _vfxRoot == null)
             return;
 
-        bool hd = GraphicsSettings.UseExtraGraphics;
         bool realSun = SunAppearanceSettings.UseRealSun;
-        _vfxRoot.SetActive(hd);
+        _vfxRoot.SetActive(realSun);
 
-        if (!hd)
+        if (!realSun)
         {
             StopCmeRoutine();
             if (_cmeParticles)
+            {
+                SetCmeContinuousEmission(false);
                 _cmeParticles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            }
             RestoreSunLight();
             return;
         }
 
         if (_sunspotsRenderer)
-            _sunspotsRenderer.enabled = realSun;
+            _sunspotsRenderer.enabled = true;
 
         if (_flickerRenderer)
         {
-            _flickerRenderer.enabled = realSun;
-            var flickerMat = _flickerRenderer.material;
-            if (flickerMat != null)
-            {
-                if (realSun)
-                {
-                    flickerMat.SetColor("_BaseColor", new Color(1f, 0.78f, 0.32f, 0.34f));
-                    flickerMat.SetFloat("_FlickerIntensity", 0.32f);
-                    flickerMat.SetFloat("_RimIntensity", 0.58f);
-                }
-                else
-                {
-                    flickerMat.SetColor("_BaseColor", new Color(1f, 0.78f, 0.32f, 0.34f));
-                    flickerMat.SetFloat("_FlickerIntensity", 0.2f);
-                    flickerMat.SetFloat("_RimIntensity", 0.42f);
-                }
-            }
+            _flickerRenderer.enabled = true;
+            ApplyRealSunFlickerProfile(_flickerRenderer.material);
         }
 
         if (_cmeParticles)
         {
-            if (realSun)
-            {
-                _cmeParticles.Clear(true);
-                _cmeParticles.Play(true);
-            }
-            else
-            {
-                _cmeParticles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-            }
+            SetCmeContinuousEmission(true);
+            _cmeParticles.Clear(true);
+            _cmeParticles.Play(true);
         }
 
-        if (realSun)
-            StartCmeRoutine();
-        else
-            StopCmeRoutine();
+        StartCmeRoutine();
     }
 
     void StartCmeRoutine()
@@ -779,14 +814,17 @@ public class SunCoronalVfxController : MonoBehaviour
 
     IEnumerator CmeBurstLoop()
     {
-        yield return new WaitForSecondsRealtime(Random.Range(CmeInitialDelayMin, CmeInitialDelayMax));
+        float initialMin = CmeInitialDelayMin * CmeInitialDelayScaleRealSun;
+        float initialMax = CmeInitialDelayMax * CmeInitialDelayScaleRealSun;
+        yield return new WaitForSecondsRealtime(Random.Range(initialMin, initialMax));
 
-        while (_vfxRoot != null && _vfxRoot.activeInHierarchy && GraphicsSettings.UseExtraGraphics
-            && SunAppearanceSettings.UseRealSun)
+        float intervalMin = CmeBurstIntervalMin * CmeBurstIntervalScaleRealSun;
+        float intervalMax = CmeBurstIntervalMax * CmeBurstIntervalScaleRealSun;
+
+        while (_vfxRoot != null && _vfxRoot.activeInHierarchy && SunAppearanceSettings.UseRealSun)
         {
-            yield return new WaitForSecondsRealtime(Random.Range(CmeBurstIntervalMin, CmeBurstIntervalMax));
-            if (_vfxRoot == null || !_vfxRoot.activeInHierarchy || !GraphicsSettings.UseExtraGraphics
-                || !SunAppearanceSettings.UseRealSun)
+            yield return new WaitForSecondsRealtime(Random.Range(intervalMin, intervalMax));
+            if (_vfxRoot == null || !_vfxRoot.activeInHierarchy || !SunAppearanceSettings.UseRealSun)
                 yield break;
 
             TriggerCmeBurst();
