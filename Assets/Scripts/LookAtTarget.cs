@@ -36,6 +36,10 @@ public class LookAtTarget : MonoBehaviour {
 
     public GameObject theGanymedeGameObject;
 
+    public GameObject thePhobosGameObject;
+
+    public GameObject theDeimosGameObject;
+
     public GameObject theUranusGameObject;
 
     public GameObject theNeptuneGameObject;
@@ -53,6 +57,8 @@ public class LookAtTarget : MonoBehaviour {
     public GameObject moonCamera;    // Детальная камера Луны
     public GameObject titanCamera;    // Детальная камера Титана
     public GameObject ganymedeCamera;    // Детальная камера Ганимеда
+    public GameObject phobosCamera;    // Детальная камера Фобоса
+    public GameObject deimosCamera;    // Детальная камера Деймоса
 
     MobileOrbitCamera _mainOrbitCamera;
     GameObject lastObservationTarget;
@@ -95,6 +101,8 @@ public class LookAtTarget : MonoBehaviour {
         theSaturnGameObject.SetActive(false);
         if (theTitanGameObject) theTitanGameObject.SetActive(false);
         if (theGanymedeGameObject) theGanymedeGameObject.SetActive(false);
+        if (thePhobosGameObject) thePhobosGameObject.SetActive(false);
+        if (theDeimosGameObject) theDeimosGameObject.SetActive(false);
         theUranusGameObject.SetActive(false);
         theNeptuneGameObject.SetActive(false);
         theSunGameObject.SetActive(false);
@@ -136,15 +144,21 @@ public class LookAtTarget : MonoBehaviour {
                 else
                 {
                     Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-                    if (Physics.Raycast(ray, out RaycastHit hit))
-                    {
-                        if (TryFocusCometFromHit(hit))
-                            return;
+                    bool rayHit = Physics.Raycast(ray, out RaycastHit hit);
 
-                        currentTarget = hit.collider.gameObject;
-                        RecordObservationTarget(currentTarget);
-                        bool useDetailCamera = currentTarget.name != "Sun";
-                        FocusPlanet(currentTarget.name, useDetailCamera, showDescription: true);
+                    if (rayHit && TryFocusCometFromHit(hit))
+                        return;
+
+                    GameObject picked = BodyPickUtility.PickBody(mainCamera, Input.mousePosition);
+                    if (picked == null && rayHit)
+                        picked = hit.collider.gameObject;
+
+                    if (picked != null)
+                    {
+                        currentTarget = picked;
+                        RecordObservationTarget(picked);
+                        bool useDetailCamera = picked.name != "Sun";
+                        FocusPlanet(picked.name, useDetailCamera, showDescription: true);
                     }
                 }
             }
@@ -299,6 +313,8 @@ public class LookAtTarget : MonoBehaviour {
         if (saturnCamera) saturnCamera.SetActive(false);
         if (titanCamera) titanCamera.SetActive(false);
         if (ganymedeCamera) ganymedeCamera.SetActive(false);
+        if (phobosCamera) phobosCamera.SetActive(false);
+        if (deimosCamera) deimosCamera.SetActive(false);
         if (uranusCamera) uranusCamera.SetActive(false);
         if (neptuneCamera) neptuneCamera.SetActive(false);
     }
@@ -315,6 +331,8 @@ public class LookAtTarget : MonoBehaviour {
         else if (planetName == "Saturn" && theSaturnGameObject) MakeDescriptionVisible(theSaturnGameObject);
         else if (planetName == "Titan" && theTitanGameObject) MakeDescriptionVisible(theTitanGameObject);
         else if (planetName == "Ganymede" && theGanymedeGameObject) MakeDescriptionVisible(theGanymedeGameObject);
+        else if (planetName == "Phobos" && thePhobosGameObject) MakeDescriptionVisible(thePhobosGameObject);
+        else if (planetName == "Deimos" && theDeimosGameObject) MakeDescriptionVisible(theDeimosGameObject);
         else if (planetName == "Uranus" && theUranusGameObject) MakeDescriptionVisible(theUranusGameObject);
         else if (planetName == "Neptune" && theNeptuneGameObject) MakeDescriptionVisible(theNeptuneGameObject);
     }
@@ -330,6 +348,8 @@ public class LookAtTarget : MonoBehaviour {
         else if (planetName == "Saturn") TurnOnSaturnCamera();
         else if (planetName == "Titan") TurnOnTitanCamera();
         else if (planetName == "Ganymede") TurnOnGanymedeCamera();
+        else if (planetName == "Phobos") TurnOnPhobosCamera();
+        else if (planetName == "Deimos") TurnOnDeimosCamera();
         else if (planetName == "Uranus") TurnOnUranusCamera();
         else if (planetName == "Neptune") TurnOnNeptuneCamera();
     }
@@ -345,6 +365,8 @@ public class LookAtTarget : MonoBehaviour {
         if (saturnCamera != null && saturnCamera.activeSelf) return saturnCamera;
         if (titanCamera != null && titanCamera.activeSelf) return titanCamera;
         if (ganymedeCamera != null && ganymedeCamera.activeSelf) return ganymedeCamera;
+        if (phobosCamera != null && phobosCamera.activeSelf) return phobosCamera;
+        if (deimosCamera != null && deimosCamera.activeSelf) return deimosCamera;
         if (uranusCamera != null && uranusCamera.activeSelf) return uranusCamera;
         if (neptuneCamera != null && neptuneCamera.activeSelf) return neptuneCamera;
         return null;
@@ -462,6 +484,26 @@ public class LookAtTarget : MonoBehaviour {
     public void TurnOffGanymedeCamera()
     {
         if (ganymedeCamera) ganymedeCamera.SetActive(false);
+    }
+
+    public void TurnOnPhobosCamera()
+    {
+        if (phobosCamera) phobosCamera.SetActive(true);
+    }
+
+    public void TurnOffPhobosCamera()
+    {
+        if (phobosCamera) phobosCamera.SetActive(false);
+    }
+
+    public void TurnOnDeimosCamera()
+    {
+        if (deimosCamera) deimosCamera.SetActive(true);
+    }
+
+    public void TurnOffDeimosCamera()
+    {
+        if (deimosCamera) deimosCamera.SetActive(false);
     }
 
     public void RecordObservationTarget(GameObject body)

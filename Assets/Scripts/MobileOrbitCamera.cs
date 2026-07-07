@@ -273,18 +273,20 @@ public class MobileOrbitCamera : MonoBehaviour
                 return;
 
             Ray ray = Camera.main.ScreenPointToRay(screenPosition);
-            if (Physics.Raycast(ray, out RaycastHit hit))
-            {
-                if (globalLookAtScript.TryFocusCometFromHit(hit))
-                    return;
+            bool rayHit = Physics.Raycast(ray, out RaycastHit hit);
 
-                GameObject hitObject = hit.collider.gameObject;
-                if (hitObject != globalLookAtScript.currentTarget)
-                {
-                    globalLookAtScript.currentTarget = hitObject;
-                    globalLookAtScript.RecordObservationTarget(hitObject);
-                    TriggerDescription(hitObject.name);
-                }
+            if (rayHit && globalLookAtScript.TryFocusCometFromHit(hit))
+                return;
+
+            GameObject picked = BodyPickUtility.PickBody(Camera.main, screenPosition);
+            if (picked == null && rayHit)
+                picked = hit.collider.gameObject;
+
+            if (picked != null && picked != globalLookAtScript.currentTarget)
+            {
+                globalLookAtScript.currentTarget = picked;
+                globalLookAtScript.RecordObservationTarget(picked);
+                TriggerDescription(picked.name);
             }
         }
     }
@@ -299,14 +301,19 @@ public class MobileOrbitCamera : MonoBehaviour
                 return;
 
             Ray ray = Camera.main.ScreenPointToRay(screenPosition);
-            if (Physics.Raycast(ray, out RaycastHit hit))
-            {
-                if (globalLookAtScript.TryFocusCometFromHit(hit))
-                    return;
+            bool rayHit = Physics.Raycast(ray, out RaycastHit hit);
 
-                GameObject hitObject = hit.collider.gameObject;
-                globalLookAtScript.currentTarget = hitObject;
-                TriggerCameraSwitch(hitObject.name, true);
+            if (rayHit && globalLookAtScript.TryFocusCometFromHit(hit))
+                return;
+
+            GameObject picked = BodyPickUtility.PickBody(Camera.main, screenPosition);
+            if (picked == null && rayHit)
+                picked = hit.collider.gameObject;
+
+            if (picked != null)
+            {
+                globalLookAtScript.currentTarget = picked;
+                TriggerCameraSwitch(picked.name, true);
             }
         }
         else
@@ -329,6 +336,8 @@ public class MobileOrbitCamera : MonoBehaviour
         var saturnDesc = globalLookAtScript.theSaturnGameObject;
         var titanDesc = globalLookAtScript.theTitanGameObject;
         var ganymedeDesc = globalLookAtScript.theGanymedeGameObject;
+        var phobosDesc = globalLookAtScript.thePhobosGameObject;
+        var deimosDesc = globalLookAtScript.theDeimosGameObject;
         var uranusDesc = globalLookAtScript.theUranusGameObject;
         var neptuneDesc = globalLookAtScript.theNeptuneGameObject;
 
@@ -342,6 +351,8 @@ public class MobileOrbitCamera : MonoBehaviour
         if (saturnDesc) saturnDesc.SetActive(planetName == "Saturn");
         if (titanDesc) titanDesc.SetActive(planetName == "Titan");
         if (ganymedeDesc) ganymedeDesc.SetActive(planetName == "Ganymede");
+        if (phobosDesc) phobosDesc.SetActive(planetName == "Phobos");
+        if (deimosDesc) deimosDesc.SetActive(planetName == "Deimos");
         if (uranusDesc) uranusDesc.SetActive(planetName == "Uranus");
         if (neptuneDesc) neptuneDesc.SetActive(planetName == "Neptune");
     }
@@ -376,6 +387,8 @@ public class MobileOrbitCamera : MonoBehaviour
         if (planetName == "Saturn" && globalLookAtScript.saturnCamera) globalLookAtScript.saturnCamera.SetActive(active);
         if (planetName == "Titan" && globalLookAtScript.titanCamera) globalLookAtScript.titanCamera.SetActive(active);
         if (planetName == "Ganymede" && globalLookAtScript.ganymedeCamera) globalLookAtScript.ganymedeCamera.SetActive(active);
+        if (planetName == "Phobos" && globalLookAtScript.phobosCamera) globalLookAtScript.phobosCamera.SetActive(active);
+        if (planetName == "Deimos" && globalLookAtScript.deimosCamera) globalLookAtScript.deimosCamera.SetActive(active);
         if (planetName == "Uranus" && globalLookAtScript.uranusCamera) globalLookAtScript.uranusCamera.SetActive(active);
         if (planetName == "Neptune" && globalLookAtScript.neptuneCamera) globalLookAtScript.neptuneCamera.SetActive(active);
     }

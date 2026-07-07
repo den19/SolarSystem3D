@@ -7,7 +7,7 @@ using UnityEngine;
 /// </summary>
 public class SolarSystemScaleController : MonoBehaviour
 {
-    const float MinPickWorldRadius = 0.12f;
+    const float MinPickWorldRadius = 0.3f;
     const float SimulationMaxCameraDistance = 600f;
     const float MainCamMinDistanceScale = 2.5f;
     const float MainCamDefaultDistanceScale = 6.5f;
@@ -280,10 +280,11 @@ public class SolarSystemScaleController : MonoBehaviour
                 && SolarSystemLayout.TryGetEducational(baseline.Transform.name, out SolarSystemLayout.EducationalEntry edu))
             {
                 collider.radius = edu.PickColliderRadius;
-                continue;
             }
-
-            collider.radius = baseline.ColliderRadius;
+            else
+            {
+                collider.radius = baseline.ColliderRadius;
+            }
 
             float lossy = Mathf.Max(0.0001f, baseline.Transform.lossyScale.x);
             float meshWorldRadius = 0.5f * lossy;

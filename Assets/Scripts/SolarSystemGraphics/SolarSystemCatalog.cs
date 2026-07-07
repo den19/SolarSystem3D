@@ -11,6 +11,8 @@ public static class SolarSystemCatalog
     public const float MoonOrbitKm = 384400f;
     public const float TitanOrbitKm = 1221870f;
     public const float GanymedeOrbitKm = 1070400f;
+    public const float PhobosOrbitKm = 9376f;
+    public const float DeimosOrbitKm = 23463f;
 
     public struct BodyDefinition
     {
@@ -119,6 +121,26 @@ public static class SolarSystemCatalog
             satelliteOrbitKm = GanymedeOrbitKm,
             orbitalEccentricity = 0.0013f,
             orbitalInclinationDeg = 0.2f
+        },
+        new BodyDefinition
+        {
+            objectName = "Phobos",
+            orbitalRadiusAu = 0f,
+            equatorialRadiusKm = 11.27f,
+            orbitCenterName = "Mars",
+            satelliteOrbitKm = PhobosOrbitKm,
+            orbitalEccentricity = 0.0151f,
+            orbitalInclinationDeg = 1.08f
+        },
+        new BodyDefinition
+        {
+            objectName = "Deimos",
+            orbitalRadiusAu = 0f,
+            equatorialRadiusKm = 6.2f,
+            orbitCenterName = "Mars",
+            satelliteOrbitKm = DeimosOrbitKm,
+            orbitalEccentricity = 0.00033f,
+            orbitalInclinationDeg = 1.79f
         }
     };
 

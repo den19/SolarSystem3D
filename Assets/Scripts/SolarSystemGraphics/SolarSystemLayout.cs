@@ -130,6 +130,26 @@ public static class SolarSystemLayout
                     SatelliteLocalPosition = new Vector3(0f, 0f, 2.0f),
                     PickColliderRadius = 1f
                 }
+            },
+            {
+                "Phobos",
+                new EducationalEntry
+                {
+                    Scale = new Vector3(0.14f, 0.14f, 0.14f),
+                    OrbitDistance = 0.95f,
+                    SatelliteLocalPosition = new Vector3(0f, 0f, 0.95f),
+                    PickColliderRadius = 2.5f
+                }
+            },
+            {
+                "Deimos",
+                new EducationalEntry
+                {
+                    Scale = new Vector3(0.08f, 0.08f, 0.08f),
+                    OrbitDistance = 2.4f,
+                    SatelliteLocalPosition = new Vector3(0f, 0f, 2.4f),
+                    PickColliderRadius = 2.0f
+                }
             }
         };
 

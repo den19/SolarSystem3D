@@ -10,6 +10,7 @@ public class OrbitLinesManager : MonoBehaviour
     [SerializeField] int circleSegments = 96;
     [SerializeField] int ellipseSegments = 128;
     [SerializeField] float lineWidth = 0.08f;
+    [SerializeField] float satelliteLineWidthScale = 0.5f;
 
     readonly List<LineRenderer> _lines = new List<LineRenderer>();
     Material _lineMaterial;
@@ -41,7 +42,7 @@ public class OrbitLinesManager : MonoBehaviour
         var lineGo = new GameObject("CometOrbitLine");
         lineGo.transform.SetParent(transform, false);
         var line = lineGo.AddComponent<LineRenderer>();
-        ConfigureLine(line);
+        ConfigureLine(line, lineWidth);
         line.positionCount = ellipseSegments + 1;
         line.SetPositions(OrbitLineUtility.BuildEllipse(
             ellipseSegments,
@@ -62,7 +63,7 @@ public class OrbitLinesManager : MonoBehaviour
         var lineGo = new GameObject("CometOrbitLine");
         lineGo.transform.SetParent(transform, false);
         var line = lineGo.AddComponent<LineRenderer>();
-        ConfigureLine(line);
+        ConfigureLine(line, lineWidth);
         line.positionCount = circleSegments + 1;
 
         Vector3[] points = OrbitLineUtility.BuildCircle(circleSegments, radius, _sun.position, Vector3.up);
@@ -151,7 +152,11 @@ public class OrbitLinesManager : MonoBehaviour
 
         var lineGo = new GameObject(spec.BodyName + "_OrbitLine");
         var line = lineGo.AddComponent<LineRenderer>();
-        ConfigureLine(line);
+        float width = lineWidth;
+        if (SolarSystemCatalog.TryGetBody(spec.BodyName, out SolarSystemCatalog.BodyDefinition orbitDef)
+            && !string.IsNullOrEmpty(orbitDef.orbitCenterName))
+            width = lineWidth * satelliteLineWidthScale;
+        ConfigureLine(line, width);
 
         if (spec.UseEllipse)
         {
@@ -207,11 +212,11 @@ public class OrbitLinesManager : MonoBehaviour
         _lines.Add(line);
     }
 
-    void ConfigureLine(LineRenderer line)
+    void ConfigureLine(LineRenderer line, float width)
     {
         line.useWorldSpace = true;
         line.loop = true;
-        line.widthMultiplier = lineWidth;
+        line.widthMultiplier = width;
         line.numCapVertices = 4;
         line.numCornerVertices = 4;
         line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
