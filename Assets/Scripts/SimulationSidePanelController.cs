@@ -10,6 +10,7 @@ public class SimulationSidePanelController : MonoBehaviour
 {
     const float PanelWidth = SidePanelUiBootstrap.PanelWidth;
     const float SlideDuration = 0.22f;
+    const float EdgeMargin = 12f;
     const float MenuButtonGap = 12f;
     const float PanelBelowMenuGap = 8f;
     static readonly Vector2 MenuButtonFallbackPosition = new Vector2(-8f, -63f);
@@ -32,25 +33,36 @@ public class SimulationSidePanelController : MonoBehaviour
     Coroutine slideRoutine;
     float panelClosedX;
     float panelOpenX;
+    Canvas canvas;
+    Rect lastSafeArea;
+    bool lastIsLandscape;
+    bool safeAreaCached;
+
+    static bool IsLandscape => Screen.width > Screen.height;
 
     void Awake()
     {
+        canvas = GetComponentInParent<Canvas>();
         SidePanelUiBootstrap.ApplyCompactLayout(transform);
         ResolveReferences();
-        LayoutMenuButton();
-        LayoutPanelBelowMenuButton();
-
-        panelClosedX = PanelWidth + 12f;
-        panelOpenX = -12f;
-
-        if (panelRect != null)
-        {
-            float panelY = panelRect.anchoredPosition.y;
-            panelRect.anchoredPosition = new Vector2(panelClosedX, panelY);
-        }
+        isPanelOpen = false;
+        RefreshSafeAreaLayout();
 
         if (menuButton != null)
             menuButton.onClick.AddListener(TogglePanel);
+    }
+
+    void Update()
+    {
+        if (!safeAreaCached)
+            return;
+
+        bool landscape = IsLandscape;
+        Rect safeArea = Screen.safeArea;
+        if (safeArea == lastSafeArea && landscape == lastIsLandscape)
+            return;
+
+        RefreshSafeAreaLayout();
     }
 
     void ResolveReferences()
@@ -96,6 +108,54 @@ public class SimulationSidePanelController : MonoBehaviour
         return SidePanelUiBootstrap.FindToggle(transform, rowName);
     }
 
+    float GetLandscapeRightInset()
+    {
+        if (!IsLandscape || canvas == null)
+            return 0f;
+
+        SafeAreaInsets.GetCanvasInsets(canvas, out _, out float right, out _, out _);
+        return right;
+    }
+
+    float GetRightMargin() => EdgeMargin + GetLandscapeRightInset();
+
+    void RefreshSafeAreaLayout()
+    {
+        LayoutMenuButton();
+        LayoutPanelBelowMenuButton();
+
+        panelClosedX = PanelWidth + GetRightMargin();
+        panelOpenX = -GetRightMargin();
+
+        if (panelRect == null)
+        {
+            CacheSafeAreaState();
+            return;
+        }
+
+        float targetX = isPanelOpen ? panelOpenX : panelClosedX;
+        float panelY = panelRect.anchoredPosition.y;
+
+        if (slideRoutine != null)
+        {
+            StopCoroutine(slideRoutine);
+            slideRoutine = StartCoroutine(SlidePanel(targetX));
+        }
+        else
+        {
+            panelRect.anchoredPosition = new Vector2(targetX, panelY);
+        }
+
+        CacheSafeAreaState();
+    }
+
+    void CacheSafeAreaState()
+    {
+        lastSafeArea = Screen.safeArea;
+        lastIsLandscape = IsLandscape;
+        safeAreaCached = true;
+    }
+
     void LayoutMenuButton()
     {
         if (menuButton == null)
@@ -109,22 +169,28 @@ public class SimulationSidePanelController : MonoBehaviour
         menuButtonRect.anchorMax = new Vector2(1f, 1f);
         menuButtonRect.pivot = new Vector2(1f, 1f);
 
+        float rightInset = GetLandscapeRightInset();
         Transform canvasTransform = transform.parent;
         if (canvasTransform == null)
         {
-            menuButtonRect.anchoredPosition = MenuButtonFallbackPosition;
+            menuButtonRect.anchoredPosition = new Vector2(
+                MenuButtonFallbackPosition.x - rightInset,
+                MenuButtonFallbackPosition.y);
             return;
         }
 
         Transform simControlTransform = canvasTransform.Find("SimulationControlButton");
         if (simControlTransform == null || !simControlTransform.TryGetComponent(out RectTransform simControlRect))
         {
-            menuButtonRect.anchoredPosition = MenuButtonFallbackPosition;
+            menuButtonRect.anchoredPosition = new Vector2(
+                MenuButtonFallbackPosition.x - rightInset,
+                MenuButtonFallbackPosition.y);
             return;
         }
 
         float y = simControlRect.anchoredPosition.y - simControlRect.rect.height - MenuButtonGap;
-        menuButtonRect.anchoredPosition = new Vector2(simControlRect.anchoredPosition.x, y);
+        float x = simControlRect.anchoredPosition.x - rightInset;
+        menuButtonRect.anchoredPosition = new Vector2(x, y);
     }
 
     void LayoutPanelBelowMenuButton()
@@ -231,6 +297,7 @@ public class SimulationSidePanelController : MonoBehaviour
 
         yield return new WaitForEndOfFrame();
         isInitializing = false;
+        RefreshSafeAreaLayout();
     }
 
     void OnDestroy()
