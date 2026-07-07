@@ -64,6 +64,10 @@ public class MobileOrbitCamera : MonoBehaviour
 
     void LateUpdate()
     {
+        var cam = GetComponent<Camera>();
+        if (cam != null && !cam.enabled)
+            return;
+
         if (gameObject.name == "Main Camera" && globalLookAtScript != null)
         {
             if (globalLookAtScript.currentTarget != null &&
@@ -86,24 +90,38 @@ public class MobileOrbitCamera : MonoBehaviour
         int touchCount = TouchInputBridge.touchCount;
         if (touchCount > 0)
         {
-            isControlled = true;
-            IsUserControlling = true;
-
             if (touchCount == 1)
             {
-                HandleSingleFingerTouch(TouchInputBridge.GetTouch(0));
+                TouchInputBridge.TouchSample touch = TouchInputBridge.GetTouch(0);
+                if (!LookAtTarget.IsPointerOverUi(touch.position))
+                {
+                    isControlled = true;
+                    IsUserControlling = true;
+                    HandleSingleFingerTouch(touch);
+                }
             }
             else if (touchCount == 2)
             {
-                _trackTapGesture = false;
-                HandlePinchZoom(
-                    TouchInputBridge.GetTouch(0),
-                    TouchInputBridge.GetTouch(1));
+                TouchInputBridge.TouchSample touchZero = TouchInputBridge.GetTouch(0);
+                TouchInputBridge.TouchSample touchOne = TouchInputBridge.GetTouch(1);
+                bool pinchOverUi = LookAtTarget.IsPointerOverUi(touchZero.position)
+                    || LookAtTarget.IsPointerOverUi(touchOne.position);
+
+                if (!pinchOverUi)
+                {
+                    isControlled = true;
+                    IsUserControlling = true;
+                    _trackTapGesture = false;
+                    HandlePinchZoom(touchZero, touchOne);
+                }
             }
         }
-        else if (Application.isEditor)
+
+        if (touchCount == 0 && Application.isEditor)
         {
-            if (Input.GetMouseButton(0))
+            bool pointerOverUi = LookAtTarget.IsPointerOverUi(Input.mousePosition);
+
+            if (!pointerOverUi && Input.GetMouseButton(0))
             {
                 isControlled = true;
                 IsUserControlling = true;
@@ -112,13 +130,16 @@ public class MobileOrbitCamera : MonoBehaviour
                 y = ClampAngle(y, yMinLimit, yMaxLimit);
             }
 
-            float scroll = Input.GetAxis("Mouse ScrollWheel");
-            if (Mathf.Abs(scroll) > 0.01f)
+            if (!pointerOverUi)
             {
-                isControlled = true;
-                IsUserControlling = true;
-                distance -= scroll * zoomSpeed * 300f;
-                distance = Mathf.Clamp(distance, minDistance, maxDistance);
+                float scroll = Input.GetAxis("Mouse ScrollWheel");
+                if (Mathf.Abs(scroll) > 0.01f)
+                {
+                    isControlled = true;
+                    IsUserControlling = true;
+                    distance -= scroll * zoomSpeed * 300f;
+                    distance = Mathf.Clamp(distance, minDistance, maxDistance);
+                }
             }
         }
 

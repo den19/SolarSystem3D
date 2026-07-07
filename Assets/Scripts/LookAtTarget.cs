@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine.UI;
 using System;
 using UnityEngine.EventSystems;
@@ -509,14 +510,33 @@ public class LookAtTarget : MonoBehaviour {
         return true;
     }
 
-    public static bool IsPointerOverUi(int pointerId)
+    static readonly List<RaycastResult> s_uiRaycastResults = new List<RaycastResult>(8);
+
+    public static bool IsPointerOverUi(Vector2 screenPosition)
     {
         if (EventSystem.current == null)
             return false;
 
-        return pointerId >= 0
-            ? EventSystem.current.IsPointerOverGameObject(pointerId)
-            : EventSystem.current.IsPointerOverGameObject();
+        var eventData = new PointerEventData(EventSystem.current) { position = screenPosition };
+        s_uiRaycastResults.Clear();
+        EventSystem.current.RaycastAll(eventData, s_uiRaycastResults);
+        return s_uiRaycastResults.Count > 0;
+    }
+
+    public static bool IsPointerOverUi(int pointerId)
+    {
+        if (pointerId < 0)
+            return IsPointerOverUi(Input.mousePosition);
+
+        int touchCount = TouchInputBridge.touchCount;
+        for (int i = 0; i < touchCount; i++)
+        {
+            TouchInputBridge.TouchSample touch = TouchInputBridge.GetTouch(i);
+            if (touch.fingerId == pointerId)
+                return IsPointerOverUi(touch.position);
+        }
+
+        return false;
     }
 
     static bool IsCatalogBody(GameObject go)
