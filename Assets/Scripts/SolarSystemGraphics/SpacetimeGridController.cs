@@ -21,6 +21,7 @@ public class SpacetimeGridController : MonoBehaviour
     [SerializeField] float halfExtentZ = 120f;
     [SerializeField] float baseY = -2f;
     [SerializeField] float depthScale = 18f;
+    [SerializeField] float depthScaleReferenceExtent = 120f;
     [SerializeField] float softening = 2.5f;
     [SerializeField] float sunMassMultiplier = 8f;
     [SerializeField] int desktopSegments = 96;
@@ -45,11 +46,15 @@ public class SpacetimeGridController : MonoBehaviour
     void OnEnable()
     {
         GravityGridSettings.UseGravityGridChanged += OnUseGravityGridChanged;
+        ScaleSettings.UseRealDistancesChanged += OnScaleSettingsChanged;
+        ScaleSettings.UseRealSizesChanged += OnScaleSettingsChanged;
     }
 
     void OnDisable()
     {
         GravityGridSettings.UseGravityGridChanged -= OnUseGravityGridChanged;
+        ScaleSettings.UseRealDistancesChanged -= OnScaleSettingsChanged;
+        ScaleSettings.UseRealSizesChanged -= OnScaleSettingsChanged;
     }
 
     void LateUpdate()
@@ -61,6 +66,15 @@ public class SpacetimeGridController : MonoBehaviour
     }
 
     void OnUseGravityGridChanged(bool enabled) => ApplySetting(enabled);
+
+    void OnScaleSettingsChanged(bool _) => RefreshBodies();
+
+    public void RefreshBodies()
+    {
+        CacheBodies();
+        if (_built)
+            DeformMesh();
+    }
 
     public void SetHalfExtent(float extent)
     {
@@ -206,12 +220,15 @@ public class SpacetimeGridController : MonoBehaviour
                 continue;
 
             _bodies.Add(body.transform);
-            float scale = Mathf.Max(0.01f, body.transform.lossyScale.x);
-            float mass = scale * scale * scale;
-            if (BodyNames[i] == "Sun")
-                mass *= sunMassMultiplier;
-            _masses.Add(mass);
+            _masses.Add(SolarSystemCatalog.GetGravityWellMass(BodyNames[i], sunMassMultiplier));
         }
+    }
+
+    float GetEffectiveDepthScale()
+    {
+        float extent = Mathf.Max(1f, halfExtentX);
+        float reference = Mathf.Max(1f, depthScaleReferenceExtent);
+        return depthScale * (extent / reference);
     }
 
     void DeformMesh()
@@ -220,6 +237,7 @@ public class SpacetimeGridController : MonoBehaviour
             CacheBodies();
 
         float softeningSq = softening * softening;
+        float effectiveDepthScale = GetEffectiveDepthScale();
 
         for (int v = 0; v < _baseVertices.Length; v++)
         {
@@ -237,7 +255,7 @@ public class SpacetimeGridController : MonoBehaviour
                 float dx = world.x - bodyPos.x;
                 float dz = world.z - bodyPos.z;
                 float distSq = dx * dx + dz * dz + softeningSq;
-                displacement -= depthScale * _masses[i] / distSq;
+                displacement -= effectiveDepthScale * _masses[i] / distSq;
             }
 
             _workingVertices[v] = new Vector3(local.x, local.y + displacement, local.z);

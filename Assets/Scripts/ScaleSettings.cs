@@ -3,74 +3,158 @@ using System;
 namespace SolarSystemApp
 {
     /// <summary>
-    /// Persisted real-distance and real-size toggles for Level1.
-    /// Scene baseline uses physical proportions; toggles off apply the compressed educational layout.
+    /// Presentation scale presets for Level1, chosen as mutually exclusive radio options.
+    /// Schematic  = compressed educational layout (compact orbits, enlarged bodies).
+    /// RealDistances = true orbit ratios with enlarged bodies for visibility ("map" view).
+    /// TrueScale  = orbits and body sizes share one consistent scale (soft-compressed sizes),
+    ///              so inner planets never fall inside the Sun.
+    /// </summary>
+    public enum ScaleMode
+    {
+        Educational = 0,
+        RealDistances = 1,
+        TrueScale = 2
+    }
+
+    /// <summary>
+    /// Persisted scale mode for Level1. Exposes legacy UseRealDistances/UseRealSizes
+    /// booleans (derived from the mode) so existing subscribers keep working.
     /// </summary>
     public static class ScaleSettings
     {
-        const string KeyRealDistances = "SolarSystem_UseRealDistances";
-        const string KeyRealSizes = "SolarSystem_UseRealSizes";
+        const string KeyMode = "SolarSystem_ScaleMode";
+        const string KeyRealDistances = "SolarSystem_UseRealDistances"; // legacy
+        const string KeyRealSizes = "SolarSystem_UseRealSizes";         // legacy
+
+        const ScaleMode DefaultMode = ScaleMode.RealDistances;
 
         static bool initialized;
-        static bool useRealDistances;
-        static bool useRealSizes;
+        static ScaleMode mode;
 
+        public static event Action<ScaleMode> ModeChanged;
         public static event Action<bool> UseRealDistancesChanged;
         public static event Action<bool> UseRealSizesChanged;
 
+        public static ScaleMode Mode
+        {
+            get { EnsureInitialized(); return mode; }
+        }
+
         public static bool UseRealDistances
         {
-            get { EnsureInitialized(); return useRealDistances; }
+            get { EnsureInitialized(); return mode != ScaleMode.Educational; }
         }
 
         public static bool UseRealSizes
         {
-            get { EnsureInitialized(); return useRealSizes; }
+            get { EnsureInitialized(); return mode == ScaleMode.TrueScale; }
         }
 
         static void EnsureInitialized()
         {
             if (initialized) return;
 
-            useRealDistances = UnityEngine.PlayerPrefs.GetInt(KeyRealDistances, 1) != 0;
-            useRealSizes = UnityEngine.PlayerPrefs.GetInt(KeyRealSizes, 1) != 0;
+            if (UnityEngine.PlayerPrefs.HasKey(KeyMode))
+                mode = ClampMode(UnityEngine.PlayerPrefs.GetInt(KeyMode, (int)DefaultMode));
+            else
+                mode = MigrateLegacy();
+
             initialized = true;
         }
 
+        static ScaleMode MigrateLegacy()
+        {
+            bool hasLegacy = UnityEngine.PlayerPrefs.HasKey(KeyRealDistances)
+                || UnityEngine.PlayerPrefs.HasKey(KeyRealSizes);
+            if (!hasLegacy)
+                return DefaultMode;
+
+            bool legacyDistances = UnityEngine.PlayerPrefs.GetInt(KeyRealDistances, 1) != 0;
+            bool legacySizes = UnityEngine.PlayerPrefs.GetInt(KeyRealSizes, 1) != 0;
+
+            if (legacySizes)
+                return ScaleMode.TrueScale;
+            if (legacyDistances)
+                return ScaleMode.RealDistances;
+            return ScaleMode.Educational;
+        }
+
+        static ScaleMode ClampMode(int raw)
+        {
+            if (raw < (int)ScaleMode.Educational || raw > (int)ScaleMode.TrueScale)
+                return DefaultMode;
+            return (ScaleMode)raw;
+        }
+
+        public static void SetMode(ScaleMode newMode)
+        {
+            EnsureInitialized();
+            if (mode == newMode) return;
+
+            bool prevDistances = mode != ScaleMode.Educational;
+            bool prevSizes = mode == ScaleMode.TrueScale;
+
+            mode = newMode;
+            UnityEngine.PlayerPrefs.SetInt(KeyMode, (int)mode);
+            UnityEngine.PlayerPrefs.Save();
+
+            ModeChanged?.Invoke(mode);
+
+            bool nowDistances = mode != ScaleMode.Educational;
+            bool nowSizes = mode == ScaleMode.TrueScale;
+            if (nowDistances != prevDistances)
+                UseRealDistancesChanged?.Invoke(nowDistances);
+            if (nowSizes != prevSizes)
+                UseRealSizesChanged?.Invoke(nowSizes);
+        }
+
+        // Backward-compatible helpers that map onto the mutually exclusive presets.
         public static void SetUseRealDistances(bool enabled)
         {
             EnsureInitialized();
-            if (useRealDistances == enabled) return;
-
-            useRealDistances = enabled;
-            UnityEngine.PlayerPrefs.SetInt(KeyRealDistances, enabled ? 1 : 0);
-            UnityEngine.PlayerPrefs.Save();
-            UseRealDistancesChanged?.Invoke(enabled);
+            if (enabled)
+            {
+                if (mode == ScaleMode.Educational)
+                    SetMode(ScaleMode.RealDistances);
+            }
+            else
+            {
+                SetMode(ScaleMode.Educational);
+            }
         }
 
         public static void SetUseRealSizes(bool enabled)
         {
             EnsureInitialized();
-            if (useRealSizes == enabled) return;
-
-            useRealSizes = enabled;
-            UnityEngine.PlayerPrefs.SetInt(KeyRealSizes, enabled ? 1 : 0);
-            UnityEngine.PlayerPrefs.Save();
-            UseRealSizesChanged?.Invoke(enabled);
+            if (enabled)
+                SetMode(ScaleMode.TrueScale);
+            else if (mode == ScaleMode.TrueScale)
+                SetMode(ScaleMode.RealDistances);
         }
 
         public static void ResetToDefaults()
         {
             UnityEngine.PlayerPrefs.DeleteKey(KeyRealDistances);
             UnityEngine.PlayerPrefs.DeleteKey(KeyRealSizes);
+            UnityEngine.PlayerPrefs.DeleteKey(KeyMode);
+
+            bool prevDistances = initialized && mode != ScaleMode.Educational;
+            bool prevSizes = initialized && mode == ScaleMode.TrueScale;
 
             initialized = true;
-            useRealDistances = true;
-            useRealSizes = true;
+            mode = DefaultMode;
 
+            UnityEngine.PlayerPrefs.SetInt(KeyMode, (int)mode);
             UnityEngine.PlayerPrefs.Save();
-            UseRealDistancesChanged?.Invoke(useRealDistances);
-            UseRealSizesChanged?.Invoke(useRealSizes);
+
+            ModeChanged?.Invoke(mode);
+
+            bool nowDistances = mode != ScaleMode.Educational;
+            bool nowSizes = mode == ScaleMode.TrueScale;
+            if (nowDistances != prevDistances)
+                UseRealDistancesChanged?.Invoke(nowDistances);
+            if (nowSizes != prevSizes)
+                UseRealSizesChanged?.Invoke(nowSizes);
         }
     }
 }

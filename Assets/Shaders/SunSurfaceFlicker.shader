@@ -122,8 +122,8 @@ Shader "Custom/SunSurfaceFlicker"
                 float rim = pow(1.0 - saturate(dot(normal, viewDir)), _RimPower);
                 float rimGlow = rim * _RimIntensity;
 
-                half3 color = _BaseColor.rgb * flicker * (1.0 + rimGlow * 1.8);
-                half alpha = _BaseColor.a * flicker + rimGlow * 0.35;
+                half3 color = _BaseColor.rgb * flicker * (0.82 + rimGlow * 1.8);
+                half alpha = saturate(_BaseColor.a * (0.75 + flicker * 0.35) + rimGlow * 0.45);
                 return half4(color, alpha);
             }
             ENDHLSL

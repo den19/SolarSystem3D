@@ -16,8 +16,9 @@ public class SunCoronalVfxController : MonoBehaviour
     const string CmeObjectName = "SunCmeLoop";
 
     const float SunspotsLocalScale = 1.006f;
-    const float FlickerLocalScale = 1.012f;
+    const float FlickerLocalScale = 1.018f;
     const float CmeEmitLocalRadius = 0.52f;
+    const float ReferenceSunWorldRadius = 5f;
     const string CmeMaterialResourcePath = "SunCmeLoopParticle";
 
 #if UNITY_ANDROID || UNITY_IOS
@@ -57,7 +58,9 @@ public class SunCoronalVfxController : MonoBehaviour
     ParticleSystem _cmeParticles;
     Transform _cmeTransform;
     Light _sunLight;
+    Transform _sunTransform;
     float _baseLightIntensity = 100f;
+    float _cmeSizeScale = 1f;
     Coroutine _cmeRoutine;
     bool _built;
 
@@ -76,14 +79,20 @@ public class SunCoronalVfxController : MonoBehaviour
     {
         SceneManager.sceneLoaded += OnSceneLoaded;
         GraphicsSettings.UseExtraGraphicsChanged += OnUseExtraGraphicsChanged;
+        ScaleSettings.UseRealSizesChanged += OnSunScaleSettingsChanged;
+        ScaleSettings.UseRealDistancesChanged += OnSunScaleSettingsChanged;
     }
 
     void OnDisable()
     {
         SceneManager.sceneLoaded -= OnSceneLoaded;
         GraphicsSettings.UseExtraGraphicsChanged -= OnUseExtraGraphicsChanged;
+        ScaleSettings.UseRealSizesChanged -= OnSunScaleSettingsChanged;
+        ScaleSettings.UseRealDistancesChanged -= OnSunScaleSettingsChanged;
         StopCmeRoutine();
     }
+
+    void OnSunScaleSettingsChanged(bool _) => RefreshSunVfxScale();
 
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
@@ -108,10 +117,20 @@ public class SunCoronalVfxController : MonoBehaviour
         if (!sun)
             return;
 
+        _sunTransform = sun.transform;
+
         if (!_built || _vfxRoot == null || _vfxRoot.transform.parent != sun.transform)
             BuildSunVfx(sun.transform);
 
+        RefreshSunVfxScale();
         ApplyHdState();
+        StartCoroutine(RefreshSunVfxScaleNextFrame());
+    }
+
+    IEnumerator RefreshSunVfxScaleNextFrame()
+    {
+        yield return null;
+        RefreshSunVfxScale();
     }
 
     void BuildSunVfx(Transform sunTransform)
@@ -149,6 +168,43 @@ public class SunCoronalVfxController : MonoBehaviour
         _sunLight = sunTransform.GetComponent<Light>();
         if (_sunLight)
             _baseLightIntensity = _sunLight.intensity;
+    }
+
+    static float GetSunWorldRadius(Transform sunTransform)
+    {
+        if (sunTransform == null)
+            return ReferenceSunWorldRadius;
+
+        var col = sunTransform.GetComponent<SphereCollider>();
+        float colliderRadius = col != null ? col.radius : 0.5f;
+        float lossy = Mathf.Max(Mathf.Abs(sunTransform.lossyScale.x),
+            Mathf.Max(Mathf.Abs(sunTransform.lossyScale.y), Mathf.Abs(sunTransform.lossyScale.z)));
+        return colliderRadius * lossy;
+    }
+
+    void RefreshSunVfxScale()
+    {
+        if (_sunTransform == null)
+            return;
+
+        float worldRadius = GetSunWorldRadius(_sunTransform);
+        _cmeSizeScale = Mathf.Clamp(worldRadius / ReferenceSunWorldRadius, 0.05f, 24f);
+
+        if (_sunspotsRenderer != null)
+            _sunspotsRenderer.transform.localScale = Vector3.one * SunspotsLocalScale;
+
+        if (_flickerRenderer != null)
+            _flickerRenderer.transform.localScale = Vector3.one * FlickerLocalScale;
+
+        if (_cmeParticles != null)
+        {
+            var renderer = _cmeParticles.GetComponent<ParticleSystemRenderer>();
+            if (renderer != null)
+            {
+                renderer.lengthScale = CmeLengthScale * _cmeSizeScale;
+                renderer.velocityScale = 0.08f * Mathf.Sqrt(_cmeSizeScale);
+            }
+        }
     }
 
     Renderer CreateSunspotsOverlay(Transform parent)
@@ -219,12 +275,12 @@ public class SunCoronalVfxController : MonoBehaviour
         }
 
         var material = new Material(shader);
-        material.SetColor("_BaseColor", new Color(1f, 0.72f, 0.35f, 0.12f));
-        material.SetFloat("_FlickerIntensity", 0.12f);
+        material.SetColor("_BaseColor", new Color(1f, 0.78f, 0.32f, 0.34f));
+        material.SetFloat("_FlickerIntensity", 0.2f);
         material.SetFloat("_SlowSpeed", 0.35f);
         material.SetFloat("_FastSpeed", 4.5f);
-        material.SetFloat("_RimPower", 3.2f);
-        material.SetFloat("_RimIntensity", 0.22f);
+        material.SetFloat("_RimPower", 2.4f);
+        material.SetFloat("_RimIntensity", 0.42f);
 
         renderer.sharedMaterial = material;
         renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -285,26 +341,26 @@ public class SunCoronalVfxController : MonoBehaviour
         noise.damping = true;
         noise.quality = ParticleSystemNoiseQuality.Medium;
 
-        ApplyCmeBurstProfile(ps, CmeLoopKind.Arcing);
+        ApplyCmeBurstProfile(ps, CmeLoopKind.Arcing, 1f);
     }
 
-    static void ApplyCmeBurstProfile(ParticleSystem ps, CmeLoopKind kind)
+    static void ApplyCmeBurstProfile(ParticleSystem ps, CmeLoopKind kind, float sizeScale)
     {
-        float sizeMin = CmeStartSizeMin;
-        float sizeMax = CmeStartSizeMax;
+        float sizeMin = CmeStartSizeMin * sizeScale;
+        float sizeMax = CmeStartSizeMax * sizeScale;
         float lifetimeMin = 4f;
         float lifetimeMax = 7f;
         float speedMin = 0.08f;
         float speedMax = 0.2f;
         float shapeAngle = 10f;
         float shapeArc = 24f;
-        float shapeRadius = 0.028f;
+        float shapeRadius = 0.028f * sizeScale;
         float velocityScale = 0.08f;
         float lengthScale = CmeLengthScale;
         float burstMin = 55;
         float burstMax = 95;
         float rollDegrees = 360f;
-        float emitRadius = CmeEmitLocalRadius;
+        float emitRadius = CmeEmitLocalRadius * sizeScale;
         Color colorA = new(1f, 0.9f, 0.52f, 1f);
         Color colorB = new(1f, 0.55f, 0.12f, 1f);
         AnimationCurve arcCurve;
@@ -325,7 +381,7 @@ public class SunCoronalVfxController : MonoBehaviour
                 sizeMax *= 0.98f;
                 shapeAngle = 7f;
                 shapeArc = 16f;
-                shapeRadius = 0.02f;
+                shapeRadius = 0.02f * sizeScale;
                 burstMin = 40;
                 burstMax = 68;
                 velocityScale = 0.07f;
@@ -344,12 +400,12 @@ public class SunCoronalVfxController : MonoBehaviour
                 sizeMax *= 1.5f;
                 shapeAngle = 14f;
                 shapeArc = 38f;
-                shapeRadius = 0.04f;
+                shapeRadius = 0.04f * sizeScale;
                 burstMin = 28;
                 burstMax = 48;
                 velocityScale = 0.06f;
                 lengthScale *= 1.1f;
-                emitRadius = CmeEmitLocalRadius * 1.04f;
+                emitRadius = CmeEmitLocalRadius * 1.04f * sizeScale;
                 arcCurve = CmeArcCurve(0.14f, 0.02f, -0.06f, -0.2f);
                 sizeCurve = CmeSizeCurve(0.25f, 1.05f, 0.62f);
                 colorA = new Color(1f, 0.82f, 0.38f, 1f);
@@ -368,7 +424,7 @@ public class SunCoronalVfxController : MonoBehaviour
                 sizeMax *= 0.92f;
                 shapeAngle = 11f;
                 shapeArc = 32f;
-                shapeRadius = 0.034f;
+                shapeRadius = 0.034f * sizeScale;
                 burstMin = 85;
                 burstMax = 130;
                 velocityScale = 0.09f;
@@ -389,7 +445,7 @@ public class SunCoronalVfxController : MonoBehaviour
                 speedMax = 0.17f;
                 shapeAngle = 9f;
                 shapeArc = 26f;
-                shapeRadius = 0.03f;
+                shapeRadius = 0.03f * sizeScale;
                 burstMin = 58;
                 burstMax = 92;
                 velocityScale = 0.08f;
@@ -635,7 +691,16 @@ public class SunCoronalVfxController : MonoBehaviour
             _sunspotsRenderer.enabled = true;
 
         if (_flickerRenderer)
+        {
             _flickerRenderer.enabled = true;
+            var flickerMat = _flickerRenderer.material;
+            if (flickerMat != null)
+            {
+                flickerMat.SetColor("_BaseColor", new Color(1f, 0.78f, 0.32f, 0.34f));
+                flickerMat.SetFloat("_FlickerIntensity", 0.2f);
+                flickerMat.SetFloat("_RimIntensity", 0.42f);
+            }
+        }
 
         if (_cmeParticles)
         {
@@ -683,7 +748,7 @@ public class SunCoronalVfxController : MonoBehaviour
 
         var kinds = (CmeLoopKind[])System.Enum.GetValues(typeof(CmeLoopKind));
         var kind = kinds[Random.Range(0, kinds.Length)];
-        ApplyCmeBurstProfile(_cmeParticles, kind);
+        ApplyCmeBurstProfile(_cmeParticles, kind, _cmeSizeScale);
 
         Vector3 localNormal = Random.onUnitSphere.normalized;
         _cmeTransform.localPosition = localNormal * _pendingEmitRadius;

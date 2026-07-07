@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using SolarSystemApp;
+using SolarScaleMode = SolarSystemApp.ScaleMode;
 using UnityEngine;
 
 /// <summary>
@@ -12,6 +13,13 @@ public class SolarSystemScaleController : MonoBehaviour
     const float MainCamMinDistanceScale = 2.5f;
     const float MainCamDefaultDistanceScale = 6.5f;
     const float AbsoluteMinMainCamDistance = 0.4f;
+
+    // True-scale presentation: sizes use catalog radius ratios softened by this exponent
+    // (1 = literal proportions, lower = small bodies boosted for visibility).
+    const float TrueScaleSizeExponent = 0.4f;
+    const float TrueScalePlanetMinPickWorldRadius = 0.6f;
+    const float TrueScaleSatelliteMinPickWorldRadius = 0.3f;
+    const float BodyMeshRadius = 0.5f;
 
     public struct OrbitSpec
     {
@@ -43,15 +51,17 @@ public class SolarSystemScaleController : MonoBehaviour
 
     public float AuToUnity => _auToUnity;
     Transform _sun;
+    Light _sunLight;
     OrbitLinesManager _orbitLinesManager;
     CometSystemController _cometSystemController;
 
     void Awake()
     {
         _sun = GameObject.Find("Sun")?.transform;
+        if (_sun != null)
+            _sunLight = _sun.GetComponent<Light>();
         CaptureBaselines();
-        ScaleSettings.UseRealDistancesChanged += OnUseRealDistancesChanged;
-        ScaleSettings.UseRealSizesChanged += OnUseRealSizesChanged;
+        ScaleSettings.ModeChanged += OnScaleModeChanged;
     }
 
     void Start()
@@ -63,13 +73,10 @@ public class SolarSystemScaleController : MonoBehaviour
 
     void OnDestroy()
     {
-        ScaleSettings.UseRealDistancesChanged -= OnUseRealDistancesChanged;
-        ScaleSettings.UseRealSizesChanged -= OnUseRealSizesChanged;
+        ScaleSettings.ModeChanged -= OnScaleModeChanged;
     }
 
-    void OnUseRealDistancesChanged(bool enabled) => ApplyAll();
-
-    void OnUseRealSizesChanged(bool enabled) => ApplyAll();
+    void OnScaleModeChanged(SolarScaleMode mode) => ApplyAll();
 
     public void ApplyDistancesOnly()
     {
@@ -157,6 +164,8 @@ public class SolarSystemScaleController : MonoBehaviour
         RescaleComets();
         UpdateMainCameraLimits();
         UpdateGridExtent();
+        UpdateSunLightRange();
+        RefreshGravityGridBodies();
     }
 
     void ApplyDistances()
@@ -255,13 +264,86 @@ public class SolarSystemScaleController : MonoBehaviour
 
     Vector3 GetBodyScale(BodyBaseline baseline, SolarSystemCatalog.BodyDefinition definition)
     {
-        if (ScaleSettings.UseRealSizes)
-            return baseline.LocalScale;
+        if (ScaleSettings.Mode == SolarScaleMode.TrueScale)
+        {
+            float uniform = ComputeTrueScaleUniform(definition);
+            return new Vector3(uniform, uniform, uniform);
+        }
 
         if (SolarSystemLayout.TryGetEducational(definition.objectName, out SolarSystemLayout.EducationalEntry edu))
             return edu.Scale;
 
         return baseline.LocalScale;
+    }
+
+    /// <summary>
+    /// True-scale body scale: catalog radius ratio softened by <see cref="TrueScaleSizeExponent"/>,
+    /// then clamped so no body overlaps the Sun or its neighbouring orbit.
+    /// </summary>
+    float ComputeTrueScaleUniform(SolarSystemCatalog.BodyDefinition definition)
+    {
+        float earthRef = GetEarthReferenceScale();
+        float ratio = SolarSystemCatalog.GetRadiusRatioToEarth(definition.objectName);
+        float uniform = earthRef * Mathf.Pow(Mathf.Max(0.0001f, ratio), TrueScaleSizeExponent);
+
+        float maxWorldRadius = GetTrueScaleMaxWorldRadius(definition);
+        if (maxWorldRadius > 0f)
+        {
+            float worldRadius = BodyMeshRadius * uniform;
+            if (worldRadius > maxWorldRadius)
+                uniform = maxWorldRadius / BodyMeshRadius;
+        }
+
+        return Mathf.Max(0.0001f, uniform);
+    }
+
+    /// <summary>
+    /// Safety cap on a body's world radius in true-scale mode so overlaps are impossible:
+    /// Sun stays inside Mercury's perihelion, planets/moons below a fraction of their own orbit.
+    /// </summary>
+    float GetTrueScaleMaxWorldRadius(SolarSystemCatalog.BodyDefinition definition)
+    {
+        if (definition.objectName == "Sun")
+        {
+            if (SolarSystemCatalog.TryGetBody("Mercury", out SolarSystemCatalog.BodyDefinition mercury))
+            {
+                float perihelion = mercury.orbitalRadiusAu * (1f - mercury.orbitalEccentricity) * _auToUnity;
+                return 0.48f * perihelion;
+            }
+            return 3.5f;
+        }
+
+        if (string.IsNullOrEmpty(definition.orbitCenterName))
+        {
+            float distance = definition.orbitalRadiusAu * _auToUnity;
+            return distance > 0f ? 0.45f * distance : 0f;
+        }
+
+        float satelliteOrbit = GetBaselineOrbitDistance(definition.objectName);
+        return satelliteOrbit > 0f ? 0.40f * satelliteOrbit : 0f;
+    }
+
+    float GetBaselineOrbitDistance(string bodyName)
+    {
+        for (int i = 0; i < _baselines.Count; i++)
+        {
+            if (_baselines[i].Transform != null && _baselines[i].Transform.name == bodyName)
+                return _baselines[i].OrbitDistance;
+        }
+
+        return 0f;
+    }
+
+    float GetEarthReferenceScale()
+    {
+        for (int i = 0; i < _baselines.Count; i++)
+        {
+            BodyBaseline baseline = _baselines[i];
+            if (baseline.Transform != null && baseline.Transform.name == "Earth")
+                return Mathf.Max(0.0001f, baseline.LocalScale.x);
+        }
+
+        return 1f;
     }
 
     void ApplyColliderClamps()
@@ -287,13 +369,26 @@ public class SolarSystemScaleController : MonoBehaviour
             }
 
             float lossy = Mathf.Max(0.0001f, baseline.Transform.lossyScale.x);
-            float meshWorldRadius = 0.5f * lossy;
+            float meshWorldRadius = BodyMeshRadius * lossy;
             float colliderWorldRadius = collider.radius * lossy;
             float worldRadius = Mathf.Max(meshWorldRadius, colliderWorldRadius);
 
-            if (worldRadius < MinPickWorldRadius)
-                collider.radius = MinPickWorldRadius / lossy;
+            float minPick = GetMinPickWorldRadius(baseline.Transform.name);
+            if (worldRadius < minPick)
+                collider.radius = minPick / lossy;
         }
+    }
+
+    float GetMinPickWorldRadius(string bodyName)
+    {
+        if (ScaleSettings.Mode != SolarScaleMode.TrueScale)
+            return MinPickWorldRadius;
+
+        if (SolarSystemCatalog.TryGetBody(bodyName, out SolarSystemCatalog.BodyDefinition definition)
+            && !string.IsNullOrEmpty(definition.orbitCenterName))
+            return TrueScaleSatelliteMinPickWorldRadius;
+
+        return TrueScalePlanetMinPickWorldRadius;
     }
 
     void UpdateGridExtent()
@@ -303,9 +398,43 @@ public class SolarSystemScaleController : MonoBehaviour
             return;
 
         if (ScaleSettings.UseRealDistances)
-            grid.SetHalfExtent(Mathf.Max(120f, SolarSystemCatalog.MaxHeliocentricAu() * _auToUnity * 0.55f));
+        {
+            float outerPlanetDistance = SolarSystemCatalog.MaxHeliocentricAu() * _auToUnity;
+            grid.SetHalfExtent(Mathf.Max(120f, outerPlanetDistance * 1.08f));
+        }
+        else if (SolarSystemLayout.TryGetEducational("Neptune", out SolarSystemLayout.EducationalEntry neptune))
+        {
+            grid.SetHalfExtent(Mathf.Max(120f, neptune.OrbitDistance * 1.12f));
+        }
         else
+        {
             grid.SetHalfExtent(120f);
+        }
+    }
+
+    void RefreshGravityGridBodies()
+    {
+        var grid = FindFirstObjectByType<SpacetimeGridController>();
+        if (grid != null)
+            grid.RefreshBodies();
+    }
+
+    void UpdateSunLightRange()
+    {
+        if (_sunLight == null && _sun != null)
+            _sunLight = _sun.GetComponent<Light>();
+        if (_sunLight == null)
+            return;
+
+        if (ScaleSettings.UseRealDistances)
+        {
+            float outerReach = SolarSystemCatalog.MaxHeliocentricAu() * _auToUnity * 1.2f;
+            _sunLight.range = Mathf.Max(500f, outerReach);
+        }
+        else
+        {
+            _sunLight.range = 500f;
+        }
     }
 
     float GetHeliocentricDistance(BodyBaseline baseline, SolarSystemCatalog.BodyDefinition definition)
@@ -466,7 +595,7 @@ public class SolarSystemScaleController : MonoBehaviour
 
         float maxDistance = SimulationMaxCameraDistance;
         if (ScaleSettings.UseRealDistances)
-            maxDistance = Mathf.Max(SimulationMaxCameraDistance, SolarSystemCatalog.MaxHeliocentricAu() * _auToUnity * 1.15f);
+            maxDistance = Mathf.Max(SimulationMaxCameraDistance, SolarSystemCatalog.MaxHeliocentricAu() * _auToUnity * 1.25f);
 
         float defaultDistance = Mathf.Clamp(
             bodyRadius * MainCamDefaultDistanceScale,

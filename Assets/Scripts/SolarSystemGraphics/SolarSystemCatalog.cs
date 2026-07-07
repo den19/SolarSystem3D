@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 /// <summary>
 /// Astronomical reference data and educational layout helpers for Level1 scale modes.
@@ -169,5 +170,43 @@ public static class SolarSystemCatalog
         }
 
         return max;
+    }
+
+    /// <summary>Equatorial radius relative to Earth (1.0 = Earth size).</summary>
+    public static float GetRadiusRatioToEarth(string objectName)
+    {
+        if (!TryGetBody(objectName, out BodyDefinition definition) || definition.equatorialRadiusKm <= 0f)
+            return 1f;
+
+        return definition.equatorialRadiusKm / EarthEquatorialRadiusKm;
+    }
+
+    /// <summary>
+    /// Uniform local scale for a body when real-size mode uses catalog proportions.
+    /// Earth reference scale is the scene baseline for Earth (typically 1).
+    /// </summary>
+    public static float GetCatalogUniformScale(float earthReferenceScale, string objectName)
+    {
+        float ratio = GetRadiusRatioToEarth(objectName);
+        return earthReferenceScale * ratio;
+    }
+
+    /// <summary>
+    /// Mass proxy for the spacetime grid, normalized so Jupiter ≈ 1 and the Sun dominates via multiplier.
+    /// Uses physical radius ratios, not scene mesh scale.
+    /// </summary>
+    public static float GetGravityWellMass(string objectName, float sunMassMultiplier = 8f)
+    {
+        float radiusRatio = GetRadiusRatioToEarth(objectName);
+        float mass = radiusRatio * radiusRatio * radiusRatio;
+
+        const float jupiterRadiusRatio = 69911f / EarthEquatorialRadiusKm;
+        float normalization = jupiterRadiusRatio * jupiterRadiusRatio * jupiterRadiusRatio;
+        mass /= Mathf.Max(0.0001f, normalization);
+
+        if (objectName == "Sun")
+            mass *= sunMassMultiplier;
+
+        return Mathf.Max(0.0001f, mass);
     }
 }

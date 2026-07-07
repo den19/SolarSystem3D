@@ -138,6 +138,9 @@ public class PlanetTextureManager : MonoBehaviour
 
         GraphicsSettings.UseExtraGraphicsChanged -= OnUseExtraGraphicsChanged;
 
+        ScaleSettings.UseRealSizesChanged -= OnScalePresentationChanged;
+        ScaleSettings.UseRealDistancesChanged -= OnScalePresentationChanged;
+
         if (_instance == this) _instance = null;
 
         if (_earthCloudMat != null) Destroy(_earthCloudMat);
@@ -183,8 +186,15 @@ public class PlanetTextureManager : MonoBehaviour
         GraphicsSettings.UseExtraGraphicsChanged -= OnUseExtraGraphicsChanged;
         GraphicsSettings.UseExtraGraphicsChanged += OnUseExtraGraphicsChanged;
 
+        ScaleSettings.UseRealSizesChanged -= OnScalePresentationChanged;
+        ScaleSettings.UseRealDistancesChanged -= OnScalePresentationChanged;
+        ScaleSettings.UseRealSizesChanged += OnScalePresentationChanged;
+        ScaleSettings.UseRealDistancesChanged += OnScalePresentationChanged;
+
         ApplyAll();
     }
+
+    void OnScalePresentationChanged(bool _) => ApplyAll();
 
     void RegisterBodySwap(string objectName, string hdMaterialResourcePath)
     {
@@ -646,7 +656,44 @@ public class PlanetTextureManager : MonoBehaviour
 
         if (_sunBloomRenderer)
             _sunBloomRenderer.enabled = hq;
-        else EnsureSunBloom();
+        else
+            EnsureSunBloom();
+
+        ConfigureSunPresentation(hq);
+    }
+
+    void ConfigureSunPresentation(bool hq)
+    {
+        var sun = GameObject.Find("Sun");
+        var mr = sun != null ? sun.GetComponent<MeshRenderer>() : null;
+        if (mr == null)
+            return;
+
+        if (!hq)
+        {
+            mr.receiveShadows = true;
+            return;
+        }
+
+        var mat = mr.material;
+        if (mat.HasProperty("_EmissionColor"))
+        {
+            mat.EnableKeyword("_EMISSION");
+            mat.SetColor("_BaseColor", Color.white);
+            mat.SetColor("_EmissionColor", new Color(4.2f, 2.9f, 1.55f));
+        }
+
+        if (mat.HasProperty("_Smoothness"))
+            mat.SetFloat("_Smoothness", 0.96f);
+
+        mr.receiveShadows = false;
+
+        if (_sunBloomRenderer != null)
+        {
+            var bloomMat = _sunBloomRenderer.material;
+            bloomMat.SetColor("_EmissionColor", new Color(2.4f, 1.55f, 0.9f));
+            _sunBloomRenderer.receiveShadows = false;
+        }
     }
 
     public void SetGraphicsQuality(bool highQuality) => GraphicsSettings.SetUseExtraGraphics(highQuality);

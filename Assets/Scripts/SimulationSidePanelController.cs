@@ -1,5 +1,6 @@
 using System.Collections;
 using SolarSystemApp;
+using SolarScaleMode = SolarSystemApp.ScaleMode;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -22,6 +23,7 @@ public class SimulationSidePanelController : MonoBehaviour
     [SerializeField] Toggle labelsToggle;
     [SerializeField] Toggle minimapToggle;
     [SerializeField] Toggle uiToggle;
+    [SerializeField] Toggle educationalToggle;
     [SerializeField] Toggle realDistancesToggle;
     [SerializeField] Toggle realSizesToggle;
     [SerializeField] Toggle realOrbitsToggle;
@@ -91,6 +93,8 @@ public class SimulationSidePanelController : MonoBehaviour
             minimapToggle = FindToggle("SidePanelMinimapLabel_Row");
         if (uiToggle == null)
             uiToggle = FindToggle("SidePanelUiLabel_Row");
+        if (educationalToggle == null)
+            educationalToggle = FindToggle("SidePanelScaleEducationalLabel_Row");
         if (realDistancesToggle == null)
             realDistancesToggle = FindToggle("SidePanelRealDistancesLabel_Row");
         if (realSizesToggle == null)
@@ -249,19 +253,10 @@ public class SimulationSidePanelController : MonoBehaviour
             uiToggle.onValueChanged.AddListener(OnUiToggleChanged);
         }
 
-        if (realDistancesToggle != null)
-        {
-            realDistancesToggle.SetIsOnWithoutNotify(ScaleSettings.UseRealDistances);
-            realDistancesToggle.onValueChanged.RemoveAllListeners();
-            realDistancesToggle.onValueChanged.AddListener(OnRealDistancesToggleChanged);
-        }
-
-        if (realSizesToggle != null)
-        {
-            realSizesToggle.SetIsOnWithoutNotify(ScaleSettings.UseRealSizes);
-            realSizesToggle.onValueChanged.RemoveAllListeners();
-            realSizesToggle.onValueChanged.AddListener(OnRealSizesToggleChanged);
-        }
+        SetupScaleModeToggle(educationalToggle, SolarScaleMode.Educational);
+        SetupScaleModeToggle(realDistancesToggle, SolarScaleMode.RealDistances);
+        SetupScaleModeToggle(realSizesToggle, SolarScaleMode.TrueScale);
+        SyncScaleModeToggles(ScaleSettings.Mode);
 
         if (realOrbitsToggle != null)
         {
@@ -290,8 +285,7 @@ public class SimulationSidePanelController : MonoBehaviour
         SimulationViewSettings.ShowSimulationUiChanged += OnUiSettingChanged;
         SimulationViewSettings.UseFreeObservationChanged += OnFreeObservationSettingChanged;
         GravityGridSettings.UseGravityGridChanged += OnGravityGridSettingChanged;
-        ScaleSettings.UseRealDistancesChanged += OnRealDistancesSettingChanged;
-        ScaleSettings.UseRealSizesChanged += OnRealSizesSettingChanged;
+        ScaleSettings.ModeChanged += OnScaleModeSettingChanged;
         OrbitSettings.UseRealOrbitsChanged += OnRealOrbitsSettingChanged;
         CometMovementSettings.UseCometMovementChanged += OnCometMovementSettingChanged;
 
@@ -308,8 +302,7 @@ public class SimulationSidePanelController : MonoBehaviour
         SimulationViewSettings.ShowSimulationUiChanged -= OnUiSettingChanged;
         SimulationViewSettings.UseFreeObservationChanged -= OnFreeObservationSettingChanged;
         GravityGridSettings.UseGravityGridChanged -= OnGravityGridSettingChanged;
-        ScaleSettings.UseRealDistancesChanged -= OnRealDistancesSettingChanged;
-        ScaleSettings.UseRealSizesChanged -= OnRealSizesSettingChanged;
+        ScaleSettings.ModeChanged -= OnScaleModeSettingChanged;
         OrbitSettings.UseRealOrbitsChanged -= OnRealOrbitsSettingChanged;
         CometMovementSettings.UseCometMovementChanged -= OnCometMovementSettingChanged;
 
@@ -347,16 +340,54 @@ public class SimulationSidePanelController : MonoBehaviour
         SimulationViewSettings.SetShowSimulationUi(isOn);
     }
 
-    void OnRealDistancesToggleChanged(bool isOn)
+    void SetupScaleModeToggle(Toggle toggle, SolarScaleMode mode)
     {
-        if (isInitializing) return;
-        ScaleSettings.SetUseRealDistances(isOn);
+        if (toggle == null)
+            return;
+
+        toggle.SetIsOnWithoutNotify(ScaleSettings.Mode == mode);
+        toggle.onValueChanged.RemoveAllListeners();
+        toggle.onValueChanged.AddListener(isOn => OnScaleModeToggleChanged(mode, isOn));
     }
 
-    void OnRealSizesToggleChanged(bool isOn)
+    void OnScaleModeToggleChanged(SolarScaleMode mode, bool isOn)
     {
         if (isInitializing) return;
-        ScaleSettings.SetUseRealSizes(isOn);
+
+        if (isOn)
+        {
+            ScaleSettings.SetMode(mode);
+            return;
+        }
+
+        // Radio behaviour: never allow all three off. Re-arm the one the user tried to clear.
+        if (!AnyScaleModeToggleOn())
+            GetScaleModeToggle(mode)?.SetIsOnWithoutNotify(true);
+    }
+
+    bool AnyScaleModeToggleOn()
+    {
+        return (educationalToggle != null && educationalToggle.isOn)
+            || (realDistancesToggle != null && realDistancesToggle.isOn)
+            || (realSizesToggle != null && realSizesToggle.isOn);
+    }
+
+    Toggle GetScaleModeToggle(SolarScaleMode mode)
+    {
+        switch (mode)
+        {
+            case SolarScaleMode.Educational: return educationalToggle;
+            case SolarScaleMode.RealDistances: return realDistancesToggle;
+            case SolarScaleMode.TrueScale: return realSizesToggle;
+            default: return null;
+        }
+    }
+
+    void SyncScaleModeToggles(SolarScaleMode mode)
+    {
+        educationalToggle?.SetIsOnWithoutNotify(mode == SolarScaleMode.Educational);
+        realDistancesToggle?.SetIsOnWithoutNotify(mode == SolarScaleMode.RealDistances);
+        realSizesToggle?.SetIsOnWithoutNotify(mode == SolarScaleMode.TrueScale);
     }
 
     void OnRealOrbitsToggleChanged(bool isOn)
@@ -407,16 +438,9 @@ public class SimulationSidePanelController : MonoBehaviour
             uiToggle.SetIsOnWithoutNotify(isOn);
     }
 
-    void OnRealDistancesSettingChanged(bool isOn)
+    void OnScaleModeSettingChanged(SolarScaleMode mode)
     {
-        if (realDistancesToggle != null)
-            realDistancesToggle.SetIsOnWithoutNotify(isOn);
-    }
-
-    void OnRealSizesSettingChanged(bool isOn)
-    {
-        if (realSizesToggle != null)
-            realSizesToggle.SetIsOnWithoutNotify(isOn);
+        SyncScaleModeToggles(mode);
     }
 
     void OnRealOrbitsSettingChanged(bool isOn)

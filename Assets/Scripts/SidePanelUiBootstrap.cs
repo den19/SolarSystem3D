@@ -23,6 +23,7 @@ public static class SidePanelUiBootstrap
         ("SidePanelLabelsLabel_Row", "SidePanelLabelsLabel"),
         ("SidePanelMinimapLabel_Row", "SidePanelMinimapLabel"),
         ("SidePanelUiLabel_Row", "SidePanelUiLabel"),
+        ("SidePanelScaleEducationalLabel_Row", "SidePanelScaleEducationalLabel"),
         ("SidePanelRealDistancesLabel_Row", "SidePanelRealDistancesLabel"),
         ("SidePanelRealSizesLabel_Row", "SidePanelRealSizesLabel"),
         ("SidePanelRealOrbitsLabel_Row", "SidePanelRealOrbitsLabel"),
