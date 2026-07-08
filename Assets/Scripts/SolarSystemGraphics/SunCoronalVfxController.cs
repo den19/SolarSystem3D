@@ -15,10 +15,19 @@ public class SunCoronalVfxController : MonoBehaviour
     const string VfxRootName = "ExtraGraphicsSunCoronalVfx";
     const string SunspotsObjectName = "ExtraGraphicsSunSunspots";
     const string FlickerObjectName = "ExtraGraphicsSunSurfaceFlicker";
+    const string GranulationObjectName = "ExtraGraphicsSunGranulation";
     const string CmeObjectName = "SunCmeLoop";
 
     const float SunspotsLocalScale = 1.006f;
     const float FlickerLocalScale = 1.018f;
+    const float GranulationLocalScale = 1.022f;
+    const float GranulationFullZoomNorm = 4.5f;
+    const float GranulationFadeEndNorm = 9f;
+    const float GranulationDisableThreshold = 0.02f;
+    const float RealSunFlickerIntensity = 0.6f;
+    const float CloseZoomFlickerIntensity = 0.15f;
+    const float RealSunSpotStrength = 1f;
+    const float CloseZoomSpotStrength = 0.35f;
     const float CmeEmitLocalRadius = 0.52f;
     const float ReferenceSunWorldRadius = 5f;
     const string CmeMaterialResourcePath = "SunCmeLoopParticle";
@@ -59,9 +68,15 @@ public class SunCoronalVfxController : MonoBehaviour
     static Material _cachedCmeMaterial;
     static Texture2D _cachedCmeSoftTexture;
 
+    static readonly int DetailBlendId = Shader.PropertyToID("_DetailBlend");
+    static readonly int OverlayAlphaId = Shader.PropertyToID("_OverlayAlpha");
+    static readonly int FlickerIntensityId = Shader.PropertyToID("_FlickerIntensity");
+    static readonly int SpotStrengthId = Shader.PropertyToID("_SpotStrength");
+
     GameObject _vfxRoot;
     Renderer _sunspotsRenderer;
     Renderer _flickerRenderer;
+    Renderer _granulationRenderer;
     Renderer _sunBaseRenderer;
     Renderer _sunBloomRenderer;
     ParticleSystem _cmeParticles;
@@ -72,6 +87,12 @@ public class SunCoronalVfxController : MonoBehaviour
     float _cmeSizeScale = 1f;
     Coroutine _cmeRoutine;
     bool _built;
+    MaterialPropertyBlock _granulationPropertyBlock;
+    MaterialPropertyBlock _flickerPropertyBlock;
+    MaterialPropertyBlock _sunspotsPropertyBlock;
+    LookAtTarget _lookAtTarget;
+    MobileOrbitCamera _orbitCamera;
+    float _lastDetailBlend = -1f;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Bootstrap()
@@ -132,6 +153,9 @@ public class SunCoronalVfxController : MonoBehaviour
 
         _sunTransform = sun.transform;
         _sunBaseRenderer = sun.GetComponent<Renderer>();
+        _orbitCamera = null;
+        _lookAtTarget = null;
+        _lastDetailBlend = -1f;
         CacheSunBloomRenderer(sun.transform);
 
         if (!_built || _vfxRoot == null || _vfxRoot.transform.parent != sun.transform)
@@ -150,16 +174,32 @@ public class SunCoronalVfxController : MonoBehaviour
         if (_sunBloomRenderer == null && _sunTransform != null)
             CacheSunBloomRenderer(_sunTransform);
 
+        float detailBlend = EvaluateSunDetailBlend();
+        ApplySunSurfaceLod(detailBlend);
+
         float t = Time.time;
-        float n1 = Mathf.PerlinNoise(t * 0.5f, 0f);
-        float n2 = Mathf.PerlinNoise(t * 2.3f, 5.2f);
-        float n3 = Mathf.PerlinNoise(t * 6.5f, 11.3f);
+        float pulseScale = Mathf.Lerp(1f, 1.4f, detailBlend);
+        float n1 = Mathf.PerlinNoise(t * 0.5f * pulseScale, 0f);
+        float n2 = Mathf.PerlinNoise(t * 2.3f * pulseScale, 5.2f);
+        float n3 = Mathf.PerlinNoise(t * 6.5f * pulseScale, 11.3f);
         float raw = n1 * 0.46f + n2 * 0.34f + n3 * 0.2f;
-        float blend = Mathf.Clamp01((raw - 0.5f) * 3.1f + 0.5f);
+        float blend = Mathf.Clamp01((raw - 0.5f) * Mathf.Lerp(3.1f, 2.2f, detailBlend) + 0.5f);
 
         var deep = new Color(1.7f, 0.34f, 0.0f);
         var bright = new Color(4.6f, 1.85f, 0.12f);
         var emission = Color.Lerp(deep, bright, blend);
+        emission = Color.Lerp(
+            Color.Lerp(deep, bright, 0.5f),
+            emission,
+            Mathf.Lerp(1f, 0.55f, detailBlend));
+        // Dim the base emission strongly when zoomed in so the bright HDR sphere and
+        // its bloom don't wash out the granulation overlay drawn on top.
+        float emissionDim = Mathf.Lerp(1f, 0.18f, detailBlend);
+        emission *= emissionDim;
+
+        var uniformBase = new Color(1f, 0.55f, 0.12f);
+        var animatedBase = new Color(1f, Mathf.Lerp(0.42f, 0.82f, blend), Mathf.Lerp(0.06f, 0.28f, blend));
+        var baseColor = Color.Lerp(animatedBase, uniformBase, detailBlend);
 
         var mat = _sunBaseRenderer.material;
         if (mat != null && mat.HasProperty("_EmissionColor"))
@@ -167,7 +207,7 @@ public class SunCoronalVfxController : MonoBehaviour
             mat.EnableKeyword("_EMISSION");
             mat.SetColor("_EmissionColor", emission);
             if (mat.HasProperty("_BaseColor"))
-                mat.SetColor("_BaseColor", new Color(1f, Mathf.Lerp(0.42f, 0.82f, blend), Mathf.Lerp(0.06f, 0.28f, blend)));
+                mat.SetColor("_BaseColor", baseColor);
         }
 
         if (_sunBloomRenderer != null && _sunBloomRenderer.enabled)
@@ -178,8 +218,107 @@ public class SunCoronalVfxController : MonoBehaviour
                 bloomMat.EnableKeyword("_EMISSION");
                 var bloomDeep = new Color(1.2f, 0.45f, 0.06f);
                 var bloomBright = new Color(2.8f, 1.2f, 0.22f);
-                bloomMat.SetColor("_EmissionColor", Color.Lerp(bloomDeep, bloomBright, blend));
+                var bloomEmission = Color.Lerp(bloomDeep, bloomBright, blend);
+                bloomEmission = Color.Lerp(
+                    Color.Lerp(bloomDeep, bloomBright, 0.5f),
+                    bloomEmission,
+                    Mathf.Lerp(1f, 0.7f, detailBlend));
+                bloomEmission *= Mathf.Lerp(1f, 0.28f, detailBlend);
+                bloomMat.SetColor("_EmissionColor", bloomEmission);
             }
+        }
+    }
+
+    float EvaluateSunDetailBlend()
+    {
+        if (_sunTransform == null)
+            return 0f;
+
+        if (!IsSunCameraFocused())
+            return 0f;
+
+        float sunRadius = GetSunWorldRadius(_sunTransform);
+        if (sunRadius <= 0.0001f)
+            return 0f;
+
+        float camDistance = ResolveMainCameraDistance();
+        float normDist = camDistance / sunRadius;
+        return 1f - Mathf.SmoothStep(GranulationFullZoomNorm, GranulationFadeEndNorm, normDist);
+    }
+
+    bool IsSunCameraFocused()
+    {
+        if (_lookAtTarget == null)
+            _lookAtTarget = FindFirstObjectByType<LookAtTarget>();
+
+        if (_lookAtTarget == null || _lookAtTarget.currentTarget == null)
+            return false;
+
+        return _lookAtTarget.currentTarget.name == SunObjectName;
+    }
+
+    float ResolveMainCameraDistance()
+    {
+        if (_orbitCamera == null)
+        {
+            var mainCam = Camera.main;
+            if (mainCam != null)
+                _orbitCamera = mainCam.GetComponent<MobileOrbitCamera>();
+        }
+
+        if (_orbitCamera != null)
+            return _orbitCamera.distance;
+
+        if (_sunTransform == null)
+            return GranulationFadeEndNorm * ReferenceSunWorldRadius;
+
+        var cam = Camera.main;
+        if (cam == null)
+            return GranulationFadeEndNorm * GetSunWorldRadius(_sunTransform);
+
+        return Vector3.Distance(cam.transform.position, _sunTransform.position);
+    }
+
+    void ApplySunSurfaceLod(float detailBlend)
+    {
+        if (Mathf.Abs(detailBlend - _lastDetailBlend) < 0.001f)
+            return;
+
+        _lastDetailBlend = detailBlend;
+
+        if (_granulationRenderer != null)
+        {
+            bool showGranulation = detailBlend > GranulationDisableThreshold;
+            _granulationRenderer.enabled = showGranulation;
+
+            if (showGranulation)
+            {
+                _granulationPropertyBlock ??= new MaterialPropertyBlock();
+                _granulationRenderer.GetPropertyBlock(_granulationPropertyBlock);
+                _granulationPropertyBlock.SetFloat(DetailBlendId, detailBlend);
+                _granulationPropertyBlock.SetFloat(OverlayAlphaId, 0.95f);
+                _granulationRenderer.SetPropertyBlock(_granulationPropertyBlock);
+            }
+        }
+
+        if (_flickerRenderer != null && _flickerRenderer.enabled)
+        {
+            _flickerPropertyBlock ??= new MaterialPropertyBlock();
+            _flickerRenderer.GetPropertyBlock(_flickerPropertyBlock);
+            _flickerPropertyBlock.SetFloat(
+                FlickerIntensityId,
+                Mathf.Lerp(RealSunFlickerIntensity, CloseZoomFlickerIntensity, detailBlend));
+            _flickerRenderer.SetPropertyBlock(_flickerPropertyBlock);
+        }
+
+        if (_sunspotsRenderer != null && _sunspotsRenderer.enabled)
+        {
+            _sunspotsPropertyBlock ??= new MaterialPropertyBlock();
+            _sunspotsRenderer.GetPropertyBlock(_sunspotsPropertyBlock);
+            _sunspotsPropertyBlock.SetFloat(
+                SpotStrengthId,
+                Mathf.Lerp(RealSunSpotStrength, CloseZoomSpotStrength, detailBlend));
+            _sunspotsRenderer.SetPropertyBlock(_sunspotsPropertyBlock);
         }
     }
 
@@ -200,6 +339,13 @@ public class SunCoronalVfxController : MonoBehaviour
             if (_sunspotsRenderer == null)
                 _sunspotsRenderer = CreateSunspotsOverlay(_vfxRoot.transform);
             _flickerRenderer = _vfxRoot.transform.Find(FlickerObjectName)?.GetComponent<Renderer>();
+            if (_flickerRenderer == null)
+                _flickerRenderer = CreateFlickerOverlay(_vfxRoot.transform);
+            _granulationRenderer = _vfxRoot.transform.Find(GranulationObjectName)?.GetComponent<Renderer>();
+            if (_granulationRenderer == null)
+                _granulationRenderer = CreateGranulationOverlay(_vfxRoot.transform);
+            else if (_granulationRenderer.sharedMaterial != null)
+                ApplyGranulationMaterialProfile(_granulationRenderer.sharedMaterial);
             _cmeTransform = _vfxRoot.transform.Find(CmeObjectName);
             _cmeParticles = _cmeTransform ? _cmeTransform.GetComponent<ParticleSystem>() : null;
             CacheSunLight(sunTransform);
@@ -216,6 +362,7 @@ public class SunCoronalVfxController : MonoBehaviour
 
         _sunspotsRenderer = CreateSunspotsOverlay(_vfxRoot.transform);
         _flickerRenderer = CreateFlickerOverlay(_vfxRoot.transform);
+        _granulationRenderer = CreateGranulationOverlay(_vfxRoot.transform);
         CreateCmeLoop(_vfxRoot.transform, out _cmeTransform, out _cmeParticles);
         CacheSunLight(sunTransform);
         CacheSunBloomRenderer(sunTransform);
@@ -261,6 +408,9 @@ public class SunCoronalVfxController : MonoBehaviour
 
         if (_flickerRenderer != null)
             _flickerRenderer.transform.localScale = Vector3.one * FlickerLocalScale;
+
+        if (_granulationRenderer != null)
+            _granulationRenderer.transform.localScale = Vector3.one * GranulationLocalScale;
 
         if (_cmeParticles != null)
         {
@@ -347,6 +497,38 @@ public class SunCoronalVfxController : MonoBehaviour
         material.SetFloat("_FastSpeed", 4.5f);
         material.SetFloat("_RimPower", 2.4f);
         material.SetFloat("_RimIntensity", 0.42f);
+
+        renderer.sharedMaterial = material;
+        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        renderer.receiveShadows = false;
+        renderer.enabled = false;
+        return renderer;
+    }
+
+    Renderer CreateGranulationOverlay(Transform parent)
+    {
+        var granulation = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        granulation.name = GranulationObjectName;
+        granulation.transform.SetParent(parent, false);
+        granulation.transform.localPosition = Vector3.zero;
+        granulation.transform.localRotation = Quaternion.identity;
+        granulation.transform.localScale = Vector3.one * GranulationLocalScale;
+
+        var collider = granulation.GetComponent<Collider>();
+        if (collider)
+            Destroy(collider);
+
+        var renderer = granulation.GetComponent<MeshRenderer>();
+        var shader = Shader.Find("Custom/SunGranulation");
+        if (shader == null)
+        {
+            Debug.LogWarning("SunCoronalVfxController: Custom/SunGranulation shader not found.");
+            renderer.enabled = false;
+            return renderer;
+        }
+
+        var material = new Material(shader);
+        ApplyGranulationMaterialProfile(material);
 
         renderer.sharedMaterial = material;
         renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -736,6 +918,22 @@ public class SunCoronalVfxController : MonoBehaviour
         renderer.receiveShadows = false;
     }
 
+    static void ApplyGranulationMaterialProfile(Material material)
+    {
+        if (material == null)
+            return;
+
+        material.SetColor("_CellColor", new Color(1.3f, 0.9f, 0.32f, 1f));
+        material.SetColor("_LaneColor", new Color(0.09f, 0.03f, 0.008f, 1f));
+        material.SetFloat("_GranuleScale", 2f);
+        material.SetFloat("_LaneWidth", 0.22f);
+        material.SetFloat("_DriftSpeed", 0.045f);
+        material.SetFloat("_PulseAmount", 0.28f);
+        material.SetFloat("_PulseSpeed", 1.1f);
+        material.SetFloat("_DetailBlend", 0f);
+        material.SetFloat("_OverlayAlpha", 1f);
+    }
+
     static void ApplyRealSunFlickerProfile(Material flickerMat)
     {
         if (flickerMat == null)
@@ -778,13 +976,27 @@ public class SunCoronalVfxController : MonoBehaviour
         }
 
         if (_sunspotsRenderer)
+        {
             _sunspotsRenderer.enabled = true;
+            _sunspotsPropertyBlock ??= new MaterialPropertyBlock();
+            _sunspotsRenderer.SetPropertyBlock(null);
+        }
 
         if (_flickerRenderer)
         {
             _flickerRenderer.enabled = true;
-            ApplyRealSunFlickerProfile(_flickerRenderer.material);
+            ApplyRealSunFlickerProfile(_flickerRenderer.sharedMaterial);
+            _flickerPropertyBlock ??= new MaterialPropertyBlock();
+            _flickerRenderer.SetPropertyBlock(null);
         }
+
+        if (_granulationRenderer)
+        {
+            _granulationRenderer.enabled = false;
+            ApplyGranulationMaterialProfile(_granulationRenderer.sharedMaterial);
+        }
+
+        _lastDetailBlend = -1f;
 
         if (_cmeParticles)
         {
