@@ -1,7 +1,9 @@
 using System.Collections;
+using System.Collections.Generic;
 using SolarSystemApp;
 using SolarScaleMode = SolarSystemApp.ScaleMode;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
@@ -41,6 +43,8 @@ public class SimulationSidePanelController : MonoBehaviour
     bool lastIsLandscape;
     bool safeAreaCached;
 
+    static readonly List<RaycastResult> s_raycastResults = new List<RaycastResult>(8);
+
     static bool IsLandscape => Screen.width > Screen.height;
 
     void Awake()
@@ -59,6 +63,8 @@ public class SimulationSidePanelController : MonoBehaviour
     {
         if (!safeAreaCached)
             return;
+
+        TryCloseOnOutsideClick();
 
         bool landscape = IsLandscape;
         Rect safeArea = Screen.safeArea;
@@ -528,5 +534,64 @@ public class SimulationSidePanelController : MonoBehaviour
 
         panelRect.anchoredPosition = end;
         slideRoutine = null;
+    }
+
+    void TryCloseOnOutsideClick()
+    {
+        if (!isPanelOpen || isInitializing)
+            return;
+
+        if (EventSystem.current == null)
+            return;
+
+        if (!TryGetPrimaryPointerDown(out Vector2 screenPosition))
+            return;
+
+        if (IsPointerOverPanelOrMenu(screenPosition))
+            return;
+
+        SetPanelOpen(false);
+    }
+
+    static bool TryGetPrimaryPointerDown(out Vector2 screenPosition)
+    {
+        TouchInputBridge.EnsureInitialized();
+
+        for (int i = 0; i < TouchInputBridge.touchCount; i++)
+        {
+            TouchInputBridge.TouchSample touch = TouchInputBridge.GetTouch(i);
+            if (touch.phase == TouchPhase.Began)
+            {
+                screenPosition = touch.position;
+                return true;
+            }
+        }
+
+        if (TouchInputBridge.touchCount == 0 && Input.GetMouseButtonDown(0))
+        {
+            screenPosition = Input.mousePosition;
+            return true;
+        }
+
+        screenPosition = default;
+        return false;
+    }
+
+    bool IsPointerOverPanelOrMenu(Vector2 screenPosition)
+    {
+        s_raycastResults.Clear();
+        var eventData = new PointerEventData(EventSystem.current) { position = screenPosition };
+        EventSystem.current.RaycastAll(eventData, s_raycastResults);
+
+        for (int i = 0; i < s_raycastResults.Count; i++)
+        {
+            Transform hit = s_raycastResults[i].gameObject.transform;
+            if (panelRect != null && hit.IsChildOf(panelRect))
+                return true;
+            if (menuButton != null && hit.IsChildOf(menuButton.transform))
+                return true;
+        }
+
+        return false;
     }
 }
