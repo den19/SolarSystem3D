@@ -687,8 +687,8 @@ public class PlanetTextureManager : MonoBehaviour
             if (lowMat.HasProperty("_EmissionColor"))
             {
                 lowMat.EnableKeyword("_EMISSION");
-                lowMat.SetColor("_BaseColor", new Color(1f, 0.6f, 0.15f));
-                lowMat.SetColor("_EmissionColor", new Color(2.2f, 0.9f, 0.05f));
+                lowMat.SetColor("_BaseColor", new Color(1f, 0.55f, 0.12f));
+                lowMat.SetColor("_EmissionColor", new Color(3.0f, 1.2f, 0.06f));
             }
 
             return;
@@ -700,8 +700,8 @@ public class PlanetTextureManager : MonoBehaviour
             mat.EnableKeyword("_EMISSION");
             if (realSun)
             {
-                mat.SetColor("_BaseColor", new Color(1f, 0.6f, 0.15f));
-                mat.SetColor("_EmissionColor", new Color(2.2f, 0.9f, 0.05f));
+                mat.SetColor("_BaseColor", new Color(1f, 0.55f, 0.12f));
+                mat.SetColor("_EmissionColor", new Color(3.0f, 1.2f, 0.06f));
             }
             else
             {
@@ -719,7 +719,7 @@ public class PlanetTextureManager : MonoBehaviour
         {
             var bloomMat = _sunBloomRenderer.material;
             if (realSun)
-                bloomMat.SetColor("_EmissionColor", new Color(1.4f, 0.6f, 0.12f));
+                bloomMat.SetColor("_EmissionColor", new Color(2.0f, 0.85f, 0.16f));
             else
                 bloomMat.SetColor("_EmissionColor", new Color(2.4f, 1.55f, 0.9f));
             _sunBloomRenderer.receiveShadows = false;

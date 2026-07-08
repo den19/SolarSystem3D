@@ -31,7 +31,7 @@ public class SunCoronalVfxController : MonoBehaviour
     const float CmeBurstIntervalMax = 16f;
     const float CmeInitialDelayMin = 2.5f;
     const float CmeInitialDelayMax = 5f;
-    const float CmeContinuousRate = 8f;
+    const float CmeContinuousRate = 16f;
 #else
     const float CmeStartSizeMin = 0.07f;
     const float CmeStartSizeMax = 0.16f;
@@ -40,11 +40,11 @@ public class SunCoronalVfxController : MonoBehaviour
     const float CmeBurstIntervalMax = 26f;
     const float CmeInitialDelayMin = 4f;
     const float CmeInitialDelayMax = 8f;
-    const float CmeContinuousRate = 6f;
+    const float CmeContinuousRate = 12f;
 #endif
 
-    const float CmeBurstIntervalScaleRealSun = 0.45f;
-    const float CmeInitialDelayScaleRealSun = 0.5f;
+    const float CmeBurstIntervalScaleRealSun = 0.3f;
+    const float CmeInitialDelayScaleRealSun = 0.4f;
 
     enum CmeLoopKind
     {
@@ -151,14 +151,14 @@ public class SunCoronalVfxController : MonoBehaviour
             CacheSunBloomRenderer(_sunTransform);
 
         float t = Time.time;
-        float n1 = Mathf.PerlinNoise(t * 0.35f, 0f);
-        float n2 = Mathf.PerlinNoise(t * 1.7f, 5.2f);
-        float n3 = Mathf.PerlinNoise(t * 4.5f, 11.3f);
-        float raw = n1 * 0.5f + n2 * 0.35f + n3 * 0.15f;
-        float blend = Mathf.Clamp01((raw - 0.5f) * 2.2f + 0.5f);
+        float n1 = Mathf.PerlinNoise(t * 0.5f, 0f);
+        float n2 = Mathf.PerlinNoise(t * 2.3f, 5.2f);
+        float n3 = Mathf.PerlinNoise(t * 6.5f, 11.3f);
+        float raw = n1 * 0.46f + n2 * 0.34f + n3 * 0.2f;
+        float blend = Mathf.Clamp01((raw - 0.5f) * 3.1f + 0.5f);
 
-        var deep = new Color(1.2f, 0.32f, 0.02f);
-        var bright = new Color(3.0f, 1.25f, 0.08f);
+        var deep = new Color(1.7f, 0.34f, 0.0f);
+        var bright = new Color(4.6f, 1.85f, 0.12f);
         var emission = Color.Lerp(deep, bright, blend);
 
         var mat = _sunBaseRenderer.material;
@@ -167,7 +167,7 @@ public class SunCoronalVfxController : MonoBehaviour
             mat.EnableKeyword("_EMISSION");
             mat.SetColor("_EmissionColor", emission);
             if (mat.HasProperty("_BaseColor"))
-                mat.SetColor("_BaseColor", new Color(1f, Mathf.Lerp(0.5f, 0.8f, blend), Mathf.Lerp(0.12f, 0.32f, blend)));
+                mat.SetColor("_BaseColor", new Color(1f, Mathf.Lerp(0.42f, 0.82f, blend), Mathf.Lerp(0.06f, 0.28f, blend)));
         }
 
         if (_sunBloomRenderer != null && _sunBloomRenderer.enabled)
@@ -176,8 +176,8 @@ public class SunCoronalVfxController : MonoBehaviour
             if (bloomMat != null && bloomMat.HasProperty("_EmissionColor"))
             {
                 bloomMat.EnableKeyword("_EMISSION");
-                var bloomDeep = new Color(0.9f, 0.35f, 0.06f);
-                var bloomBright = new Color(1.8f, 0.8f, 0.18f);
+                var bloomDeep = new Color(1.2f, 0.45f, 0.06f);
+                var bloomBright = new Color(2.8f, 1.2f, 0.22f);
                 bloomMat.SetColor("_EmissionColor", Color.Lerp(bloomDeep, bloomBright, blend));
             }
         }
@@ -741,11 +741,11 @@ public class SunCoronalVfxController : MonoBehaviour
         if (flickerMat == null)
             return;
 
-        flickerMat.SetColor("_BaseColor", new Color(1f, 0.7f, 0.25f, 0.5f));
-        flickerMat.SetFloat("_FlickerIntensity", 0.45f);
-        flickerMat.SetFloat("_RimIntensity", 0.75f);
-        flickerMat.SetFloat("_FastSpeed", 6f);
-        flickerMat.SetFloat("_SlowSpeed", 0.6f);
+        flickerMat.SetColor("_BaseColor", new Color(1f, 0.62f, 0.16f, 0.62f));
+        flickerMat.SetFloat("_FlickerIntensity", 0.6f);
+        flickerMat.SetFloat("_RimIntensity", 0.95f);
+        flickerMat.SetFloat("_FastSpeed", 8f);
+        flickerMat.SetFloat("_SlowSpeed", 0.85f);
     }
 
     void SetCmeContinuousEmission(bool active)
