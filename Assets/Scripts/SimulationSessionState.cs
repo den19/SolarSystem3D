@@ -1,4 +1,12 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
+
+public enum SimulationLaunchMode
+{
+    New,
+    Continue
+}
 
 public static class SimulationSessionState
 {
@@ -12,6 +20,10 @@ public static class SimulationSessionState
     private const string KeyDetailCamX = "SolarSystem_DetailCamX";
     private const string KeyDetailCamY = "SolarSystem_DetailCamY";
     private const string KeyDetailCamDistance = "SolarSystem_DetailCamDistance";
+    private const string KeyActiveCamDistance = "SolarSystem_ActiveCamDistance";
+    private const string KeyMotionSnapshot = "SolarSystem_MotionSnapshot";
+
+    public static SimulationLaunchMode PendingLaunchMode { get; set; } = SimulationLaunchMode.New;
 
     public static bool HasSavedState { get; private set; }
     public static string SelectedPlanetName { get; private set; } = "Earth";
@@ -23,10 +35,38 @@ public static class SimulationSessionState
     public static float DetailCamX { get; private set; }
     public static float DetailCamY { get; private set; }
     public static float DetailCamDistance { get; private set; } = 4.5f;
+    public static float ActiveCameraDistance { get; private set; } = 8f;
+
+    static MotionSnapshot _motionSnapshot;
+
+    [Serializable]
+    class BodyMotionSnapshot
+    {
+        public string name;
+        public bool usePhase;
+        public float phaseRad;
+        public float posX;
+        public float posY;
+        public float posZ;
+    }
+
+    [Serializable]
+    class CometMotionSnapshot
+    {
+        public string name;
+        public float angle;
+    }
+
+    [Serializable]
+    class MotionSnapshot
+    {
+        public BodyMotionSnapshot[] bodies;
+        public CometMotionSnapshot[] comets;
+    }
 
     public static void CaptureFromScene()
     {
-        LookAtTarget lookAt = Object.FindFirstObjectByType<LookAtTarget>();
+        LookAtTarget lookAt = UnityEngine.Object.FindFirstObjectByType<LookAtTarget>();
         if (lookAt == null)
         {
             Debug.LogWarning("[SimulationSessionState] LookAtTarget not found; session state not captured.");
@@ -37,9 +77,15 @@ public static class SimulationSessionState
         IsDetailCamera = lookAt.mainCamera != null && !lookAt.mainCamera.enabled;
         TimeScale = UnityEngine.Time.timeScale > 0f ? UnityEngine.Time.timeScale : 1f;
 
+        Transform observedTarget = lookAt.currentTarget != null ? lookAt.currentTarget.transform : null;
+
         float mainCamX, mainCamY, mainCamDistance;
-        CaptureOrbitFromCamera(lookAt.mainCamera != null ? lookAt.mainCamera.gameObject : null,
-            out mainCamX, out mainCamY, out mainCamDistance);
+        CaptureOrbitFromCamera(
+            lookAt.mainCamera != null ? lookAt.mainCamera.gameObject : null,
+            observedTarget,
+            out mainCamX,
+            out mainCamY,
+            out mainCamDistance);
         MainCamX = mainCamX;
         MainCamY = mainCamY;
         MainCamDistance = mainCamDistance;
@@ -48,14 +94,87 @@ public static class SimulationSessionState
         if (activeDetailCamera != null)
         {
             float detailCamX, detailCamY, detailCamDistance;
-            CaptureOrbitFromCamera(activeDetailCamera, out detailCamX, out detailCamY, out detailCamDistance);
+            CaptureOrbitFromCamera(activeDetailCamera, observedTarget, out detailCamX, out detailCamY, out detailCamDistance);
             DetailCamX = detailCamX;
             DetailCamY = detailCamY;
             DetailCamDistance = detailCamDistance;
         }
 
+        GameObject activeCamera = GetActiveCameraGameObject(lookAt);
+        if (activeCamera != null && observedTarget != null)
+        {
+            ActiveCameraDistance = Vector3.Distance(activeCamera.transform.position, observedTarget.position);
+
+            if (IsDetailCamera)
+                DetailCamDistance = ActiveCameraDistance;
+            else
+                MainCamDistance = ActiveCameraDistance;
+        }
+        else
+        {
+            ActiveCameraDistance = IsDetailCamera ? DetailCamDistance : MainCamDistance;
+        }
+
+        CaptureMotionFromScene();
+
         HasSavedState = true;
         Save();
+    }
+
+    static void CaptureMotionFromScene()
+    {
+        var bodySnapshots = new List<BodyMotionSnapshot>();
+
+        for (int i = 0; i < SolarSystemCatalog.Bodies.Length; i++)
+        {
+            SolarSystemCatalog.BodyDefinition definition = SolarSystemCatalog.Bodies[i];
+            if (definition.objectName == "Sun")
+                continue;
+
+            GameObject bodyGo = GameObject.Find(definition.objectName);
+            if (bodyGo == null)
+                continue;
+
+            var orbitController = bodyGo.GetComponent<BodyOrbitController>();
+            var snapshot = new BodyMotionSnapshot { name = definition.objectName };
+
+            if (orbitController != null && orbitController.enabled)
+            {
+                snapshot.usePhase = true;
+                snapshot.phaseRad = orbitController.PhaseRad;
+            }
+            else
+            {
+                snapshot.usePhase = false;
+                Vector3 pos = bodyGo.transform.position;
+                snapshot.posX = pos.x;
+                snapshot.posY = pos.y;
+                snapshot.posZ = pos.z;
+            }
+
+            bodySnapshots.Add(snapshot);
+        }
+
+        var cometSnapshots = new List<CometMotionSnapshot>();
+        CometOrbitController[] cometOrbits = UnityEngine.Object.FindObjectsByType<CometOrbitController>(FindObjectsSortMode.None);
+        for (int i = 0; i < cometOrbits.Length; i++)
+        {
+            CometOrbitController orbit = cometOrbits[i];
+            if (orbit == null)
+                continue;
+
+            cometSnapshots.Add(new CometMotionSnapshot
+            {
+                name = orbit.gameObject.name,
+                angle = orbit.OrbitAngle
+            });
+        }
+
+        _motionSnapshot = new MotionSnapshot
+        {
+            bodies = bodySnapshots.ToArray(),
+            comets = cometSnapshots.ToArray()
+        };
     }
 
     public static void Save()
@@ -70,6 +189,13 @@ public static class SimulationSessionState
         PlayerPrefs.SetFloat(KeyDetailCamX, DetailCamX);
         PlayerPrefs.SetFloat(KeyDetailCamY, DetailCamY);
         PlayerPrefs.SetFloat(KeyDetailCamDistance, DetailCamDistance);
+        PlayerPrefs.SetFloat(KeyActiveCamDistance, ActiveCameraDistance);
+
+        if (_motionSnapshot != null)
+        {
+            PlayerPrefs.SetString(KeyMotionSnapshot, JsonUtility.ToJson(_motionSnapshot));
+        }
+
         PlayerPrefs.Save();
     }
 
@@ -85,6 +211,8 @@ public static class SimulationSessionState
         PlayerPrefs.DeleteKey(KeyDetailCamX);
         PlayerPrefs.DeleteKey(KeyDetailCamY);
         PlayerPrefs.DeleteKey(KeyDetailCamDistance);
+        PlayerPrefs.DeleteKey(KeyActiveCamDistance);
+        PlayerPrefs.DeleteKey(KeyMotionSnapshot);
         PlayerPrefs.Save();
 
         HasSavedState = false;
@@ -97,6 +225,9 @@ public static class SimulationSessionState
         DetailCamX = 0f;
         DetailCamY = 0f;
         DetailCamDistance = 4.5f;
+        ActiveCameraDistance = 8f;
+        _motionSnapshot = null;
+        PendingLaunchMode = SimulationLaunchMode.New;
     }
 
     public static void Load()
@@ -111,10 +242,87 @@ public static class SimulationSessionState
         DetailCamX = PlayerPrefs.GetFloat(KeyDetailCamX, 0f);
         DetailCamY = PlayerPrefs.GetFloat(KeyDetailCamY, 0f);
         DetailCamDistance = PlayerPrefs.GetFloat(KeyDetailCamDistance, 4.5f);
+        ActiveCameraDistance = PlayerPrefs.GetFloat(KeyActiveCamDistance, MainCamDistance);
 
         if (TimeScale <= 0f)
         {
             TimeScale = 1f;
+        }
+
+        string motionJson = PlayerPrefs.GetString(KeyMotionSnapshot, string.Empty);
+        if (!string.IsNullOrEmpty(motionJson))
+        {
+            _motionSnapshot = JsonUtility.FromJson<MotionSnapshot>(motionJson);
+        }
+        else
+        {
+            _motionSnapshot = null;
+        }
+    }
+
+    public static void RestoreMotionState()
+    {
+        Load();
+
+        if (!HasSavedState || _motionSnapshot == null)
+        {
+            return;
+        }
+
+        BodyOrbitSystemController bodyOrbitSystem = UnityEngine.Object.FindFirstObjectByType<BodyOrbitSystemController>();
+        if (bodyOrbitSystem != null && _motionSnapshot.bodies != null)
+        {
+            var phases = new Dictionary<string, float>();
+            var positions = new Dictionary<string, Vector3>();
+
+            for (int i = 0; i < _motionSnapshot.bodies.Length; i++)
+            {
+                BodyMotionSnapshot body = _motionSnapshot.bodies[i];
+                if (body.usePhase)
+                {
+                    phases[body.name] = body.phaseRad;
+                }
+                else
+                {
+                    positions[body.name] = new Vector3(body.posX, body.posY, body.posZ);
+                }
+            }
+
+            bodyOrbitSystem.RestoreSavedMotion(phases, positions);
+        }
+        else if (_motionSnapshot.bodies != null)
+        {
+            for (int i = 0; i < _motionSnapshot.bodies.Length; i++)
+            {
+                BodyMotionSnapshot body = _motionSnapshot.bodies[i];
+                GameObject bodyGo = GameObject.Find(body.name);
+                if (bodyGo == null)
+                    continue;
+
+                if (body.usePhase)
+                {
+                    BodyOrbitController orbit = bodyGo.GetComponent<BodyOrbitController>();
+                    if (orbit != null && orbit.enabled)
+                        orbit.SetPhaseRad(body.phaseRad);
+                }
+                else
+                {
+                    bodyGo.transform.position = new Vector3(body.posX, body.posY, body.posZ);
+                }
+            }
+        }
+
+        CometSystemController cometSystem = UnityEngine.Object.FindFirstObjectByType<CometSystemController>();
+        if (cometSystem != null && _motionSnapshot.comets != null)
+        {
+            var angles = new Dictionary<string, float>();
+            for (int i = 0; i < _motionSnapshot.comets.Length; i++)
+            {
+                CometMotionSnapshot comet = _motionSnapshot.comets[i];
+                angles[comet.name] = comet.angle;
+            }
+
+            cometSystem.RestoreSavedAngles(angles);
         }
     }
 
@@ -127,7 +335,7 @@ public static class SimulationSessionState
             return;
         }
 
-        LookAtTarget lookAt = Object.FindFirstObjectByType<LookAtTarget>();
+        LookAtTarget lookAt = UnityEngine.Object.FindFirstObjectByType<LookAtTarget>();
         if (lookAt == null)
         {
             Debug.LogWarning("[SimulationSessionState] LookAtTarget not found; session state not restored.");
@@ -145,12 +353,24 @@ public static class SimulationSessionState
         bool useDetailCamera = IsDetailCamera && SelectedPlanetName != "Sun";
         lookAt.FocusPlanet(SelectedPlanetName, useDetailCamera, showDescription: true);
 
+        Transform observedTarget = lookAt.currentTarget != null
+            ? lookAt.currentTarget.transform
+            : null;
+
+        float restoreDistance = ActiveCameraDistance > 0f
+            ? ActiveCameraDistance
+            : (useDetailCamera ? DetailCamDistance : MainCamDistance);
+
         if (lookAt.mainCamera != null)
         {
             MobileOrbitCamera mainOrbit = lookAt.mainCamera.GetComponent<MobileOrbitCamera>();
             if (mainOrbit != null)
             {
-                mainOrbit.ApplyOrbitState(MainCamX, MainCamY, MainCamDistance);
+                if (observedTarget != null)
+                    mainOrbit.target = observedTarget;
+
+                float distance = useDetailCamera ? MainCamDistance : restoreDistance;
+                mainOrbit.ApplyOrbitState(MainCamX, MainCamY, distance);
             }
         }
 
@@ -162,7 +382,10 @@ public static class SimulationSessionState
                 MobileOrbitCamera detailOrbit = activeDetailCamera.GetComponent<MobileOrbitCamera>();
                 if (detailOrbit != null)
                 {
-                    detailOrbit.ApplyOrbitState(DetailCamX, DetailCamY, DetailCamDistance);
+                    if (observedTarget != null)
+                        detailOrbit.target = observedTarget;
+
+                    detailOrbit.ApplyOrbitState(DetailCamX, DetailCamY, restoreDistance);
                 }
             }
         }
@@ -170,7 +393,23 @@ public static class SimulationSessionState
         UnityEngine.Time.timeScale = TimeScale;
     }
 
-    private static void CaptureOrbitFromCamera(GameObject cameraObject, out float orbitX, out float orbitY, out float orbitDistance)
+    static GameObject GetActiveCameraGameObject(LookAtTarget lookAt)
+    {
+        if (lookAt == null)
+            return null;
+
+        if (lookAt.mainCamera != null && lookAt.mainCamera.enabled)
+            return lookAt.mainCamera.gameObject;
+
+        return lookAt.GetActiveDetailCamera();
+    }
+
+    private static void CaptureOrbitFromCamera(
+        GameObject cameraObject,
+        Transform observedTarget,
+        out float orbitX,
+        out float orbitY,
+        out float orbitDistance)
     {
         orbitX = 0f;
         orbitY = 0f;
@@ -184,7 +423,16 @@ public static class SimulationSessionState
         MobileOrbitCamera orbitCam = cameraObject.GetComponent<MobileOrbitCamera>();
         if (orbitCam != null)
         {
+            if (observedTarget != null)
+                orbitCam.target = observedTarget;
+
+            orbitCam.SyncOrbitFromTransform();
             orbitCam.GetOrbitState(out orbitX, out orbitY, out orbitDistance);
+
+            if (observedTarget != null)
+            {
+                orbitDistance = Vector3.Distance(cameraObject.transform.position, observedTarget.position);
+            }
         }
     }
 }

@@ -57,6 +57,12 @@ public class BodyOrbitController : MonoBehaviour
 
     public float PhaseRad => _phaseRad;
 
+    public void SetPhaseRad(float phaseRad)
+    {
+        _phaseRad = phaseRad;
+        ApplyPosition();
+    }
+
     void Update()
     {
         if (_center == null)

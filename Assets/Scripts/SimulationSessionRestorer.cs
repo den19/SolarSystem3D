@@ -41,7 +41,19 @@ public class SimulationSessionRestorer : MonoBehaviour
 
     private IEnumerator RestoreAfterInit()
     {
-        yield return null;
+        while (!SimulationViewBootstrap.SystemsReady)
+        {
+            yield return null;
+        }
+
+        if (SimulationSessionState.PendingLaunchMode != SimulationLaunchMode.Continue)
+        {
+            SimulationSessionState.PendingLaunchMode = SimulationLaunchMode.New;
+            yield break;
+        }
+
+        SimulationSessionState.RestoreMotionState();
         SimulationSessionState.RestoreToScene();
+        SimulationSessionState.PendingLaunchMode = SimulationLaunchMode.New;
     }
 }

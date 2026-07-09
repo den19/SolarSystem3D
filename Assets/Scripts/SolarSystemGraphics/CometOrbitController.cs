@@ -64,6 +64,12 @@ public class CometOrbitController : MonoBehaviour
 
     public void RefreshPosition() => UpdatePosition();
 
+    public void SetOrbitAngle(float angle)
+    {
+        _angle = angle;
+        UpdatePosition();
+    }
+
     void RecalculateSemiMinorAxis()
     {
         _semiMinorAxis = _definition.semiMajorAxis *

@@ -11,6 +11,8 @@ public class SimulationViewBootstrap : MonoBehaviour
 
     bool systemsInitialized;
 
+    public static bool SystemsReady { get; private set; }
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Bootstrap()
     {
@@ -34,6 +36,8 @@ public class SimulationViewBootstrap : MonoBehaviour
 
         if (instance != null)
             Destroy(instance.gameObject);
+
+        SystemsReady = false;
 
         var go = new GameObject("SimulationViewSystems");
         instance = go.AddComponent<SimulationViewBootstrap>();
@@ -86,5 +90,9 @@ public class SimulationViewBootstrap : MonoBehaviour
 
         var cleanView = gameObject.AddComponent<CleanViewController>();
         cleanView.Initialize(cometSystem, sidePanel);
+
+        yield return null;
+
+        SystemsReady = true;
     }
 }

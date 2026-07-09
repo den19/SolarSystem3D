@@ -140,7 +140,7 @@ public class BodyOrbitSystemController : MonoBehaviour
             _scaleController.RebuildOrbitLinesOnly();
     }
 
-    void ConfigureOrbitController(BodyOrbitEntry entry, bool capturePhaseFromPosition)
+    void ConfigureOrbitController(BodyOrbitEntry entry, bool capturePhaseFromPosition, float? overridePhase = null)
     {
         Transform center = ResolveOrbitCenter(entry.Definition);
         if (center == null || entry.OrbitController == null)
@@ -154,9 +154,13 @@ public class BodyOrbitSystemController : MonoBehaviour
             return;
 
         float angularSpeed = entry.RotateAround != null ? entry.RotateAround.speed : 5f;
-        float phase = capturePhaseFromPosition
-            ? ComputePhaseFromTransform(entry, center, semiMajorAxis)
-            : entry.OrbitController.PhaseRad;
+        float phase;
+        if (overridePhase.HasValue)
+            phase = overridePhase.Value;
+        else if (capturePhaseFromPosition)
+            phase = ComputePhaseFromTransform(entry, center, semiMajorAxis);
+        else
+            phase = entry.OrbitController.PhaseRad;
 
         entry.OrbitController.Configure(
             center,
@@ -193,5 +197,35 @@ public class BodyOrbitSystemController : MonoBehaviour
         }
 
         return _sun;
+    }
+
+    public void RestoreSavedMotion(Dictionary<string, float> phases, Dictionary<string, Vector3> positions)
+    {
+        if (!OrbitSettings.UseRealOrbits)
+        {
+            if (positions == null)
+                return;
+
+            foreach (KeyValuePair<string, Vector3> kvp in positions)
+            {
+                GameObject bodyGo = GameObject.Find(kvp.Key);
+                if (bodyGo != null)
+                    bodyGo.transform.position = kvp.Value;
+            }
+
+            return;
+        }
+
+        if (phases == null)
+            return;
+
+        for (int i = 0; i < _entries.Count; i++)
+        {
+            BodyOrbitEntry entry = _entries[i];
+            if (!phases.TryGetValue(entry.Definition.objectName, out float phase))
+                continue;
+
+            ConfigureOrbitController(entry, capturePhaseFromPosition: false, overridePhase: phase);
+        }
     }
 }

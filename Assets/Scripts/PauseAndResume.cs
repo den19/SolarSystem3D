@@ -9,7 +9,14 @@ public class PauseAndResume : MonoBehaviour
     private void Start()
     {
         SimulationSessionState.Load();
+
+        if (SceneManager.GetActiveScene().name == gameSceneName)
+        {
+            GameState.isPaused = true;
+        }
+
         Time.timeScale = SimulationSessionState.HasSavedState
+            && SimulationSessionState.PendingLaunchMode == SimulationLaunchMode.Continue
             ? SimulationSessionState.TimeScale
             : 1f;
     }
@@ -24,13 +31,25 @@ public class PauseAndResume : MonoBehaviour
         SceneManager.LoadSceneAsync(mainMenuSceneName);
     }
 
+    public void StartNewSimulation()
+    {
+        SimulationSessionState.Clear();
+        SimulationSessionState.PendingLaunchMode = SimulationLaunchMode.New;
+        GameState.isPaused = true;
+        Time.timeScale = 1f;
+    }
+
     public void ResumeGame()
     {
         SimulationSessionState.Load();
-        Time.timeScale = SimulationSessionState.HasSavedState
-            ? SimulationSessionState.TimeScale
-            : 1f;
 
-        SceneManager.LoadSceneAsync(gameSceneName);
+        if (!SimulationSessionState.HasSavedState)
+        {
+            return;
+        }
+
+        SimulationSessionState.PendingLaunchMode = SimulationLaunchMode.Continue;
+        GameState.isPaused = true;
+        Time.timeScale = SimulationSessionState.TimeScale;
     }
 }

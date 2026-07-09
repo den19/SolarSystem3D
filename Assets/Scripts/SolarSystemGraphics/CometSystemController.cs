@@ -164,6 +164,22 @@ public class CometSystemController : MonoBehaviour
         RebuildCometOrbitLines(_cachedAuToUnity, useRealDistances: false);
     }
 
+    public void RestoreSavedAngles(Dictionary<string, float> angles)
+    {
+        if (angles == null)
+            return;
+
+        for (int i = 0; i < _cometOrbits.Count; i++)
+        {
+            CometOrbitController orbit = _cometOrbits[i];
+            if (orbit == null)
+                continue;
+
+            if (angles.TryGetValue(orbit.gameObject.name, out float angle))
+                orbit.SetOrbitAngle(angle);
+        }
+    }
+
     void RebuildCometOrbitLines(float auToUnity, bool useRealDistances)
     {
         if (_orbitLinesManager == null)
