@@ -90,6 +90,9 @@ public class VisualsInitializer : MonoBehaviour
                     orbitCam.minDistance = 2.5f;
                     orbitCam.maxDistance = 600f;
                     orbitCam.distance = 8f;
+
+                    if (cam.gameObject.GetComponent<BodyShowcaseCameraController>() == null)
+                        cam.gameObject.AddComponent<BodyShowcaseCameraController>();
                     
                     Debug.Log($"[Visuals] Сенсорное управление MobileOrbitCamera успешно добавлено на главную камеру: {cam.name}");
                 }

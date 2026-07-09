@@ -39,6 +39,9 @@ public class MobileOrbitCamera : MonoBehaviour
     /// <summary>True while the user is touching the screen (orbit or pinch) this frame.</summary>
     public bool IsUserControlling { get; private set; }
 
+    /// <summary>True while an external controller (e.g. showcase camera) owns orbit input.</summary>
+    public bool ShowcaseOverrideActive { get; private set; }
+
     void Start()
     {
         TouchInputBridge.EnsureInitialized();
@@ -86,6 +89,12 @@ public class MobileOrbitCamera : MonoBehaviour
 
         isControlled = false;
         IsUserControlling = false;
+
+        if (ShowcaseOverrideActive)
+        {
+            DetectUserOverrideDuringShowcase();
+            return;
+        }
 
         int touchCount = TouchInputBridge.touchCount;
         if (touchCount > 0)
@@ -426,6 +435,33 @@ public class MobileOrbitCamera : MonoBehaviour
     {
         maxDistance = Mathf.Max(minDistance + 1f, newMaxDistance);
         distance = Mathf.Clamp(distance, minDistance, maxDistance);
+    }
+
+    public void SetExternalOrbitControl(bool enabled)
+    {
+        ShowcaseOverrideActive = enabled;
+        if (!enabled)
+            IsUserControlling = false;
+    }
+
+    void DetectUserOverrideDuringShowcase()
+    {
+        int touchCount = TouchInputBridge.touchCount;
+        if (touchCount > 0)
+        {
+            TouchInputBridge.TouchSample touch = TouchInputBridge.GetTouch(0);
+            if (!LookAtTarget.IsPointerOverUi(touch.position) &&
+                (touch.phase == TouchPhase.Moved || touch.phase == TouchPhase.Stationary))
+            {
+                IsUserControlling = true;
+                return;
+            }
+        }
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+        if (!LookAtTarget.IsPointerOverUi(Input.mousePosition) && Input.GetMouseButton(0))
+            IsUserControlling = true;
+#endif
     }
 
     private float ClampAngle(float angle, float min, float max)

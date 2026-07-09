@@ -8,6 +8,8 @@ using SolarSystemApp;
 
 public class LookAtTarget : MonoBehaviour {
 
+    public static event Action<GameObject> OnTargetChanged;
+
     [Tooltip("This is the object that the script's game object will look at by default")]
     public GameObject defaultTarget; // the default target that the camera should look at
 
@@ -155,6 +157,7 @@ public class LookAtTarget : MonoBehaviour {
 
                     if (picked != null)
                     {
+                        StopActiveShowcase();
                         currentTarget = picked;
                         RecordObservationTarget(picked);
                         bool useDetailCamera = picked.name != "Sun";
@@ -191,8 +194,10 @@ public class LookAtTarget : MonoBehaviour {
             return;
         }
 
+        StopActiveShowcase();
         currentTarget = planetGo;
         RecordObservationTarget(planetGo);
+        NotifyTargetChanged(planetGo);
         MakeAllDescriptionsInvisible();
         TurnOffAllDetailCameras();
 
@@ -230,8 +235,10 @@ public class LookAtTarget : MonoBehaviour {
         if (info == null)
             return;
 
+        StopActiveShowcase();
         GameObject cometRoot = info.gameObject;
         currentTarget = cometRoot;
+        NotifyTargetChanged(cometRoot);
         MakeAllDescriptionsInvisible();
         TurnOffAllDetailCameras();
         TurnOnMainCamera();
@@ -624,6 +631,21 @@ public class LookAtTarget : MonoBehaviour {
         }
 
         return nearest;
+    }
+
+    static void NotifyTargetChanged(GameObject target)
+    {
+        OnTargetChanged?.Invoke(target);
+    }
+
+    static void StopActiveShowcase()
+    {
+        if (Camera.main == null)
+            return;
+
+        var showcase = Camera.main.GetComponent<BodyShowcaseCameraController>();
+        if (showcase != null)
+            showcase.StopShowcase();
     }
 
     static bool TryGetPlacementPoint(Ray ray, Vector3 focusPosition, out Vector3 worldPoint)
