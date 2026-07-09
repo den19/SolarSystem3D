@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using UnityEditor;
 using UnityEditor.SceneManagement;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -13,11 +14,11 @@ public static class SidePanelSceneSetup
     const float RowHeight = SidePanelUiBootstrap.RowHeight;
     const float RowSpacing = SidePanelUiBootstrap.RowSpacing;
     const float RowStartY = SidePanelUiBootstrap.RowStartY;
-    const float PanelBottomPadding = SidePanelUiBootstrap.PanelBottomPadding;
     const float PanelBelowMenuGap = 8f;
     const float MenuButtonSize = 44f;
-    const float ButtonGap = 12f;
-    static readonly Vector2 MenuButtonFallbackPosition = new Vector2(-8f, -63f);
+    const float SimControlButtonWidth = 88f;
+    const float SimControlButtonMinWidth = 72f;
+    const float BarHeight = 48f;
     const float IconPadding = 4f;
     static readonly Color IconColor = new Color(0.85f, 0.92f, 1f, 1f);
     static readonly (string rowName, string labelName)[] ToggleRows = SidePanelUiBootstrap.ToggleRows;
@@ -33,7 +34,19 @@ public static class SidePanelSceneSetup
         if (!scene.path.Replace('\\', '/').EndsWith("Assets/_Scenes/Level1.unity"))
             return;
 
-        SetupInternal(markSceneDirty: Object.FindFirstObjectByType<SimulationSidePanelController>() == null);
+        Transform canvasTransform = FindMainScreenCanvas();
+        if (canvasTransform == null)
+            return;
+
+        Transform navigationBar = EnsureBodyNavigationBarLayout(canvasTransform);
+        EnsureMenuButton(navigationBar);
+        EnsureSimulationControlButton(navigationBar);
+        EnableBodyNameAutoSize(canvasTransform);
+
+        if (Object.FindFirstObjectByType<SimulationSidePanelController>() == null)
+            SetupInternal(markSceneDirty: true);
+        else
+            EditorSceneManager.MarkSceneDirty(scene);
     }
 
     [MenuItem(MenuPath)]
@@ -60,7 +73,9 @@ public static class SidePanelSceneSetup
             return;
         }
 
-        Button menuButton = EnsureMenuButton(canvasTransform);
+        Transform navigationBar = EnsureBodyNavigationBarLayout(canvasTransform);
+        Button menuButton = EnsureMenuButton(navigationBar);
+        EnsureSimulationControlButton(navigationBar);
         SimulationSidePanelController controller = EnsurePanel(canvasTransform, menuButton);
         RemoveLegacyGravityGridUi(canvasTransform);
 
@@ -79,64 +94,125 @@ public static class SidePanelSceneSetup
         return canvasGo != null ? canvasGo.transform : null;
     }
 
-    static Button EnsureMenuButton(Transform canvasTransform)
+    static Transform EnsureBodyNavigationBarLayout(Transform canvasTransform)
     {
-        Transform existing = canvasTransform.Find("SidePanelMenuButton");
+        Transform bar = canvasTransform.Find("BodyNavigationBar");
+        if (bar == null)
+        {
+            Debug.LogWarning("BodyNavigationBar not found on MainScreenCanvas.");
+            return canvasTransform;
+        }
+
+        var barRect = bar.GetComponent<RectTransform>();
+        barRect.anchorMin = new Vector2(0f, 1f);
+        barRect.anchorMax = new Vector2(1f, 1f);
+        barRect.pivot = new Vector2(0.5f, 1f);
+        barRect.sizeDelta = new Vector2(0f, BarHeight);
+        barRect.anchoredPosition = Vector2.zero;
+        barRect.offsetMin = new Vector2(8f, barRect.offsetMin.y);
+        barRect.offsetMax = new Vector2(-8f, -14f);
+
+        var layout = bar.GetComponent<HorizontalLayoutGroup>();
+        if (layout != null)
+        {
+            layout.padding = new RectOffset(8, 8, 4, 4);
+            layout.spacing = 4f;
+            layout.childAlignment = TextAnchor.MiddleCenter;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = true;
+        }
+
+        bar.SetAsLastSibling();
+        return bar;
+    }
+
+    static Button EnsureMenuButton(Transform navigationBar)
+    {
+        Transform canvas = navigationBar.parent;
+        Transform existing = FindUiTransform(canvas, "SidePanelMenuButton");
         if (existing != null)
         {
+            existing.SetParent(navigationBar, false);
+            existing.SetSiblingIndex(3);
             UpgradeMenuButton(existing);
             return existing.GetComponent<Button>();
         }
 
-        var buttonGo = new GameObject("SidePanelMenuButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+        var buttonGo = new GameObject("SidePanelMenuButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button), typeof(LayoutElement));
         buttonGo.layer = LayerMask.NameToLayer("UI");
-        buttonGo.transform.SetParent(canvasTransform, false);
-
-        var rect = buttonGo.GetComponent<RectTransform>();
-        rect.sizeDelta = new Vector2(MenuButtonSize, MenuButtonSize);
-        LayoutMenuButtonRelativeToSimControl(canvasTransform, rect);
+        buttonGo.transform.SetParent(navigationBar, false);
+        buttonGo.transform.SetSiblingIndex(3);
 
         StyleMenuButton(buttonGo);
         EnsureMenuButtonIcon(buttonGo.transform);
+        ApplyMenuButtonLayout(buttonGo.GetComponent<LayoutElement>());
 
         return buttonGo.GetComponent<Button>();
     }
 
     static void UpgradeMenuButton(Transform button)
     {
-        var rect = button.GetComponent<RectTransform>();
-        rect.sizeDelta = new Vector2(MenuButtonSize, MenuButtonSize);
-        LayoutMenuButtonRelativeToSimControl(button.parent, rect);
-
+        ApplyLayoutChildRect(button.GetComponent<RectTransform>());
         StyleMenuButton(button.gameObject);
         EnsureMenuButtonIcon(button);
+
+        if (button.GetComponent<LayoutElement>() == null)
+            button.gameObject.AddComponent<LayoutElement>();
+        ApplyMenuButtonLayout(button.GetComponent<LayoutElement>());
 
         Transform label = button.Find("Label");
         if (label != null)
             Object.DestroyImmediate(label.gameObject);
     }
 
-    static void LayoutMenuButtonRelativeToSimControl(Transform canvasTransform, RectTransform menuButtonRect)
+    static void ApplyMenuButtonLayout(LayoutElement layoutElement)
     {
-        menuButtonRect.anchorMin = new Vector2(1f, 1f);
-        menuButtonRect.anchorMax = new Vector2(1f, 1f);
-        menuButtonRect.pivot = new Vector2(1f, 1f);
-
-        if (canvasTransform == null)
-        {
-            menuButtonRect.anchoredPosition = MenuButtonFallbackPosition;
+        if (layoutElement == null)
             return;
-        }
 
-        Transform simControlTransform = canvasTransform.Find("SimulationControlButton");
-        if (simControlTransform == null || !simControlTransform.TryGetComponent(out RectTransform simControlRect))
-        {
-            menuButtonRect.anchoredPosition = MenuButtonFallbackPosition;
+        layoutElement.minWidth = MenuButtonSize;
+        layoutElement.minHeight = MenuButtonSize;
+        layoutElement.preferredWidth = MenuButtonSize;
+        layoutElement.preferredHeight = MenuButtonSize;
+        layoutElement.flexibleWidth = 0f;
+        layoutElement.flexibleHeight = 0f;
+    }
+
+    static void EnsureSimulationControlButton(Transform navigationBar)
+    {
+        Transform canvas = navigationBar.parent;
+        Transform existing = FindUiTransform(canvas, "SimulationControlButton");
+        if (existing == null)
             return;
-        }
 
-        float y = simControlRect.anchoredPosition.y - simControlRect.rect.height - ButtonGap;
-        menuButtonRect.anchoredPosition = new Vector2(simControlRect.anchoredPosition.x, y);
+        existing.SetParent(navigationBar, false);
+        existing.SetAsLastSibling();
+        ApplyLayoutChildRect(existing.GetComponent<RectTransform>());
+
+        LayoutElement layoutElement = existing.GetComponent<LayoutElement>();
+        if (layoutElement == null)
+            layoutElement = existing.gameObject.AddComponent<LayoutElement>();
+
+        layoutElement.minWidth = SimControlButtonMinWidth;
+        layoutElement.minHeight = MenuButtonSize;
+        layoutElement.preferredWidth = SimControlButtonWidth;
+        layoutElement.preferredHeight = MenuButtonSize;
+        layoutElement.flexibleWidth = 0f;
+        layoutElement.flexibleHeight = 0f;
+    }
+
+    static void ApplyLayoutChildRect(RectTransform rect)
+    {
+        if (rect == null)
+            return;
+
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.zero;
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = Vector2.zero;
+        rect.sizeDelta = Vector2.zero;
     }
 
     static void StyleMenuButton(GameObject buttonGo)
@@ -283,7 +359,23 @@ public static class SidePanelSceneSetup
         if (freeObservationToggle != null)
             freeObservationToggle.isOn = false;
 
+        EnableBodyNameAutoSize(canvasTransform);
         return controller;
+    }
+
+    static void EnableBodyNameAutoSize(Transform canvasTransform)
+    {
+        Transform bar = canvasTransform.Find("BodyNavigationBar");
+        if (bar == null)
+            return;
+
+        Transform label = bar.Find("BodyNameButton/Label");
+        if (label == null || !label.TryGetComponent(out TMP_Text text))
+            return;
+
+        text.enableAutoSizing = true;
+        text.fontSizeMin = 12f;
+        text.fontSizeMax = 17f;
     }
 
     static float ComputePanelHeight(int rowCount) => SidePanelUiBootstrap.ComputePanelHeight(rowCount);
@@ -294,15 +386,40 @@ public static class SidePanelSceneSetup
         panelRect.anchorMax = new Vector2(1f, 1f);
         panelRect.pivot = new Vector2(1f, 1f);
 
-        Transform menuButtonTransform = canvasTransform.Find("SidePanelMenuButton");
+        Transform menuButtonTransform = FindUiTransform(canvasTransform, "SidePanelMenuButton");
         if (menuButtonTransform == null || !menuButtonTransform.TryGetComponent(out RectTransform menuButtonRect))
         {
             panelRect.anchoredPosition = new Vector2(-12f, -115f);
             return;
         }
 
-        float y = menuButtonRect.anchoredPosition.y - menuButtonRect.rect.height - PanelBelowMenuGap;
+        var canvasRect = canvasTransform.GetComponent<RectTransform>();
+        Bounds menuBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(canvasRect, menuButtonRect);
+        float y = menuBounds.min.y - canvasRect.rect.yMax - PanelBelowMenuGap;
         panelRect.anchoredPosition = new Vector2(-12f, y);
+    }
+
+    static Transform FindUiTransform(Transform root, string objectName)
+    {
+        if (root == null)
+            return null;
+
+        Transform direct = root.Find(objectName);
+        if (direct != null)
+            return direct;
+
+        Transform inBar = root.Find("BodyNavigationBar/" + objectName);
+        if (inBar != null)
+            return inBar;
+
+        for (int i = 0; i < root.childCount; i++)
+        {
+            Transform nested = FindUiTransform(root.GetChild(i), objectName);
+            if (nested != null)
+                return nested;
+        }
+
+        return null;
     }
 
     static void RemoveLegacyGravityGridUi(Transform canvasTransform)

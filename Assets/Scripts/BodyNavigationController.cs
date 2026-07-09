@@ -21,9 +21,19 @@ public class BodyNavigationController : MonoBehaviour
     List<BodyNavigationOrder.NavigationEntry> _entries = new List<BodyNavigationOrder.NavigationEntry>();
     int _currentIndex = -1;
     bool _suppressTargetSync;
+    Rect _lastSafeArea;
+    bool _lastIsLandscape;
+    const float BaseTopOffset = -14f;
+    const float HorizontalMargin = 8f;
+    const float BarHeight = 48f;
 
     void Awake()
     {
+        if (barRect == null)
+            barRect = GetComponent<RectTransform>();
+
+        EnsureToolbarButtonsInBar();
+
         if (prevButton != null)
             prevButton.onClick.AddListener(OnPrevClicked);
         if (nextButton != null)
@@ -63,13 +73,129 @@ public class BodyNavigationController : MonoBehaviour
             _showcaseCamera = Camera.main.GetComponent<BodyShowcaseCameraController>();
 
         RebuildNavigationList();
-        SyncFromCurrentTarget();
+        EnsureToolbarButtonsInBar();
+        EnsureTopBarLayout();
         ApplySafeAreaInset();
+        SyncFromCurrentTarget();
     }
 
     void Update()
     {
-        ApplySafeAreaInset();
+        bool landscape = Screen.width > Screen.height;
+        if (Screen.safeArea != _lastSafeArea || landscape != _lastIsLandscape)
+            ApplySafeAreaInset();
+    }
+
+    void EnsureTopBarLayout()
+    {
+        if (barRect == null)
+            return;
+
+        barRect.anchorMin = new Vector2(0f, 1f);
+        barRect.anchorMax = new Vector2(1f, 1f);
+        barRect.pivot = new Vector2(0.5f, 1f);
+        barRect.sizeDelta = new Vector2(0f, BarHeight);
+    }
+
+    void EnsureToolbarButtonsInBar()
+    {
+        if (barRect == null)
+            return;
+
+        Canvas canvas = barRect.GetComponentInParent<Canvas>();
+        if (canvas == null)
+            return;
+
+        ConfigureNameButtonLayout();
+        EnsureBarChildButton(FindUiTransform(canvas.transform, "SidePanelMenuButton"), 3, 44f, 44f);
+        EnsureBarChildButton(FindUiTransform(canvas.transform, "SimulationControlButton"), 4, 88f, 44f, 72f);
+    }
+
+    void ConfigureNameButtonLayout()
+    {
+        if (bodyNameButton == null)
+            return;
+
+        if (!bodyNameButton.TryGetComponent(out LayoutElement layoutElement))
+            layoutElement = bodyNameButton.gameObject.AddComponent<LayoutElement>();
+
+        layoutElement.minWidth = 48f;
+        layoutElement.preferredWidth = 120f;
+        layoutElement.flexibleWidth = 1f;
+        layoutElement.minHeight = 40f;
+        layoutElement.preferredHeight = 40f;
+        layoutElement.flexibleHeight = 0f;
+    }
+
+    static void EnsureBarChildButton(Transform button, int siblingIndex, float preferredWidth, float preferredHeight, float minWidth = -1f)
+    {
+        if (button == null)
+            return;
+
+        Transform bar = button.parent;
+        while (bar != null && bar.name != "BodyNavigationBar")
+            bar = bar.parent;
+
+        if (bar == null)
+            bar = button.root.Find("BodyNavigationBar");
+
+        if (bar == null)
+            return;
+
+        if (button.parent != bar)
+            button.SetParent(bar, false);
+
+        button.SetSiblingIndex(siblingIndex);
+
+        if (!button.TryGetComponent(out RectTransform rect))
+            return;
+
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.zero;
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = Vector2.zero;
+        rect.sizeDelta = Vector2.zero;
+        rect.localScale = Vector3.one;
+
+        if (!button.TryGetComponent(out LayoutElement layoutElement))
+            layoutElement = button.gameObject.AddComponent<LayoutElement>();
+
+        float resolvedMinWidth = minWidth > 0f ? minWidth : preferredWidth;
+        layoutElement.minWidth = resolvedMinWidth;
+        layoutElement.minHeight = preferredHeight;
+        layoutElement.preferredWidth = preferredWidth;
+        layoutElement.preferredHeight = preferredHeight;
+        layoutElement.flexibleWidth = 0f;
+        layoutElement.flexibleHeight = 0f;
+
+        if (button.TryGetComponent(out Animator animator))
+            animator.applyRootMotion = false;
+    }
+
+    static Transform FindUiTransform(Transform root, string objectName)
+    {
+        if (root == null)
+            return null;
+
+        if (root.name == objectName)
+            return root;
+
+        Transform direct = root.Find(objectName);
+        if (direct != null)
+            return direct;
+
+        Transform inBar = root.Find("BodyNavigationBar/" + objectName);
+        if (inBar != null)
+            return inBar;
+
+        for (int i = 0; i < root.childCount; i++)
+        {
+            Transform nested = FindUiTransform(root.GetChild(i), objectName);
+            if (nested != null)
+                return nested;
+        }
+
+        return null;
     }
 
     void OnCometMovementChanged(bool enabled)
@@ -131,7 +257,7 @@ public class BodyNavigationController : MonoBehaviour
     {
         PlayClickSound();
         if (_currentIndex >= 0 && _currentIndex < _entries.Count)
-            NavigateToEntry(_entries[_currentIndex]);
+            NavigateToEntry(_entries[_currentIndex], showDescription: true);
     }
 
     void NavigateRelative(int delta)
@@ -144,10 +270,10 @@ public class BodyNavigationController : MonoBehaviour
         else
             _currentIndex = BodyNavigationOrder.WrapIndex(_currentIndex + delta, _entries.Count);
 
-        NavigateToEntry(_entries[_currentIndex]);
+        NavigateToEntry(_entries[_currentIndex], showDescription: false);
     }
 
-    void NavigateToEntry(BodyNavigationOrder.NavigationEntry entry)
+    void NavigateToEntry(BodyNavigationOrder.NavigationEntry entry, bool showDescription)
     {
         if (entry.sceneObject == null)
             return;
@@ -161,9 +287,9 @@ public class BodyNavigationController : MonoBehaviour
         _suppressTargetSync = true;
 
         if (entry.kind == BodyNavigationOrder.EntryKind.Comet)
-            _lookAtTarget.FocusComet(entry.sceneObject, showDescription: true);
+            _lookAtTarget.FocusComet(entry.sceneObject, showDescription);
         else
-            _lookAtTarget.FocusPlanet(entry.objectName, useDetailCamera: false, showDescription: true);
+            _lookAtTarget.FocusPlanet(entry.objectName, useDetailCamera: false, showDescription);
 
         _currentIndex = BodyNavigationOrder.FindIndexForObject(_entries, entry.sceneObject);
         RefreshLabel();
@@ -215,10 +341,18 @@ public class BodyNavigationController : MonoBehaviour
         if (barRect == null)
             return;
 
-        Rect safe = Screen.safeArea;
-        float topInset = Screen.height - safe.yMax;
-        if (topInset > 0f)
-            barRect.anchoredPosition = new Vector2(barRect.anchoredPosition.x, -14f - topInset * 0.5f);
+        _lastSafeArea = Screen.safeArea;
+        _lastIsLandscape = Screen.width > Screen.height;
+
+        Canvas canvas = barRect.GetComponentInParent<Canvas>();
+        SafeAreaInsets.GetCanvasInsets(canvas, out float left, out float right, out float top, out _);
+
+        barRect.offsetMin = new Vector2(left + HorizontalMargin, barRect.offsetMin.y);
+        barRect.offsetMax = new Vector2(-(right + HorizontalMargin), barRect.offsetMax.y);
+        barRect.sizeDelta = new Vector2(0f, BarHeight);
+        barRect.anchoredPosition = new Vector2(0f, BaseTopOffset - top);
+
+        LayoutRebuilder.ForceRebuildLayoutImmediate(barRect);
     }
 
     static void PlayClickSound()

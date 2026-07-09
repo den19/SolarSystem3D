@@ -14,9 +14,7 @@ public class SimulationSidePanelController : MonoBehaviour
     const float PanelWidth = SidePanelUiBootstrap.PanelWidth;
     const float SlideDuration = 0.22f;
     const float EdgeMargin = 12f;
-    const float MenuButtonGap = 12f;
     const float PanelBelowMenuGap = 8f;
-    static readonly Vector2 MenuButtonFallbackPosition = new Vector2(-8f, -63f);
 
     [SerializeField] Button menuButton;
     [SerializeField] RectTransform panelRect;
@@ -84,7 +82,7 @@ public class SimulationSidePanelController : MonoBehaviour
             var canvas = GetComponentInParent<Canvas>();
             if (canvas != null)
             {
-                Transform buttonTransform = canvas.transform.Find("SidePanelMenuButton");
+                Transform buttonTransform = FindUiTransform(canvas.transform, "SidePanelMenuButton");
                 if (buttonTransform != null)
                     menuButton = buttonTransform.GetComponent<Button>();
             }
@@ -134,7 +132,6 @@ public class SimulationSidePanelController : MonoBehaviour
 
     void RefreshSafeAreaLayout()
     {
-        LayoutMenuButton();
         LayoutPanelBelowMenuButton();
 
         panelClosedX = PanelWidth + GetRightMargin();
@@ -169,58 +166,46 @@ public class SimulationSidePanelController : MonoBehaviour
         safeAreaCached = true;
     }
 
-    void LayoutMenuButton()
-    {
-        if (menuButton == null)
-            return;
-
-        var menuButtonRect = menuButton.GetComponent<RectTransform>();
-        if (menuButtonRect == null)
-            return;
-
-        menuButtonRect.anchorMin = new Vector2(1f, 1f);
-        menuButtonRect.anchorMax = new Vector2(1f, 1f);
-        menuButtonRect.pivot = new Vector2(1f, 1f);
-
-        float rightInset = GetLandscapeRightInset();
-        Transform canvasTransform = transform.parent;
-        if (canvasTransform == null)
-        {
-            menuButtonRect.anchoredPosition = new Vector2(
-                MenuButtonFallbackPosition.x - rightInset,
-                MenuButtonFallbackPosition.y);
-            return;
-        }
-
-        Transform simControlTransform = canvasTransform.Find("SimulationControlButton");
-        if (simControlTransform == null || !simControlTransform.TryGetComponent(out RectTransform simControlRect))
-        {
-            menuButtonRect.anchoredPosition = new Vector2(
-                MenuButtonFallbackPosition.x - rightInset,
-                MenuButtonFallbackPosition.y);
-            return;
-        }
-
-        float y = simControlRect.anchoredPosition.y - simControlRect.rect.height - MenuButtonGap;
-        float x = simControlRect.anchoredPosition.x - rightInset;
-        menuButtonRect.anchoredPosition = new Vector2(x, y);
-    }
-
     void LayoutPanelBelowMenuButton()
     {
-        if (panelRect == null || menuButton == null)
+        if (panelRect == null || menuButton == null || canvas == null)
             return;
 
         var menuButtonRect = menuButton.GetComponent<RectTransform>();
-        if (menuButtonRect == null)
+        var canvasRect = canvas.GetComponent<RectTransform>();
+        if (menuButtonRect == null || canvasRect == null)
             return;
 
         panelRect.anchorMin = new Vector2(1f, 1f);
         panelRect.anchorMax = new Vector2(1f, 1f);
         panelRect.pivot = new Vector2(1f, 1f);
 
-        float y = menuButtonRect.anchoredPosition.y - menuButtonRect.rect.height - PanelBelowMenuGap;
+        Bounds menuBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(canvasRect, menuButtonRect);
+        float y = menuBounds.min.y - canvasRect.rect.yMax - PanelBelowMenuGap;
         panelRect.anchoredPosition = new Vector2(panelRect.anchoredPosition.x, y);
+    }
+
+    static Transform FindUiTransform(Transform root, string objectName)
+    {
+        if (root == null)
+            return null;
+
+        Transform direct = root.Find(objectName);
+        if (direct != null)
+            return direct;
+
+        Transform inBar = root.Find("BodyNavigationBar/" + objectName);
+        if (inBar != null)
+            return inBar;
+
+        foreach (Transform child in root)
+        {
+            Transform nested = FindUiTransform(child, objectName);
+            if (nested != null)
+                return nested;
+        }
+
+        return null;
     }
 
     IEnumerator Start()

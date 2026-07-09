@@ -2,13 +2,13 @@ using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// Cinematic camera: three orbits around a body, then sun-facing follow framing.
+/// Cinematic camera: six orbits around a body, then sun-facing follow framing.
 /// </summary>
 public class BodyShowcaseCameraController : MonoBehaviour
 {
-    const float OrbitDurationSec = 10f;
+    const float OrbitDurationSec = 20f;
     const float OrbitPitchDeg = 35f;
-    const float OrbitRevolutions = 3f;
+    const float OrbitRevolutions = 6f;
     const float TargetScreenWidthFraction = 0.5f;
     const int DistanceSolveIterations = 6;
 
