@@ -1,8 +1,11 @@
 using System.Collections;
+using System.Collections.Generic;
+using SolarSystemApp;
 using UnityEngine;
 
 /// <summary>
-/// Cinematic camera: four orbits around a body, then sun-facing follow framing.
+/// Cinematic camera: four orbits around a body, then follow framing
+/// (sun-facing when free observation is on, contextual side view when off).
 /// </summary>
 public class BodyShowcaseCameraController : MonoBehaviour
 {
@@ -10,7 +13,18 @@ public class BodyShowcaseCameraController : MonoBehaviour
     const float OrbitPitchDeg = 35f;
     const float OrbitRevolutions = 4f;
     const float TargetScreenWidthFraction = 0.5f;
+    const float GuidedTargetScreenWidthFraction = 0.38f;
+    const float GuidedContextViewportFraction = 0.82f;
+    const float GuidedNeighborRadiusScale = 0.35f;
     const int DistanceSolveIterations = 6;
+
+    static readonly string[] SunContextBodyNames = { "Mercury", "Venus", "Earth" };
+
+    struct ContextBody
+    {
+        public Vector3 center;
+        public float radius;
+    }
 
     [SerializeField] float orbitDurationSec = OrbitDurationSec;
     [SerializeField] float orbitPitchDeg = OrbitPitchDeg;
@@ -22,6 +36,7 @@ public class BodyShowcaseCameraController : MonoBehaviour
     Coroutine _showcaseRoutine;
     bool _followMode;
     Transform _followTarget;
+    readonly List<ContextBody> _contextBodies = new List<ContextBody>();
 
     public bool IsShowcaseActive { get; private set; }
 
@@ -29,6 +44,16 @@ public class BodyShowcaseCameraController : MonoBehaviour
     {
         _camera = GetComponent<Camera>();
         _orbitCamera = GetComponent<MobileOrbitCamera>();
+    }
+
+    void OnEnable()
+    {
+        SimulationViewSettings.UseFreeObservationChanged += OnFreeObservationChanged;
+    }
+
+    void OnDisable()
+    {
+        SimulationViewSettings.UseFreeObservationChanged -= OnFreeObservationChanged;
     }
 
     void Start()
@@ -82,6 +107,11 @@ public class BodyShowcaseCameraController : MonoBehaviour
 
         if (_orbitCamera != null)
             _orbitCamera.SetExternalOrbitControl(false);
+    }
+
+    void OnFreeObservationChanged(bool _)
+    {
+        // Follow reframes on the next LateUpdate when the toggle changes mid-showcase.
     }
 
     void EnsureOrbitCamera()
@@ -145,34 +175,85 @@ public class BodyShowcaseCameraController : MonoBehaviour
 
     void ApplyFollowFraming(Transform target)
     {
+        if (SimulationViewSettings.UseFreeObservation)
+            ApplySunFacingFollowFraming(target);
+        else
+            ApplyGuidedFollowFraming(target);
+    }
+
+    void ApplySunFacingFollowFraming(Transform target)
+    {
+        EnsureSunReference();
+        ComputeFramingVectors(target.position, out Vector3 bodyPos, out Vector3 toSun, out Vector3 side);
+
+        float bodyRadius = EstimateBodyRadius(target);
+        float distance = SolveDistanceForScreenWidth(
+            bodyPos, toSun, side, bodyRadius, sunFacing: true, targetScreenWidthFraction);
+        distance = Mathf.Clamp(distance, _orbitCamera.minDistance, _orbitCamera.maxDistance);
+
+        Vector3 cameraPos = ComputeCameraPosition(bodyPos, toSun, side, distance, sunFacing: true);
+        _camera.transform.position = cameraPos;
+        _camera.transform.rotation = Quaternion.LookRotation((bodyPos - cameraPos).normalized, Vector3.up);
+
+        _orbitCamera.SyncOrbitFromTransform();
+    }
+
+    void ApplyGuidedFollowFraming(Transform target)
+    {
+        EnsureSunReference();
+        ComputeFramingVectors(target.position, out Vector3 bodyPos, out Vector3 toSun, out Vector3 side);
+
+        float bodyRadius = EstimateBodyRadius(target);
+        float baseDistance = SolveDistanceForScreenWidth(
+            bodyPos, toSun, side, bodyRadius, sunFacing: false, GuidedTargetScreenWidthFraction);
+
+        CollectContextBodies(target, bodyPos, bodyRadius);
+        float contextDistance = SolveDistanceForContext(bodyPos, toSun, side, _contextBodies);
+        float distance = Mathf.Max(baseDistance, contextDistance);
+        distance = Mathf.Clamp(distance, _orbitCamera.minDistance, _orbitCamera.maxDistance);
+
+        Vector3 cameraPos = ComputeCameraPosition(bodyPos, toSun, side, distance, sunFacing: false);
+        _camera.transform.position = cameraPos;
+        _camera.transform.rotation = Quaternion.LookRotation((bodyPos - cameraPos).normalized, Vector3.up);
+
+        _orbitCamera.SyncOrbitFromTransform();
+    }
+
+    void EnsureSunReference()
+    {
         if (_sun == null)
         {
             GameObject sunGo = GameObject.Find("Sun");
             if (sunGo != null)
                 _sun = sunGo.transform;
         }
+    }
 
-        Vector3 bodyPos = target.position;
-        Vector3 toSun = _sun != null ? (_sun.position - bodyPos) : Vector3.forward;
+    static void ComputeFramingVectors(Vector3 bodyPos, out Vector3 resolvedBodyPos, out Vector3 toSun, out Vector3 side)
+    {
+        resolvedBodyPos = bodyPos;
+
+        GameObject sunGo = GameObject.Find("Sun");
+        Transform sun = sunGo != null ? sunGo.transform : null;
+        toSun = sun != null ? (sun.position - bodyPos) : Vector3.forward;
         if (toSun.sqrMagnitude < 0.0001f)
             toSun = Vector3.forward;
         toSun.Normalize();
 
         Vector3 up = Vector3.up;
-        Vector3 side = Vector3.Cross(up, toSun);
+        side = Vector3.Cross(up, toSun);
         if (side.sqrMagnitude < 0.0001f)
             side = Vector3.right;
         side.Normalize();
+    }
 
-        float bodyRadius = EstimateBodyRadius(target);
-        float distance = SolveDistanceForScreenWidth(target, bodyPos, toSun, side, bodyRadius);
-        distance = Mathf.Clamp(distance, _orbitCamera.minDistance, _orbitCamera.maxDistance);
+    static Vector3 ComputeCameraPosition(Vector3 bodyPos, Vector3 toSun, Vector3 side, float distance, bool sunFacing)
+    {
+        Vector3 up = Vector3.up;
+        if (sunFacing)
+            return bodyPos - toSun * distance * 0.55f + side * distance * 0.2f + up * distance * 0.35f;
 
-        Vector3 cameraPos = bodyPos - toSun * distance * 0.55f + side * distance * 0.2f + up * distance * 0.35f;
-        _camera.transform.position = cameraPos;
-        _camera.transform.rotation = Quaternion.LookRotation((bodyPos - cameraPos).normalized, up);
-
-        _orbitCamera.SyncOrbitFromTransform();
+        return bodyPos + side * distance * 0.85f + up * distance * 0.3f;
     }
 
     static float EstimateBodyRadius(Transform target)
@@ -184,14 +265,20 @@ public class BodyShowcaseCameraController : MonoBehaviour
         return Mathf.Max(target.lossyScale.x, 0.5f);
     }
 
-    float SolveDistanceForScreenWidth(Transform target, Vector3 bodyPos, Vector3 toSun, Vector3 side, float bodyRadius)
+    float SolveDistanceForScreenWidth(
+        Vector3 bodyPos,
+        Vector3 toSun,
+        Vector3 side,
+        float bodyRadius,
+        bool sunFacing,
+        float desiredScreenWidthFraction)
     {
         float distance = Mathf.Max(_orbitCamera.minDistance, bodyRadius * 4f);
-        float desiredWidth = Screen.width * targetScreenWidthFraction;
+        float desiredWidth = Screen.width * desiredScreenWidthFraction;
 
         for (int i = 0; i < DistanceSolveIterations; i++)
         {
-            Vector3 cameraPos = bodyPos - toSun * distance * 0.55f + side * distance * 0.2f + Vector3.up * distance * 0.35f;
+            Vector3 cameraPos = ComputeCameraPosition(bodyPos, toSun, side, distance, sunFacing);
             _camera.transform.position = cameraPos;
             _camera.transform.rotation = Quaternion.LookRotation((bodyPos - cameraPos).normalized, Vector3.up);
 
@@ -213,5 +300,186 @@ public class BodyShowcaseCameraController : MonoBehaviour
         }
 
         return distance;
+    }
+
+    float SolveDistanceForContext(Vector3 bodyPos, Vector3 toSun, Vector3 side, List<ContextBody> contextBodies)
+    {
+        if (contextBodies == null || contextBodies.Count == 0)
+            return _orbitCamera.minDistance;
+
+        float distance = Mathf.Max(_orbitCamera.minDistance, EstimateBodyRadius(_followTarget) * 4f);
+        float maxViewportWidth = Screen.width * GuidedContextViewportFraction;
+        float maxViewportHeight = Screen.height * GuidedContextViewportFraction;
+        Vector2 screenCenter = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+
+        for (int i = 0; i < DistanceSolveIterations; i++)
+        {
+            Vector3 cameraPos = ComputeCameraPosition(bodyPos, toSun, side, distance, sunFacing: false);
+            _camera.transform.position = cameraPos;
+            _camera.transform.rotation = Quaternion.LookRotation((bodyPos - cameraPos).normalized, Vector3.up);
+
+            Vector3 cameraRight = _camera.transform.right;
+            Vector3 cameraUp = _camera.transform.up;
+            GetScreenBounds(_camera, contextBodies, cameraRight, cameraUp, out float minX, out float maxX, out float minY, out float maxY);
+
+            float boundsWidth = Mathf.Max(1f, maxX - minX);
+            float boundsHeight = Mathf.Max(1f, maxY - minY);
+            float boundsCenterX = (minX + maxX) * 0.5f;
+            float boundsCenterY = (minY + maxY) * 0.5f;
+
+            float widthRatio = boundsWidth / maxViewportWidth;
+            float heightRatio = boundsHeight / maxViewportHeight;
+            float scaleRatio = Mathf.Max(widthRatio, heightRatio, 1f);
+
+            if (scaleRatio <= 1.02f &&
+                Mathf.Abs(boundsCenterX - screenCenter.x) <= Screen.width * 0.08f &&
+                Mathf.Abs(boundsCenterY - screenCenter.y) <= Screen.height * 0.08f)
+                break;
+
+            distance *= Mathf.Max(scaleRatio, 1.05f);
+            distance = Mathf.Clamp(distance, _orbitCamera.minDistance, _orbitCamera.maxDistance);
+        }
+
+        return distance;
+    }
+
+    static void GetScreenBounds(
+        Camera camera,
+        List<ContextBody> contextBodies,
+        Vector3 cameraRight,
+        Vector3 cameraUp,
+        out float minX,
+        out float maxX,
+        out float minY,
+        out float maxY)
+    {
+        minX = float.MaxValue;
+        maxX = float.MinValue;
+        minY = float.MaxValue;
+        maxY = float.MinValue;
+
+        for (int i = 0; i < contextBodies.Count; i++)
+        {
+            ContextBody body = contextBodies[i];
+            IncludeScreenBounds(camera, body.center, body.radius, cameraRight, cameraUp, ref minX, ref maxX, ref minY, ref maxY);
+            IncludeScreenBounds(camera, body.center, body.radius, -cameraRight, cameraUp, ref minX, ref maxX, ref minY, ref maxY);
+            IncludeScreenBounds(camera, body.center, body.radius, cameraRight, -cameraUp, ref minX, ref maxX, ref minY, ref maxY);
+            IncludeScreenBounds(camera, body.center, body.radius, -cameraRight, -cameraUp, ref minX, ref maxX, ref minY, ref maxY);
+        }
+    }
+
+    static void IncludeScreenBounds(
+        Camera camera,
+        Vector3 center,
+        float radius,
+        Vector3 axisA,
+        Vector3 axisB,
+        ref float minX,
+        ref float maxX,
+        ref float minY,
+        ref float maxY)
+    {
+        if (camera == null)
+            return;
+
+        Vector3 worldPoint = center + axisA.normalized * radius + axisB.normalized * radius;
+        Vector3 screenPoint = camera.WorldToScreenPoint(worldPoint);
+
+        if (screenPoint.z <= 0f)
+            return;
+
+        minX = Mathf.Min(minX, screenPoint.x);
+        maxX = Mathf.Max(maxX, screenPoint.x);
+        minY = Mathf.Min(minY, screenPoint.y);
+        maxY = Mathf.Max(maxY, screenPoint.y);
+    }
+
+    void CollectContextBodies(Transform target, Vector3 bodyPos, float targetRadius)
+    {
+        _contextBodies.Clear();
+        _contextBodies.Add(new ContextBody { center = bodyPos, radius = targetRadius });
+
+        string targetName = target.name;
+        if (!SolarSystemCatalog.TryGetBody(targetName, out SolarSystemCatalog.BodyDefinition definition))
+        {
+            CollectNearbyCatalogBodies(bodyPos, ResolveNeighborRadius(bodyPos), targetName);
+            return;
+        }
+
+        if (targetName == "Sun")
+        {
+            AddContextBodyByName("Sun");
+            for (int i = 0; i < SunContextBodyNames.Length; i++)
+                AddContextBodyByName(SunContextBodyNames[i]);
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(definition.orbitCenterName))
+        {
+            AddContextBodyByName(definition.orbitCenterName);
+            for (int i = 0; i < SolarSystemCatalog.Bodies.Length; i++)
+            {
+                SolarSystemCatalog.BodyDefinition candidate = SolarSystemCatalog.Bodies[i];
+                if (candidate.orbitCenterName == definition.orbitCenterName)
+                    AddContextBodyByName(candidate.objectName);
+            }
+
+            return;
+        }
+
+        float neighborRadius = ResolveNeighborRadius(bodyPos);
+        CollectNearbyCatalogBodies(bodyPos, neighborRadius, targetName);
+    }
+
+    void CollectNearbyCatalogBodies(Vector3 bodyPos, float neighborRadius, string excludeName)
+    {
+        float radiusSq = neighborRadius * neighborRadius;
+        for (int i = 0; i < SolarSystemCatalog.Bodies.Length; i++)
+        {
+            string objectName = SolarSystemCatalog.Bodies[i].objectName;
+            if (objectName == excludeName)
+                continue;
+
+            GameObject bodyGo = GameObject.Find(objectName);
+            if (bodyGo == null || !bodyGo.activeInHierarchy)
+                continue;
+
+            Vector3 offset = bodyGo.transform.position - bodyPos;
+            offset.y = 0f;
+            if (offset.sqrMagnitude <= radiusSq)
+                AddContextBody(bodyGo.transform);
+        }
+    }
+
+    float ResolveNeighborRadius(Vector3 bodyPos)
+    {
+        float referenceDistance = 2f;
+        if (_sun != null)
+            referenceDistance = Vector3.Distance(bodyPos, _sun.position);
+
+        return Mathf.Max(referenceDistance * GuidedNeighborRadiusScale, 2f);
+    }
+
+    void AddContextBodyByName(string objectName)
+    {
+        GameObject bodyGo = GameObject.Find(objectName);
+        if (bodyGo == null || !bodyGo.activeInHierarchy)
+            return;
+
+        AddContextBody(bodyGo.transform);
+    }
+
+    void AddContextBody(Transform bodyTransform)
+    {
+        Vector3 center = bodyTransform.position;
+        float radius = EstimateBodyRadius(bodyTransform);
+
+        for (int i = 0; i < _contextBodies.Count; i++)
+        {
+            if ((_contextBodies[i].center - center).sqrMagnitude < 0.0001f)
+                return;
+        }
+
+        _contextBodies.Add(new ContextBody { center = center, radius = radius });
     }
 }
