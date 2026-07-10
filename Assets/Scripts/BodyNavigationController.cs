@@ -21,11 +21,12 @@ public class BodyNavigationController : MonoBehaviour
     List<BodyNavigationOrder.NavigationEntry> _entries = new List<BodyNavigationOrder.NavigationEntry>();
     int _currentIndex = -1;
     bool _suppressTargetSync;
+    bool _screenLayoutCached;
     Rect _lastSafeArea;
-    bool _lastIsLandscape;
-    const float BaseTopOffset = -14f;
-    const float HorizontalMargin = 8f;
-    const float BarHeight = 48f;
+    int _lastScreenWidth;
+    int _lastScreenHeight;
+    Coroutine _safeAreaRefreshRoutine;
+    SimulationSidePanelController _sidePanelController;
 
     void Awake()
     {
@@ -33,6 +34,7 @@ public class BodyNavigationController : MonoBehaviour
             barRect = GetComponent<RectTransform>();
 
         EnsureToolbarButtonsInBar();
+        EnsureTopBarLayout();
 
         if (prevButton != null)
             prevButton.onClick.AddListener(OnPrevClicked);
@@ -54,11 +56,25 @@ public class BodyNavigationController : MonoBehaviour
         LocalizationManager.OnLanguageChanged -= RefreshLabel;
         CometMovementSettings.UseCometMovementChanged -= OnCometMovementChanged;
         LookAtTarget.OnTargetChanged -= OnTargetChanged;
+
+        if (_safeAreaRefreshRoutine != null)
+        {
+            StopCoroutine(_safeAreaRefreshRoutine);
+            _safeAreaRefreshRoutine = null;
+        }
     }
 
     void Start()
     {
+        StartCoroutine(LayoutAfterCanvasReady());
         StartCoroutine(InitializeWhenReady());
+    }
+
+    IEnumerator LayoutAfterCanvasReady()
+    {
+        yield return new WaitForEndOfFrame();
+        ApplySafeAreaInset();
+        NotifySidePanelLayoutChanged();
     }
 
     IEnumerator InitializeWhenReady()
@@ -74,16 +90,40 @@ public class BodyNavigationController : MonoBehaviour
 
         RebuildNavigationList();
         EnsureToolbarButtonsInBar();
-        EnsureTopBarLayout();
         ApplySafeAreaInset();
+        NotifySidePanelLayoutChanged();
         SyncFromCurrentTarget();
     }
 
     void Update()
     {
-        bool landscape = Screen.width > Screen.height;
-        if (Screen.safeArea != _lastSafeArea || landscape != _lastIsLandscape)
-            ApplySafeAreaInset();
+        if (!_screenLayoutCached)
+            return;
+
+        if (Screen.width == _lastScreenWidth &&
+            Screen.height == _lastScreenHeight &&
+            Screen.safeArea == _lastSafeArea)
+            return;
+
+        RequestSafeAreaRefresh();
+    }
+
+    void RequestSafeAreaRefresh()
+    {
+        if (_safeAreaRefreshRoutine != null)
+            StopCoroutine(_safeAreaRefreshRoutine);
+
+        _safeAreaRefreshRoutine = StartCoroutine(RefreshSafeAreaAfterLayout());
+    }
+
+    IEnumerator RefreshSafeAreaAfterLayout()
+    {
+        yield return null;
+        yield return new WaitForEndOfFrame();
+
+        _safeAreaRefreshRoutine = null;
+        ApplySafeAreaInset();
+        NotifySidePanelLayoutChanged();
     }
 
     void EnsureTopBarLayout()
@@ -91,10 +131,7 @@ public class BodyNavigationController : MonoBehaviour
         if (barRect == null)
             return;
 
-        barRect.anchorMin = new Vector2(0f, 1f);
-        barRect.anchorMax = new Vector2(1f, 1f);
-        barRect.pivot = new Vector2(0.5f, 1f);
-        barRect.sizeDelta = new Vector2(0f, BarHeight);
+        SidePanelUiBootstrap.ApplyBarRectLayout(barRect, 0f, 0f, 0f);
     }
 
     void EnsureToolbarButtonsInBar()
@@ -341,18 +378,31 @@ public class BodyNavigationController : MonoBehaviour
         if (barRect == null)
             return;
 
-        _lastSafeArea = Screen.safeArea;
-        _lastIsLandscape = Screen.width > Screen.height;
+        Canvas.ForceUpdateCanvases();
 
         Canvas canvas = barRect.GetComponentInParent<Canvas>();
         SafeAreaInsets.GetCanvasInsets(canvas, out float left, out float right, out float top, out _);
 
-        barRect.offsetMin = new Vector2(left + HorizontalMargin, barRect.offsetMin.y);
-        barRect.offsetMax = new Vector2(-(right + HorizontalMargin), barRect.offsetMax.y);
-        barRect.sizeDelta = new Vector2(0f, BarHeight);
-        barRect.anchoredPosition = new Vector2(0f, BaseTopOffset - top);
-
+        SidePanelUiBootstrap.ApplyBarRectLayout(barRect, left, right, top);
         LayoutRebuilder.ForceRebuildLayoutImmediate(barRect);
+        CacheScreenLayoutState();
+    }
+
+    void NotifySidePanelLayoutChanged()
+    {
+        if (_sidePanelController == null)
+            _sidePanelController = FindFirstObjectByType<SimulationSidePanelController>();
+
+        if (_sidePanelController != null)
+            _sidePanelController.RefreshSafeAreaLayout();
+    }
+
+    void CacheScreenLayoutState()
+    {
+        _lastSafeArea = Screen.safeArea;
+        _lastScreenWidth = Screen.width;
+        _lastScreenHeight = Screen.height;
+        _screenLayoutCached = true;
     }
 
     static void PlayClickSound()

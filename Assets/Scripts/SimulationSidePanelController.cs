@@ -130,7 +130,7 @@ public class SimulationSidePanelController : MonoBehaviour
 
     float GetRightMargin() => EdgeMargin + GetLandscapeRightInset();
 
-    void RefreshSafeAreaLayout()
+    public void RefreshSafeAreaLayout()
     {
         LayoutPanelBelowMenuButton();
 

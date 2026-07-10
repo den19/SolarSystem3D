@@ -11,6 +11,9 @@ public static class SidePanelUiBootstrap
     public const float RowStartY = 8f;
     public const float PanelBottomPadding = 8f;
     public const float PanelWidth = 270f;
+    public const float BarHeight = 48f;
+    public const float BarHorizontalMargin = 8f;
+    public const float BarTopMargin = 0f;
     const float LabelMaxAnchorX = 0.82f;
     const float ToggleMinAnchorX = 0.84f;
     const float ToggleMaxAnchorX = 0.96f;
@@ -38,6 +41,22 @@ public static class SidePanelUiBootstrap
             return RowStartY + PanelBottomPadding;
 
         return RowStartY + rowCount * RowHeight + (rowCount - 1) * RowSpacing + PanelBottomPadding;
+    }
+
+    public static void ApplyBarRectLayout(RectTransform bar, float safeLeft, float safeRight, float safeTop)
+    {
+        if (bar == null)
+            return;
+
+        bar.anchorMin = new Vector2(0f, 1f);
+        bar.anchorMax = new Vector2(1f, 1f);
+        bar.pivot = new Vector2(0.5f, 1f);
+        bar.anchoredPosition = Vector2.zero;
+        bar.sizeDelta = Vector2.zero;
+
+        float topInset = safeTop + BarTopMargin;
+        bar.offsetMin = new Vector2(safeLeft + BarHorizontalMargin, -(BarHeight + topInset));
+        bar.offsetMax = new Vector2(-(safeRight + BarHorizontalMargin), -topInset);
     }
 
     public static void ApplyCompactLayout(Transform panel)

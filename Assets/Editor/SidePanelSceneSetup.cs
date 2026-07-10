@@ -18,7 +18,6 @@ public static class SidePanelSceneSetup
     const float MenuButtonSize = 44f;
     const float SimControlButtonWidth = 88f;
     const float SimControlButtonMinWidth = 72f;
-    const float BarHeight = 48f;
     const float IconPadding = 4f;
     static readonly Color IconColor = new Color(0.85f, 0.92f, 1f, 1f);
     static readonly (string rowName, string labelName)[] ToggleRows = SidePanelUiBootstrap.ToggleRows;
@@ -104,13 +103,7 @@ public static class SidePanelSceneSetup
         }
 
         var barRect = bar.GetComponent<RectTransform>();
-        barRect.anchorMin = new Vector2(0f, 1f);
-        barRect.anchorMax = new Vector2(1f, 1f);
-        barRect.pivot = new Vector2(0.5f, 1f);
-        barRect.sizeDelta = new Vector2(0f, BarHeight);
-        barRect.anchoredPosition = Vector2.zero;
-        barRect.offsetMin = new Vector2(8f, barRect.offsetMin.y);
-        barRect.offsetMax = new Vector2(-8f, -14f);
+        SidePanelUiBootstrap.ApplyBarRectLayout(barRect, 0f, 0f, 0f);
 
         var layout = bar.GetComponent<HorizontalLayoutGroup>();
         if (layout != null)
