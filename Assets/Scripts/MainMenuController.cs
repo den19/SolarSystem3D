@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 public class MainMenuController : MonoBehaviour
 {
@@ -12,5 +14,20 @@ public class MainMenuController : MonoBehaviour
         {
             continueButton.SetActive(SimulationSessionState.HasSavedState);
         }
+    }
+
+    void Start()
+    {
+        if (!SimulationSessionState.HasSavedState || continueButton == null)
+            return;
+
+        if (!continueButton.activeInHierarchy)
+            return;
+
+        var selectable = continueButton.GetComponent<Selectable>();
+        if (selectable == null || !selectable.IsInteractable() || EventSystem.current == null)
+            return;
+
+        EventSystem.current.SetSelectedGameObject(continueButton);
     }
 }
