@@ -345,6 +345,7 @@ public class MobileOrbitCamera : MonoBehaviour
         var saturnDesc = globalLookAtScript.theSaturnGameObject;
         var titanDesc = globalLookAtScript.theTitanGameObject;
         var ganymedeDesc = globalLookAtScript.theGanymedeGameObject;
+        var ioDesc = globalLookAtScript.theIoGameObject;
         var phobosDesc = globalLookAtScript.thePhobosGameObject;
         var deimosDesc = globalLookAtScript.theDeimosGameObject;
         var uranusDesc = globalLookAtScript.theUranusGameObject;
@@ -360,6 +361,7 @@ public class MobileOrbitCamera : MonoBehaviour
         if (saturnDesc) saturnDesc.SetActive(planetName == "Saturn");
         if (titanDesc) titanDesc.SetActive(planetName == "Titan");
         if (ganymedeDesc) ganymedeDesc.SetActive(planetName == "Ganymede");
+        if (ioDesc) ioDesc.SetActive(planetName == "Io");
         if (phobosDesc) phobosDesc.SetActive(planetName == "Phobos");
         if (deimosDesc) deimosDesc.SetActive(planetName == "Deimos");
         if (uranusDesc) uranusDesc.SetActive(planetName == "Uranus");
@@ -396,6 +398,7 @@ public class MobileOrbitCamera : MonoBehaviour
         if (planetName == "Saturn" && globalLookAtScript.saturnCamera) globalLookAtScript.saturnCamera.SetActive(active);
         if (planetName == "Titan" && globalLookAtScript.titanCamera) globalLookAtScript.titanCamera.SetActive(active);
         if (planetName == "Ganymede" && globalLookAtScript.ganymedeCamera) globalLookAtScript.ganymedeCamera.SetActive(active);
+        if (planetName == "Io" && globalLookAtScript.ioCamera) globalLookAtScript.ioCamera.SetActive(active);
         if (planetName == "Phobos" && globalLookAtScript.phobosCamera) globalLookAtScript.phobosCamera.SetActive(active);
         if (planetName == "Deimos" && globalLookAtScript.deimosCamera) globalLookAtScript.deimosCamera.SetActive(active);
         if (planetName == "Uranus" && globalLookAtScript.uranusCamera) globalLookAtScript.uranusCamera.SetActive(active);

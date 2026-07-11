@@ -174,6 +174,7 @@ public class PlanetTextureManager : MonoBehaviour
         RegisterBodySwap("Neptune", "PlanetGraphicsHD/NeptuneTexture_HD");
         RegisterBodySwap("Moon", "PlanetGraphicsHD/MoonTexture_HD");
         RegisterBodySwap("Titan", "PlanetGraphicsHD/TitanTexture_HD");
+        RegisterBodySwap("Io", "PlanetGraphicsHD/IoTexture_HD");
         RegisterBodySwap("Ganymede", "PlanetGraphicsHD/GanymedeTexture_HD");
         RegisterBodySwap("Phobos", "PlanetGraphicsHD/PhobosTexture_HD");
         RegisterBodySwap("Deimos", "PlanetGraphicsHD/DeimosTexture_HD");
@@ -223,7 +224,19 @@ public class PlanetTextureManager : MonoBehaviour
             return;
         }
 
+        if (!MaterialHasAlbedo(mr.sharedMaterial))
+            Debug.LogWarning($"PlanetTextureManager: '{objectName}' standard material has no albedo texture (pink/magenta risk on device).");
+        if (!MaterialHasAlbedo(hd))
+            Debug.LogWarning($"PlanetTextureManager: '{objectName}' HD material at '{hdMaterialResourcePath}' has no albedo texture (pink/magenta risk on device).");
+
         Swaps.Add(new SwapEntry { Renderer = mr, StandardShared = mr.sharedMaterial, HdShared = hd });
+    }
+
+    static bool MaterialHasAlbedo(Material mat)
+    {
+        if (mat == null) return false;
+        if (mat.HasProperty("_BaseMap") && mat.GetTexture("_BaseMap") != null) return true;
+        return mat.mainTexture != null;
     }
 
     void EnsureSunBloom()

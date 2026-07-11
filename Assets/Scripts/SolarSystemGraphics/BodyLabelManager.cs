@@ -20,7 +20,7 @@ public class BodyLabelManager : MonoBehaviour
 
     static readonly string[] BodyNames =
     {
-        "Sun", "Mercury", "Venus", "Earth", "Moon", "Mars", "Phobos", "Deimos", "Jupiter", "Ganymede", "Saturn", "Titan", "Uranus", "Neptune"
+        "Sun", "Mercury", "Venus", "Earth", "Moon", "Mars", "Phobos", "Deimos", "Jupiter", "Io", "Ganymede", "Saturn", "Titan", "Uranus", "Neptune"
     };
 
     readonly List<LabelEntry> _entries = new List<LabelEntry>();

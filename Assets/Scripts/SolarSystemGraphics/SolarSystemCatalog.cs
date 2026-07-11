@@ -11,6 +11,7 @@ public static class SolarSystemCatalog
     public const float AuKm = 149597870.7f;
     public const float MoonOrbitKm = 384400f;
     public const float TitanOrbitKm = 1221870f;
+    public const float IoOrbitKm = 421700f;
     public const float GanymedeOrbitKm = 1070400f;
     public const float PhobosOrbitKm = 9376f;
     public const float DeimosOrbitKm = 23463f;
@@ -112,6 +113,16 @@ public static class SolarSystemCatalog
             satelliteOrbitKm = TitanOrbitKm,
             orbitalEccentricity = 0.029f,
             orbitalInclinationDeg = 0.33f
+        },
+        new BodyDefinition
+        {
+            objectName = "Io",
+            orbitalRadiusAu = 0f,
+            equatorialRadiusKm = 1821.6f,
+            orbitCenterName = "Jupiter",
+            satelliteOrbitKm = IoOrbitKm,
+            orbitalEccentricity = 0.0041f,
+            orbitalInclinationDeg = 0.05f
         },
         new BodyDefinition
         {
