@@ -28,7 +28,10 @@ public class PanelManager : MonoBehaviour {
 	public void OpenPanel (Animator anim)
 	{
 		if (m_Open == anim)
+		{
+			TryApplyMainMenuDefaultSelection(anim);
 			return;
+		}
 
 		anim.gameObject.SetActive(true);
 		var newPreviouslySelected = EventSystem.current.currentSelectedGameObject;
@@ -42,9 +45,30 @@ public class PanelManager : MonoBehaviour {
 		m_Open = anim;
 		m_Open.SetBool(m_OpenParameterId, true);
 
-		GameObject go = FindFirstEnabledSelectable(anim.gameObject);
+		if (IsMainMenuPanel(anim))
+			TryApplyMainMenuDefaultSelection(anim);
+		else
+			SetSelected(FindFirstEnabledSelectable(anim.gameObject));
+	}
 
-		SetSelected(go);
+	bool IsMainMenuPanel(Animator anim)
+	{
+		return initiallyOpen != null && anim == initiallyOpen;
+	}
+
+	void TryApplyMainMenuDefaultSelection(Animator anim)
+	{
+		if (!IsMainMenuPanel(anim))
+			return;
+
+		var mainMenuController = MainMenuController.Instance != null
+			? MainMenuController.Instance
+			: FindObjectOfType<MainMenuController>();
+
+		if (mainMenuController != null)
+			mainMenuController.ApplyDefaultSelection();
+		else
+			SetSelected(FindFirstEnabledSelectable(anim.gameObject));
 	}
 
 	static GameObject FindFirstEnabledSelectable (GameObject gameObject)
