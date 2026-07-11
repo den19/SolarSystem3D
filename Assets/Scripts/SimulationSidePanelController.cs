@@ -24,7 +24,6 @@ public class SimulationSidePanelController : MonoBehaviour
     [SerializeField] Toggle minimapToggle;
     [SerializeField] Toggle uiToggle;
     [SerializeField] Toggle educationalToggle;
-    [SerializeField] Toggle realDistancesToggle;
     [SerializeField] Toggle realSizesToggle;
     [SerializeField] Toggle realOrbitsToggle;
     [SerializeField] Toggle cometMovementToggle;
@@ -100,8 +99,6 @@ public class SimulationSidePanelController : MonoBehaviour
             uiToggle = FindToggle("SidePanelUiLabel_Row");
         if (educationalToggle == null)
             educationalToggle = FindToggle("SidePanelScaleEducationalLabel_Row");
-        if (realDistancesToggle == null)
-            realDistancesToggle = FindToggle("SidePanelRealDistancesLabel_Row");
         if (realSizesToggle == null)
             realSizesToggle = FindToggle("SidePanelRealSizesLabel_Row");
         if (realOrbitsToggle == null)
@@ -248,7 +245,6 @@ public class SimulationSidePanelController : MonoBehaviour
         }
 
         SetupScaleModeToggle(educationalToggle, SolarScaleMode.Educational);
-        SetupScaleModeToggle(realDistancesToggle, SolarScaleMode.RealDistances);
         SetupScaleModeToggle(realSizesToggle, SolarScaleMode.TrueScale);
         SyncScaleModeToggles(ScaleSettings.Mode);
 
@@ -363,7 +359,7 @@ public class SimulationSidePanelController : MonoBehaviour
             return;
         }
 
-        // Radio behaviour: never allow all three off. Re-arm the one the user tried to clear.
+        // Radio behaviour: never allow both scale toggles off. Re-arm the one the user tried to clear.
         if (!AnyScaleModeToggleOn())
             GetScaleModeToggle(mode)?.SetIsOnWithoutNotify(true);
     }
@@ -371,7 +367,6 @@ public class SimulationSidePanelController : MonoBehaviour
     bool AnyScaleModeToggleOn()
     {
         return (educationalToggle != null && educationalToggle.isOn)
-            || (realDistancesToggle != null && realDistancesToggle.isOn)
             || (realSizesToggle != null && realSizesToggle.isOn);
     }
 
@@ -380,7 +375,6 @@ public class SimulationSidePanelController : MonoBehaviour
         switch (mode)
         {
             case SolarScaleMode.Educational: return educationalToggle;
-            case SolarScaleMode.RealDistances: return realDistancesToggle;
             case SolarScaleMode.TrueScale: return realSizesToggle;
             default: return null;
         }
@@ -389,7 +383,6 @@ public class SimulationSidePanelController : MonoBehaviour
     void SyncScaleModeToggles(SolarScaleMode mode)
     {
         educationalToggle?.SetIsOnWithoutNotify(mode == SolarScaleMode.Educational);
-        realDistancesToggle?.SetIsOnWithoutNotify(mode == SolarScaleMode.RealDistances);
         realSizesToggle?.SetIsOnWithoutNotify(mode == SolarScaleMode.TrueScale);
     }
 

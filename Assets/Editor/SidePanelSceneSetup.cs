@@ -42,10 +42,14 @@ public static class SidePanelSceneSetup
         EnsureSimulationControlButton(navigationBar);
         EnableBodyNameAutoSize(canvasTransform);
 
-        if (Object.FindFirstObjectByType<SimulationSidePanelController>() == null)
+        var panel = Object.FindFirstObjectByType<SimulationSidePanelController>();
+        if (panel == null)
             SetupInternal(markSceneDirty: true);
         else
+        {
+            SidePanelUiBootstrap.ApplyCompactLayout(panel.transform);
             EditorSceneManager.MarkSceneDirty(scene);
+        }
     }
 
     [MenuItem(MenuPath)]
@@ -297,7 +301,6 @@ public static class SidePanelSceneSetup
         Toggle minimapToggle = null;
         Toggle uiToggle = null;
         Toggle educationalToggle = null;
-        Toggle realDistancesToggle = null;
         Toggle realSizesToggle = null;
         Toggle realOrbitsToggle = null;
         Toggle cometMovementToggle = null;
@@ -318,7 +321,6 @@ public static class SidePanelSceneSetup
                 case "SidePanelMinimapLabel_Row": minimapToggle = toggle; break;
                 case "SidePanelUiLabel_Row": uiToggle = toggle; break;
                 case "SidePanelScaleEducationalLabel_Row": educationalToggle = toggle; break;
-                case "SidePanelRealDistancesLabel_Row": realDistancesToggle = toggle; break;
                 case "SidePanelRealSizesLabel_Row": realSizesToggle = toggle; break;
                 case "SidePanelRealOrbitsLabel_Row": realOrbitsToggle = toggle; break;
                 case "SidePanelCometMovementLabel_Row": cometMovementToggle = toggle; break;
@@ -336,7 +338,6 @@ public static class SidePanelSceneSetup
         serializedController.FindProperty("minimapToggle").objectReferenceValue = minimapToggle;
         serializedController.FindProperty("uiToggle").objectReferenceValue = uiToggle;
         serializedController.FindProperty("educationalToggle").objectReferenceValue = educationalToggle;
-        serializedController.FindProperty("realDistancesToggle").objectReferenceValue = realDistancesToggle;
         serializedController.FindProperty("realSizesToggle").objectReferenceValue = realSizesToggle;
         serializedController.FindProperty("realOrbitsToggle").objectReferenceValue = realOrbitsToggle;
         serializedController.FindProperty("cometMovementToggle").objectReferenceValue = cometMovementToggle;
@@ -352,6 +353,7 @@ public static class SidePanelSceneSetup
         if (freeObservationToggle != null)
             freeObservationToggle.isOn = false;
 
+        SidePanelUiBootstrap.ApplyCompactLayout(panelGo.transform);
         EnableBodyNameAutoSize(canvasTransform);
         return controller;
     }

@@ -5,14 +5,13 @@ namespace SolarSystemApp
     /// <summary>
     /// Presentation scale presets for Level1, chosen as mutually exclusive radio options.
     /// Schematic  = compressed educational layout (compact orbits, enlarged bodies).
-    /// RealDistances = true orbit ratios with enlarged bodies for visibility ("map" view).
-    /// TrueScale  = orbits and body sizes share one consistent scale (soft-compressed sizes),
+    /// TrueScale  = true orbit ratios with catalog body sizes (soft-compressed),
     ///              so inner planets never fall inside the Sun.
     /// </summary>
     public enum ScaleMode
     {
         Educational = 0,
-        RealDistances = 1,
+        // Value 1 was RealDistances (removed); kept out of enum for PlayerPrefs migration.
         TrueScale = 2
     }
 
@@ -26,7 +25,10 @@ namespace SolarSystemApp
         const string KeyRealDistances = "SolarSystem_UseRealDistances"; // legacy
         const string KeyRealSizes = "SolarSystem_UseRealSizes";         // legacy
 
-        const ScaleMode DefaultMode = ScaleMode.RealDistances;
+        const int LegacyRealDistancesRaw = 1;
+        const int LegacyTrueScaleRaw = 2;
+
+        const ScaleMode DefaultMode = ScaleMode.Educational;
 
         static bool initialized;
         static ScaleMode mode;
@@ -75,15 +77,23 @@ namespace SolarSystemApp
             if (legacySizes)
                 return ScaleMode.TrueScale;
             if (legacyDistances)
-                return ScaleMode.RealDistances;
+                return ScaleMode.Educational;
             return ScaleMode.Educational;
         }
 
         static ScaleMode ClampMode(int raw)
         {
-            if (raw < (int)ScaleMode.Educational || raw > (int)ScaleMode.TrueScale)
-                return DefaultMode;
-            return (ScaleMode)raw;
+            switch (raw)
+            {
+                case (int)ScaleMode.Educational:
+                    return ScaleMode.Educational;
+                case LegacyTrueScaleRaw:
+                    return ScaleMode.TrueScale;
+                case LegacyRealDistancesRaw:
+                    return ScaleMode.Educational;
+                default:
+                    return ScaleMode.Educational;
+            }
         }
 
         public static void SetMode(ScaleMode newMode)
@@ -115,7 +125,7 @@ namespace SolarSystemApp
             if (enabled)
             {
                 if (mode == ScaleMode.Educational)
-                    SetMode(ScaleMode.RealDistances);
+                    SetMode(ScaleMode.TrueScale);
             }
             else
             {
@@ -129,7 +139,7 @@ namespace SolarSystemApp
             if (enabled)
                 SetMode(ScaleMode.TrueScale);
             else if (mode == ScaleMode.TrueScale)
-                SetMode(ScaleMode.RealDistances);
+                SetMode(ScaleMode.Educational);
         }
 
         public static void ResetToDefaults()

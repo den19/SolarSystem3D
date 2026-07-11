@@ -27,7 +27,6 @@ public static class SidePanelUiBootstrap
         ("SidePanelMinimapLabel_Row", "SidePanelMinimapLabel"),
         ("SidePanelUiLabel_Row", "SidePanelUiLabel"),
         ("SidePanelScaleEducationalLabel_Row", "SidePanelScaleEducationalLabel"),
-        ("SidePanelRealDistancesLabel_Row", "SidePanelRealDistancesLabel"),
         ("SidePanelRealSizesLabel_Row", "SidePanelRealSizesLabel"),
         ("SidePanelRealOrbitsLabel_Row", "SidePanelRealOrbitsLabel"),
         ("SidePanelCometMovementLabel_Row", "SidePanelCometMovementLabel"),
@@ -64,6 +63,8 @@ public static class SidePanelUiBootstrap
         if (panel == null)
             return;
 
+        RemoveOrphanRows(panel);
+
         float y = RowStartY;
         for (int i = 0; i < ToggleRows.Length; i++)
         {
@@ -83,6 +84,34 @@ public static class SidePanelUiBootstrap
 
         if (panel.TryGetComponent(out RectTransform panelRect))
             panelRect.sizeDelta = new Vector2(PanelWidth, ComputePanelHeight(ToggleRows.Length));
+    }
+
+    static void RemoveOrphanRows(Transform panel)
+    {
+        for (int i = panel.childCount - 1; i >= 0; i--)
+        {
+            Transform child = panel.GetChild(i);
+            if (!child.name.EndsWith("_Row"))
+                continue;
+
+            bool known = false;
+            for (int j = 0; j < ToggleRows.Length; j++)
+            {
+                if (child.name == ToggleRows[j].rowName)
+                {
+                    known = true;
+                    break;
+                }
+            }
+
+            if (!known)
+            {
+                if (Application.isPlaying)
+                    Object.Destroy(child.gameObject);
+                else
+                    Object.DestroyImmediate(child.gameObject);
+            }
+        }
     }
 
     public static Toggle FindToggle(Transform panel, string rowName)
