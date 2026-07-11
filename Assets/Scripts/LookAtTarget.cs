@@ -40,6 +40,10 @@ public class LookAtTarget : MonoBehaviour {
 
     public GameObject theIoGameObject;
 
+    public GameObject theEuropaGameObject;
+
+    public GameObject theCallistoGameObject;
+
     public GameObject thePhobosGameObject;
 
     public GameObject theDeimosGameObject;
@@ -62,6 +66,8 @@ public class LookAtTarget : MonoBehaviour {
     public GameObject titanCamera;    // Детальная камера Титана
     public GameObject ganymedeCamera;    // Детальная камера Ганимеда
     public GameObject ioCamera;    // Детальная камера Ио
+    public GameObject europaCamera;    // Детальная камера Европы
+    public GameObject callistoCamera;    // Детальная камера Каллисто
     public GameObject phobosCamera;    // Детальная камера Фобоса
     public GameObject deimosCamera;    // Детальная камера Деймоса
 
@@ -107,6 +113,8 @@ public class LookAtTarget : MonoBehaviour {
         if (theTitanGameObject) theTitanGameObject.SetActive(false);
         if (theGanymedeGameObject) theGanymedeGameObject.SetActive(false);
         if (theIoGameObject) theIoGameObject.SetActive(false);
+        if (theEuropaGameObject) theEuropaGameObject.SetActive(false);
+        if (theCallistoGameObject) theCallistoGameObject.SetActive(false);
         if (thePhobosGameObject) thePhobosGameObject.SetActive(false);
         if (theDeimosGameObject) theDeimosGameObject.SetActive(false);
         theUranusGameObject.SetActive(false);
@@ -325,6 +333,8 @@ public class LookAtTarget : MonoBehaviour {
         if (titanCamera) titanCamera.SetActive(false);
         if (ganymedeCamera) ganymedeCamera.SetActive(false);
         if (ioCamera) ioCamera.SetActive(false);
+        if (europaCamera) europaCamera.SetActive(false);
+        if (callistoCamera) callistoCamera.SetActive(false);
         if (phobosCamera) phobosCamera.SetActive(false);
         if (deimosCamera) deimosCamera.SetActive(false);
         if (uranusCamera) uranusCamera.SetActive(false);
@@ -344,6 +354,8 @@ public class LookAtTarget : MonoBehaviour {
         else if (planetName == "Titan" && theTitanGameObject) MakeDescriptionVisible(theTitanGameObject);
         else if (planetName == "Ganymede" && theGanymedeGameObject) MakeDescriptionVisible(theGanymedeGameObject);
         else if (planetName == "Io" && theIoGameObject) MakeDescriptionVisible(theIoGameObject);
+        else if (planetName == "Europa" && theEuropaGameObject) MakeDescriptionVisible(theEuropaGameObject);
+        else if (planetName == "Callisto" && theCallistoGameObject) MakeDescriptionVisible(theCallistoGameObject);
         else if (planetName == "Phobos" && thePhobosGameObject) MakeDescriptionVisible(thePhobosGameObject);
         else if (planetName == "Deimos" && theDeimosGameObject) MakeDescriptionVisible(theDeimosGameObject);
         else if (planetName == "Uranus" && theUranusGameObject) MakeDescriptionVisible(theUranusGameObject);
@@ -362,6 +374,8 @@ public class LookAtTarget : MonoBehaviour {
         else if (planetName == "Titan") TurnOnTitanCamera();
         else if (planetName == "Ganymede") TurnOnGanymedeCamera();
         else if (planetName == "Io") TurnOnIoCamera();
+        else if (planetName == "Europa") TurnOnEuropaCamera();
+        else if (planetName == "Callisto") TurnOnCallistoCamera();
         else if (planetName == "Phobos") TurnOnPhobosCamera();
         else if (planetName == "Deimos") TurnOnDeimosCamera();
         else if (planetName == "Uranus") TurnOnUranusCamera();
@@ -380,6 +394,8 @@ public class LookAtTarget : MonoBehaviour {
         if (titanCamera != null && titanCamera.activeSelf) return titanCamera;
         if (ganymedeCamera != null && ganymedeCamera.activeSelf) return ganymedeCamera;
         if (ioCamera != null && ioCamera.activeSelf) return ioCamera;
+        if (europaCamera != null && europaCamera.activeSelf) return europaCamera;
+        if (callistoCamera != null && callistoCamera.activeSelf) return callistoCamera;
         if (phobosCamera != null && phobosCamera.activeSelf) return phobosCamera;
         if (deimosCamera != null && deimosCamera.activeSelf) return deimosCamera;
         if (uranusCamera != null && uranusCamera.activeSelf) return uranusCamera;
@@ -509,6 +525,26 @@ public class LookAtTarget : MonoBehaviour {
     public void TurnOffIoCamera()
     {
         if (ioCamera) ioCamera.SetActive(false);
+    }
+
+    public void TurnOnEuropaCamera()
+    {
+        if (europaCamera) europaCamera.SetActive(true);
+    }
+
+    public void TurnOffEuropaCamera()
+    {
+        if (europaCamera) europaCamera.SetActive(false);
+    }
+
+    public void TurnOnCallistoCamera()
+    {
+        if (callistoCamera) callistoCamera.SetActive(true);
+    }
+
+    public void TurnOffCallistoCamera()
+    {
+        if (callistoCamera) callistoCamera.SetActive(false);
     }
 
     public void TurnOnPhobosCamera()

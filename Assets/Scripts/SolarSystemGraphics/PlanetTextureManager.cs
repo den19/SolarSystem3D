@@ -175,7 +175,9 @@ public class PlanetTextureManager : MonoBehaviour
         RegisterBodySwap("Moon", "PlanetGraphicsHD/MoonTexture_HD");
         RegisterBodySwap("Titan", "PlanetGraphicsHD/TitanTexture_HD");
         RegisterBodySwap("Io", "PlanetGraphicsHD/IoTexture_HD");
+        RegisterBodySwap("Europa", "PlanetGraphicsHD/EuropaTexture_HD");
         RegisterBodySwap("Ganymede", "PlanetGraphicsHD/GanymedeTexture_HD");
+        RegisterBodySwap("Callisto", "PlanetGraphicsHD/CallistoTexture_HD");
         RegisterBodySwap("Phobos", "PlanetGraphicsHD/PhobosTexture_HD");
         RegisterBodySwap("Deimos", "PlanetGraphicsHD/DeimosTexture_HD");
 

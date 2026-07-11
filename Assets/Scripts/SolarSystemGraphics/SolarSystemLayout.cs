@@ -132,12 +132,32 @@ public static class SolarSystemLayout
                 }
             },
             {
+                "Europa",
+                new EducationalEntry
+                {
+                    Scale = new Vector3(0.17f, 0.17f, 0.17f),
+                    OrbitDistance = 1.25f,
+                    SatelliteLocalPosition = new Vector3(0f, 0f, 1.25f),
+                    PickColliderRadius = 1f
+                }
+            },
+            {
                 "Ganymede",
                 new EducationalEntry
                 {
                     Scale = new Vector3(0.28f, 0.28f, 0.28f),
                     OrbitDistance = 2.0f,
                     SatelliteLocalPosition = new Vector3(0f, 0f, 2.0f),
+                    PickColliderRadius = 1f
+                }
+            },
+            {
+                "Callisto",
+                new EducationalEntry
+                {
+                    Scale = new Vector3(0.26f, 0.26f, 0.26f),
+                    OrbitDistance = 3.5f,
+                    SatelliteLocalPosition = new Vector3(0f, 0f, 3.5f),
                     PickColliderRadius = 1f
                 }
             },

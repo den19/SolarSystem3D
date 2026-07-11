@@ -346,6 +346,8 @@ public class MobileOrbitCamera : MonoBehaviour
         var titanDesc = globalLookAtScript.theTitanGameObject;
         var ganymedeDesc = globalLookAtScript.theGanymedeGameObject;
         var ioDesc = globalLookAtScript.theIoGameObject;
+        var europaDesc = globalLookAtScript.theEuropaGameObject;
+        var callistoDesc = globalLookAtScript.theCallistoGameObject;
         var phobosDesc = globalLookAtScript.thePhobosGameObject;
         var deimosDesc = globalLookAtScript.theDeimosGameObject;
         var uranusDesc = globalLookAtScript.theUranusGameObject;
@@ -362,6 +364,8 @@ public class MobileOrbitCamera : MonoBehaviour
         if (titanDesc) titanDesc.SetActive(planetName == "Titan");
         if (ganymedeDesc) ganymedeDesc.SetActive(planetName == "Ganymede");
         if (ioDesc) ioDesc.SetActive(planetName == "Io");
+        if (europaDesc) europaDesc.SetActive(planetName == "Europa");
+        if (callistoDesc) callistoDesc.SetActive(planetName == "Callisto");
         if (phobosDesc) phobosDesc.SetActive(planetName == "Phobos");
         if (deimosDesc) deimosDesc.SetActive(planetName == "Deimos");
         if (uranusDesc) uranusDesc.SetActive(planetName == "Uranus");
@@ -399,6 +403,8 @@ public class MobileOrbitCamera : MonoBehaviour
         if (planetName == "Titan" && globalLookAtScript.titanCamera) globalLookAtScript.titanCamera.SetActive(active);
         if (planetName == "Ganymede" && globalLookAtScript.ganymedeCamera) globalLookAtScript.ganymedeCamera.SetActive(active);
         if (planetName == "Io" && globalLookAtScript.ioCamera) globalLookAtScript.ioCamera.SetActive(active);
+        if (planetName == "Europa" && globalLookAtScript.europaCamera) globalLookAtScript.europaCamera.SetActive(active);
+        if (planetName == "Callisto" && globalLookAtScript.callistoCamera) globalLookAtScript.callistoCamera.SetActive(active);
         if (planetName == "Phobos" && globalLookAtScript.phobosCamera) globalLookAtScript.phobosCamera.SetActive(active);
         if (planetName == "Deimos" && globalLookAtScript.deimosCamera) globalLookAtScript.deimosCamera.SetActive(active);
         if (planetName == "Uranus" && globalLookAtScript.uranusCamera) globalLookAtScript.uranusCamera.SetActive(active);

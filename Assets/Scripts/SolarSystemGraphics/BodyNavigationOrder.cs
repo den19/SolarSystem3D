@@ -25,7 +25,7 @@ public static class BodyNavigationOrder
     static readonly string[] BaseBodyNames =
     {
         "Sun", "Mercury", "Venus", "Earth", "Moon", "Mars", "Phobos", "Deimos",
-        "Jupiter", "Io", "Ganymede", "Saturn", "Titan", "Uranus", "Neptune"
+        "Jupiter", "Io", "Europa", "Ganymede", "Callisto", "Saturn", "Titan", "Uranus", "Neptune"
     };
 
     const string CometInsertAfter = "Neptune";

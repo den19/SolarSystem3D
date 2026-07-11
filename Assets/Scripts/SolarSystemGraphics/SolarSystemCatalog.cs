@@ -12,7 +12,9 @@ public static class SolarSystemCatalog
     public const float MoonOrbitKm = 384400f;
     public const float TitanOrbitKm = 1221870f;
     public const float IoOrbitKm = 421700f;
+    public const float EuropaOrbitKm = 671100f;
     public const float GanymedeOrbitKm = 1070400f;
+    public const float CallistoOrbitKm = 1882700f;
     public const float PhobosOrbitKm = 9376f;
     public const float DeimosOrbitKm = 23463f;
 
@@ -126,6 +128,16 @@ public static class SolarSystemCatalog
         },
         new BodyDefinition
         {
+            objectName = "Europa",
+            orbitalRadiusAu = 0f,
+            equatorialRadiusKm = 1560.8f,
+            orbitCenterName = "Jupiter",
+            satelliteOrbitKm = EuropaOrbitKm,
+            orbitalEccentricity = 0.009f,
+            orbitalInclinationDeg = 0.47f
+        },
+        new BodyDefinition
+        {
             objectName = "Ganymede",
             orbitalRadiusAu = 0f,
             equatorialRadiusKm = 2634.1f,
@@ -133,6 +145,16 @@ public static class SolarSystemCatalog
             satelliteOrbitKm = GanymedeOrbitKm,
             orbitalEccentricity = 0.0013f,
             orbitalInclinationDeg = 0.2f
+        },
+        new BodyDefinition
+        {
+            objectName = "Callisto",
+            orbitalRadiusAu = 0f,
+            equatorialRadiusKm = 2410.3f,
+            orbitCenterName = "Jupiter",
+            satelliteOrbitKm = CallistoOrbitKm,
+            orbitalEccentricity = 0.0074f,
+            orbitalInclinationDeg = 0.19f
         },
         new BodyDefinition
         {
