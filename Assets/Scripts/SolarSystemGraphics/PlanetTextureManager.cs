@@ -180,6 +180,7 @@ public class PlanetTextureManager : MonoBehaviour
         RegisterBodySwap("Callisto", "PlanetGraphicsHD/CallistoTexture_HD");
         RegisterBodySwap("Phobos", "PlanetGraphicsHD/PhobosTexture_HD");
         RegisterBodySwap("Deimos", "PlanetGraphicsHD/DeimosTexture_HD");
+        RegisterBodySwap("Triton", "PlanetGraphicsHD/TritonTexture_HD");
 
         EnsureSunBloom();
         EnsureEarthCloudOverlay();

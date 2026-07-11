@@ -15,12 +15,12 @@ public class SpacetimeGridController : MonoBehaviour
 
     static readonly string[] BodyNames =
     {
-        "Sun", "Mercury", "Venus", "Earth", "Mars", "Phobos", "Deimos", "Jupiter", "Saturn", "Uranus", "Neptune", "Moon", "Io", "Europa", "Titan", "Ganymede", "Callisto"
+        "Sun", "Mercury", "Venus", "Earth", "Mars", "Phobos", "Deimos", "Jupiter", "Saturn", "Uranus", "Neptune", "Moon", "Io", "Europa", "Titan", "Ganymede", "Callisto", "Triton"
     };
 
     static readonly HashSet<string> MoonNames = new HashSet<string>
     {
-        "Moon", "Phobos", "Deimos", "Io", "Europa", "Titan", "Ganymede", "Callisto"
+        "Moon", "Phobos", "Deimos", "Io", "Europa", "Titan", "Ganymede", "Callisto", "Triton"
     };
 
     static bool _shaderMissingWarningLogged;

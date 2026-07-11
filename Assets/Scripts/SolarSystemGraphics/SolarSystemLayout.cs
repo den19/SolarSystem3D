@@ -180,6 +180,16 @@ public static class SolarSystemLayout
                     SatelliteLocalPosition = new Vector3(0f, 0f, 2.4f),
                     PickColliderRadius = 2.0f
                 }
+            },
+            {
+                "Triton",
+                new EducationalEntry
+                {
+                    Scale = new Vector3(0.15f, 0.15f, 0.15f),
+                    OrbitDistance = 2.2f,
+                    SatelliteLocalPosition = new Vector3(0f, 0f, 2.2f),
+                    PickColliderRadius = 1f
+                }
             }
         };
 

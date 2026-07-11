@@ -17,6 +17,7 @@ public static class SolarSystemCatalog
     public const float CallistoOrbitKm = 1882700f;
     public const float PhobosOrbitKm = 9376f;
     public const float DeimosOrbitKm = 23463f;
+    public const float TritonOrbitKm = 354759f;
 
     public struct BodyDefinition
     {
@@ -175,6 +176,16 @@ public static class SolarSystemCatalog
             satelliteOrbitKm = DeimosOrbitKm,
             orbitalEccentricity = 0.00033f,
             orbitalInclinationDeg = 1.79f
+        },
+        new BodyDefinition
+        {
+            objectName = "Triton",
+            orbitalRadiusAu = 0f,
+            equatorialRadiusKm = 1353.4f,
+            orbitCenterName = "Neptune",
+            satelliteOrbitKm = TritonOrbitKm,
+            orbitalEccentricity = 0.000016f,
+            orbitalInclinationDeg = 0.67f
         }
     };
 

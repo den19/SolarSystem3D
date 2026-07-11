@@ -52,6 +52,8 @@ public class LookAtTarget : MonoBehaviour {
 
     public GameObject theNeptuneGameObject;
 
+    public GameObject theTritonGameObject;
+
     public Camera mainCamera;      // Главная камера (первоначальная)
     public GameObject earthCamera;    // Детальная камера Земли (которая появляется при фокусировке на объект)
     public GameObject marsCamera;    // Детальная камера Марса
@@ -70,6 +72,7 @@ public class LookAtTarget : MonoBehaviour {
     public GameObject callistoCamera;    // Детальная камера Каллисто
     public GameObject phobosCamera;    // Детальная камера Фобоса
     public GameObject deimosCamera;    // Детальная камера Деймоса
+    public GameObject tritonCamera;    // Детальная камера Тритона
 
     MobileOrbitCamera _mainOrbitCamera;
     GameObject lastObservationTarget;
@@ -119,6 +122,7 @@ public class LookAtTarget : MonoBehaviour {
         if (theDeimosGameObject) theDeimosGameObject.SetActive(false);
         theUranusGameObject.SetActive(false);
         theNeptuneGameObject.SetActive(false);
+        if (theTritonGameObject) theTritonGameObject.SetActive(false);
         theSunGameObject.SetActive(false);
 
         if (CometDescriptionPanel.Instance != null)
@@ -339,6 +343,7 @@ public class LookAtTarget : MonoBehaviour {
         if (deimosCamera) deimosCamera.SetActive(false);
         if (uranusCamera) uranusCamera.SetActive(false);
         if (neptuneCamera) neptuneCamera.SetActive(false);
+        if (tritonCamera) tritonCamera.SetActive(false);
     }
 
     private void ShowDescriptionForPlanet(string planetName)
@@ -360,6 +365,7 @@ public class LookAtTarget : MonoBehaviour {
         else if (planetName == "Deimos" && theDeimosGameObject) MakeDescriptionVisible(theDeimosGameObject);
         else if (planetName == "Uranus" && theUranusGameObject) MakeDescriptionVisible(theUranusGameObject);
         else if (planetName == "Neptune" && theNeptuneGameObject) MakeDescriptionVisible(theNeptuneGameObject);
+        else if (planetName == "Triton" && theTritonGameObject) MakeDescriptionVisible(theTritonGameObject);
     }
 
     private void TurnOnDetailCameraForPlanet(string planetName)
@@ -380,6 +386,7 @@ public class LookAtTarget : MonoBehaviour {
         else if (planetName == "Deimos") TurnOnDeimosCamera();
         else if (planetName == "Uranus") TurnOnUranusCamera();
         else if (planetName == "Neptune") TurnOnNeptuneCamera();
+        else if (planetName == "Triton") TurnOnTritonCamera();
     }
 
     public GameObject GetActiveDetailCamera()
@@ -400,6 +407,7 @@ public class LookAtTarget : MonoBehaviour {
         if (deimosCamera != null && deimosCamera.activeSelf) return deimosCamera;
         if (uranusCamera != null && uranusCamera.activeSelf) return uranusCamera;
         if (neptuneCamera != null && neptuneCamera.activeSelf) return neptuneCamera;
+        if (tritonCamera != null && tritonCamera.activeSelf) return tritonCamera;
         return null;
     }
 
@@ -565,6 +573,16 @@ public class LookAtTarget : MonoBehaviour {
     public void TurnOffDeimosCamera()
     {
         if (deimosCamera) deimosCamera.SetActive(false);
+    }
+
+    public void TurnOnTritonCamera()
+    {
+        if (tritonCamera) tritonCamera.SetActive(true);
+    }
+
+    public void TurnOffTritonCamera()
+    {
+        if (tritonCamera) tritonCamera.SetActive(false);
     }
 
     public void RecordObservationTarget(GameObject body)

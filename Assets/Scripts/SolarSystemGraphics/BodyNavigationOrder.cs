@@ -25,10 +25,10 @@ public static class BodyNavigationOrder
     static readonly string[] BaseBodyNames =
     {
         "Sun", "Mercury", "Venus", "Earth", "Moon", "Mars", "Phobos", "Deimos",
-        "Jupiter", "Io", "Europa", "Ganymede", "Callisto", "Saturn", "Titan", "Uranus", "Neptune"
+        "Jupiter", "Io", "Europa", "Ganymede", "Callisto", "Saturn", "Titan", "Uranus", "Neptune", "Triton"
     };
 
-    const string CometInsertAfter = "Neptune";
+    const string CometInsertAfter = "Triton";
 
     public static List<NavigationEntry> BuildNavigationList()
     {
