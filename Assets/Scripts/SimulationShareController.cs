@@ -13,11 +13,9 @@ public class SimulationShareController : MonoBehaviour
     const int CaptureWidth = 1080;
     const int CaptureHeight = 1920;
 
-    const string KeyShareNoInternet = "ShareNoInternetMessage";
     const string KeyShareFailed = "ShareFailedMessage";
     const string KeyShareCaptureFailed = "ShareCaptureFailedMessage";
 
-    const string FallbackShareNoInternet = "No internet connection. Sharing is unavailable.";
     const string FallbackShareFailed = "Unable to share. Please try again.";
     const string FallbackShareCaptureFailed = "Failed to capture screenshot.";
 
@@ -127,13 +125,6 @@ public class SimulationShareController : MonoBehaviour
             yield break;
         }
 
-        if (!NetworkReachabilityHelper.HasInternet)
-        {
-            ShowShareNoInternet();
-            _isSharing = false;
-            yield break;
-        }
-
         try
         {
             if (!AndroidShareHelper.TryShareImageWithText(pngPath, shareText))
@@ -171,11 +162,6 @@ public class SimulationShareController : MonoBehaviour
         }
 
         return null;
-    }
-
-    static void ShowShareNoInternet()
-    {
-        TransientMessageController.ShowLocalized(KeyShareNoInternet, FallbackShareNoInternet);
     }
 
     static void ShowShareFailed()

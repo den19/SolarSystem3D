@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -7,7 +8,11 @@ using UnityEngine.UI;
 [RequireComponent(typeof(Button))]
 public class ShareButtonController : MonoBehaviour
 {
+    const string KeyShareNotReady = "ShareNotReadyMessage";
+    const string FallbackShareNotReady = "Preparing share. Please try again in a moment.";
+
     Button _button;
+    bool _retryPending;
 
     void Awake()
     {
@@ -32,8 +37,30 @@ public class ShareButtonController : MonoBehaviour
     void OnShareClicked()
     {
         if (SimulationShareController.Instance != null)
+        {
+            SimulationShareController.Instance.RequestShare();
+            return;
+        }
+
+        if (!SimulationViewBootstrap.SystemsReady && !_retryPending)
+        {
+            _retryPending = true;
+            StartCoroutine(RetryShareAfterInit());
+            return;
+        }
+
+        TransientMessageController.ShowLocalized(KeyShareNotReady, FallbackShareNotReady);
+    }
+
+    IEnumerator RetryShareAfterInit()
+    {
+        yield return null;
+
+        _retryPending = false;
+
+        if (SimulationShareController.Instance != null)
             SimulationShareController.Instance.RequestShare();
         else
-            TransientMessageController.ShowLocalized("ShareFailedMessage", "Unable to share. Please try again.");
+            TransientMessageController.ShowLocalized(KeyShareNotReady, FallbackShareNotReady);
     }
 }

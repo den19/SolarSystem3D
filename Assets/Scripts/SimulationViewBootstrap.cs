@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -41,6 +42,8 @@ public class SimulationViewBootstrap : MonoBehaviour
 
         var go = new GameObject("SimulationViewSystems");
         instance = go.AddComponent<SimulationViewBootstrap>();
+        go.AddComponent<SimulationShareController>();
+        go.AddComponent<TransientMessageController>();
     }
 
     void Start()
@@ -62,37 +65,41 @@ public class SimulationViewBootstrap : MonoBehaviour
 
         systemsInitialized = true;
 
-        var orbitLines = gameObject.AddComponent<OrbitLinesManager>();
-        var bodyLabels = gameObject.AddComponent<BodyLabelManager>();
-        gameObject.AddComponent<MinimapController>();
+        try
+        {
+            var orbitLines = gameObject.AddComponent<OrbitLinesManager>();
+            var bodyLabels = gameObject.AddComponent<BodyLabelManager>();
+            gameObject.AddComponent<MinimapController>();
 
-        var cometSystem = gameObject.AddComponent<CometSystemController>();
-        cometSystem.Initialize(orbitLines, bodyLabels);
+            var cometSystem = gameObject.AddComponent<CometSystemController>();
+            cometSystem.Initialize(orbitLines, bodyLabels);
 
-        gameObject.AddComponent<SolarSystemScaleController>();
-        gameObject.AddComponent<BodyOrbitSystemController>();
+            gameObject.AddComponent<SolarSystemScaleController>();
+            gameObject.AddComponent<BodyOrbitSystemController>();
 
-        Canvas canvas = null;
-        GameObject canvasGo = GameObject.Find("MainScreenCanvas");
-        if (canvasGo != null)
-            canvas = canvasGo.GetComponent<Canvas>();
-        if (canvas == null)
-            canvas = FindFirstObjectByType<Canvas>();
-        SimulationSidePanelController sidePanel = null;
-        if (canvas != null)
-            sidePanel = canvas.GetComponentInChildren<SimulationSidePanelController>(true);
+            Canvas canvas = null;
+            GameObject canvasGo = GameObject.Find("MainScreenCanvas");
+            if (canvasGo != null)
+                canvas = canvasGo.GetComponent<Canvas>();
+            if (canvas == null)
+                canvas = FindFirstObjectByType<Canvas>();
+            SimulationSidePanelController sidePanel = null;
+            if (canvas != null)
+                sidePanel = canvas.GetComponentInChildren<SimulationSidePanelController>(true);
 
-        if (sidePanel == null)
-            Debug.LogError("SimulationSidePanelController not found on MainScreenCanvas. Add SimulationSidePanel to the scene.");
+            if (sidePanel == null)
+                Debug.LogError("SimulationSidePanelController not found on MainScreenCanvas. Add SimulationSidePanel to the scene.");
 
-        if (canvas != null)
-            CometDescriptionPanel.EnsureOnCanvas(canvas.transform);
+            if (canvas != null)
+                CometDescriptionPanel.EnsureOnCanvas(canvas.transform);
 
-        var cleanView = gameObject.AddComponent<CleanViewController>();
-        cleanView.Initialize(cometSystem, sidePanel);
-
-        gameObject.AddComponent<SimulationShareController>();
-        gameObject.AddComponent<TransientMessageController>();
+            var cleanView = gameObject.AddComponent<CleanViewController>();
+            cleanView.Initialize(cometSystem, sidePanel);
+        }
+        catch (Exception exception)
+        {
+            Debug.LogError("SimulationViewBootstrap: simulation systems init failed. " + exception);
+        }
 
         yield return null;
 

@@ -1,0 +1,2 @@
+-keep class androidx.core.content.FileProvider { *; }
+-keep class androidx.core.** { *; }
