@@ -458,20 +458,60 @@ public class SolarSystemScaleController : MonoBehaviour
             return baseline.OrbitDistance;
         }
 
-        float distance = baseline.OrbitDistance;
         float minOrbit = GetMinimumSatelliteOrbitLocal(definition.orbitCenterName);
-        if (distance < minOrbit
-            && SolarSystemLayout.TryGetEducational(definition.objectName, out SolarSystemLayout.EducationalEntry fallback))
-            distance = fallback.OrbitDistance;
+        float innermost = GetInnermostSatelliteBaseline(definition.orbitCenterName);
+        if (innermost > 0.0001f && innermost < minOrbit)
+            return baseline.OrbitDistance * (minOrbit / innermost);
 
-        return distance;
+        return baseline.OrbitDistance;
     }
 
-    static float GetMinimumSatelliteOrbitLocal(string orbitCenterName)
+    /// <summary>
+    /// Earth–Moon educational clearance ratio used as the true-scale satellite orbit template.
+    /// </summary>
+    float GetEarthMoonClearanceRatio()
     {
-        const float meshRadius = 0.5f;
-        const float margin = 1.08f;
-        return meshRadius * margin;
+        if (SolarSystemLayout.TryGetEducational("Moon", out SolarSystemLayout.EducationalEntry moon)
+            && SolarSystemLayout.TryGetEducational("Earth", out SolarSystemLayout.EducationalEntry earth))
+        {
+            float earthRadius = BodyMeshRadius * earth.Scale.x;
+            if (earthRadius > 0.0001f)
+                return moon.OrbitDistance / earthRadius;
+        }
+
+        return 2.78f;
+    }
+
+    float GetTrueScaleParentWorldRadius(string parentName)
+    {
+        if (!SolarSystemCatalog.TryGetBody(parentName, out SolarSystemCatalog.BodyDefinition parentDef))
+            return BodyMeshRadius;
+
+        return BodyMeshRadius * ComputeTrueScaleUniform(parentDef);
+    }
+
+    float GetInnermostSatelliteBaseline(string parentName)
+    {
+        float min = float.MaxValue;
+        for (int i = 0; i < _baselines.Count; i++)
+        {
+            BodyBaseline entry = _baselines[i];
+            if (entry.OrbitCenterName != parentName)
+                continue;
+
+            if (entry.OrbitDistance < min)
+                min = entry.OrbitDistance;
+        }
+
+        return min < float.MaxValue ? min : 0f;
+    }
+
+    float GetMinimumSatelliteOrbitLocal(string orbitCenterName)
+    {
+        if (string.IsNullOrEmpty(orbitCenterName))
+            return BodyMeshRadius * 1.08f;
+
+        return GetTrueScaleParentWorldRadius(orbitCenterName) * GetEarthMoonClearanceRatio();
     }
 
     float GetOrbitRadius(BodyBaseline baseline, SolarSystemCatalog.BodyDefinition definition)
