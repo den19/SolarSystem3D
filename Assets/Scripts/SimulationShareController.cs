@@ -14,8 +14,10 @@ public class SimulationShareController : MonoBehaviour
 {
     public static SimulationShareController Instance { get; private set; }
 
-    const int CaptureWidth = 1080;
-    const int CaptureHeight = 1920;
+    const int TargetCaptureWidth = 1080;
+    const int TargetCaptureHeight = 1920;
+    const int FallbackCaptureWidth = 720;
+    const int FallbackCaptureHeight = 1280;
 
     const string KeyShareFailed = "ShareFailedMessage";
     const string KeyShareCaptureFailed = "ShareCaptureFailedMessage";
@@ -73,7 +75,6 @@ public class SimulationShareController : MonoBehaviour
     {
         _isSharing = true;
         Texture2D texture = null;
-        RenderTexture renderTexture = null;
         bool captureFailed = false;
 
         Camera captureCamera = ResolveCaptureCamera();
@@ -85,35 +86,88 @@ public class SimulationShareController : MonoBehaviour
             yield break;
         }
 
+        ResolveCaptureDimensions(out int captureWidth, out int captureHeight);
+        Debug.Log("SimulationShareController: short share target resolution " + captureWidth + "x" + captureHeight);
+
+        yield return CaptureCameraFrameRoutine(captureCamera, captureWidth, captureHeight, result => texture = result);
+
+        if (texture == null && captureWidth == TargetCaptureWidth)
+        {
+            Debug.LogWarning("SimulationShareController: retrying short share at fallback resolution.");
+            yield return CaptureCameraFrameRoutine(captureCamera, FallbackCaptureWidth, FallbackCaptureHeight, result => texture = result);
+        }
+
+        if (texture == null)
+        {
+            captureFailed = true;
+            Debug.LogError("SimulationShareController: capture failed at all supported resolutions.");
+        }
+
+        if (captureFailed || texture == null)
+        {
+            ShowShareCaptureFailed();
+            _isSharing = false;
+            yield break;
+        }
+
+        yield return FinalizeShare(texture, BuildShareFileName(includeUi: false));
+        _isSharing = false;
+    }
+
+    IEnumerator CaptureCameraFrameRoutine(Camera captureCamera, int captureWidth, int captureHeight, Action<Texture2D> onCaptured)
+    {
+        onCaptured(null);
+
+        RenderTexture renderTexture = null;
+        Texture2D texture = null;
         RenderTexture previousTarget = captureCamera.targetTexture;
         float previousAspect = captureCamera.aspect;
         bool minimapWasEnabled = _minimapCamera != null && _minimapCamera.enabled;
-        renderTexture = RenderTexture.GetTemporary(CaptureWidth, CaptureHeight, 24, RenderTextureFormat.ARGB32);
+        bool sizeMismatch = false;
 
-        if (_minimapCamera != null)
-            _minimapCamera.enabled = false;
-
-        captureCamera.aspect = 9f / 16f;
-        captureCamera.targetTexture = renderTexture;
-        captureCamera.Render();
-
-        yield return new WaitForEndOfFrame();
-
-        try
+        renderTexture = RenderTexture.GetTemporary(captureWidth, captureHeight, 24, RenderTextureFormat.ARGB32);
+        if (renderTexture.width != captureWidth || renderTexture.height != captureHeight)
         {
-            RenderTexture previousActive = RenderTexture.active;
-            RenderTexture.active = renderTexture;
-
-            texture = new Texture2D(CaptureWidth, CaptureHeight, TextureFormat.RGB24, false);
-            texture.ReadPixels(new Rect(0, 0, CaptureWidth, CaptureHeight), 0, 0);
-            texture.Apply();
-
-            RenderTexture.active = previousActive;
+            Debug.LogWarning(
+                "SimulationShareController: RenderTexture size mismatch. got " + renderTexture.width + "x" +
+                renderTexture.height + ", expected " + captureWidth + "x" + captureHeight + ".");
+            sizeMismatch = true;
         }
-        catch (Exception exception)
+
+        if (!sizeMismatch)
         {
-            captureFailed = true;
-            Debug.LogError("SimulationShareController: capture failed. " + exception.Message);
+            if (_minimapCamera != null)
+                _minimapCamera.enabled = false;
+
+            captureCamera.aspect = 9f / 16f;
+            captureCamera.targetTexture = renderTexture;
+            captureCamera.Render();
+
+            yield return new WaitForEndOfFrame();
+
+            try
+            {
+                RenderTexture previousActive = RenderTexture.active;
+                RenderTexture.active = renderTexture;
+
+                texture = new Texture2D(captureWidth, captureHeight, TextureFormat.RGB24, false);
+                texture.ReadPixels(new Rect(0, 0, captureWidth, captureHeight), 0, 0);
+                texture.Apply();
+
+                RenderTexture.active = previousActive;
+                onCaptured(texture);
+            }
+            catch (Exception exception)
+            {
+                if (texture != null)
+                {
+                    Destroy(texture);
+                    texture = null;
+                }
+
+                Debug.LogError("SimulationShareController: capture failed. " + exception.Message);
+                onCaptured(null);
+            }
         }
 
         captureCamera.targetTexture = previousTarget;
@@ -124,19 +178,6 @@ public class SimulationShareController : MonoBehaviour
 
         if (renderTexture != null)
             RenderTexture.ReleaseTemporary(renderTexture);
-
-        if (captureFailed || texture == null)
-        {
-            if (texture != null)
-                Destroy(texture);
-
-            ShowShareCaptureFailed();
-            _isSharing = false;
-            yield break;
-        }
-
-        yield return FinalizeShare(texture, BuildShareFileName(includeUi: false));
-        _isSharing = false;
     }
 
     IEnumerator CaptureScreenWithUiAndShareRoutine()
@@ -205,6 +246,7 @@ public class SimulationShareController : MonoBehaviour
 
         try
         {
+            Debug.Log("SimulationShareController: sharing " + texture.width + "x" + texture.height);
             byte[] pngBytes = texture.EncodeToPNG();
             string pngPath = Path.Combine(GetOutputDirectory(), fileName);
             File.WriteAllBytes(pngPath, pngBytes);
@@ -232,16 +274,24 @@ public class SimulationShareController : MonoBehaviour
 
     static Texture2D ScaleToCaptureSize(Texture2D source)
     {
-        RenderTexture renderTexture = RenderTexture.GetTemporary(CaptureWidth, CaptureHeight, 0, RenderTextureFormat.ARGB32);
+        ResolveCaptureDimensions(out int captureWidth, out int captureHeight);
+        RenderTexture renderTexture = RenderTexture.GetTemporary(captureWidth, captureHeight, 0, RenderTextureFormat.ARGB32);
         RenderTexture previousActive = RenderTexture.active;
 
         try
         {
+            if (renderTexture.width != captureWidth || renderTexture.height != captureHeight)
+            {
+                Debug.LogWarning(
+                    "SimulationShareController: scale RenderTexture size mismatch. got " + renderTexture.width + "x" +
+                    renderTexture.height + ", expected " + captureWidth + "x" + captureHeight + ".");
+            }
+
             Graphics.Blit(source, renderTexture);
             RenderTexture.active = renderTexture;
 
-            Texture2D scaled = new Texture2D(CaptureWidth, CaptureHeight, TextureFormat.RGB24, false);
-            scaled.ReadPixels(new Rect(0, 0, CaptureWidth, CaptureHeight), 0, 0);
+            Texture2D scaled = new Texture2D(captureWidth, captureHeight, TextureFormat.RGB24, false);
+            scaled.ReadPixels(new Rect(0, 0, captureWidth, captureHeight), 0, 0);
             scaled.Apply();
             return scaled;
         }
@@ -250,6 +300,19 @@ public class SimulationShareController : MonoBehaviour
             RenderTexture.active = previousActive;
             RenderTexture.ReleaseTemporary(renderTexture);
         }
+    }
+
+    static void ResolveCaptureDimensions(out int width, out int height)
+    {
+        if (SystemInfo.maxTextureSize >= TargetCaptureHeight)
+        {
+            width = TargetCaptureWidth;
+            height = TargetCaptureHeight;
+            return;
+        }
+
+        width = FallbackCaptureWidth;
+        height = FallbackCaptureHeight;
     }
 
     static void ResetShareButtonVisual()
