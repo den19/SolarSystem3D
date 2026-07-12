@@ -64,8 +64,15 @@ public class CleanViewController : MonoBehaviour
         else
             HideSimulationUi();
 
-        if (!showSimulationUi && _sidePanel != null)
-            _sidePanel.ClosePanelImmediate();
+        if (!showSimulationUi)
+        {
+            if (_sidePanel != null)
+                _sidePanel.ClosePanelImmediate();
+
+            var bodyPicker = FindFirstObjectByType<BodyNavigationPickerController>();
+            if (bodyPicker != null)
+                bodyPicker.Hide();
+        }
     }
 
     void ApplyCometMovement(bool enabled)

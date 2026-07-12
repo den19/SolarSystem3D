@@ -15,6 +15,8 @@ public class BodyNavigationController : MonoBehaviour
     [SerializeField] Button bodyNameButton;
     [SerializeField] TMP_Text bodyNameText;
     [SerializeField] RectTransform barRect;
+    [SerializeField] BodyNavigationPickerController bodyNavigationPicker;
+    [SerializeField] BodyNameLongPressHandler bodyNameLongPressHandler;
 
     LookAtTarget _lookAtTarget;
     BodyShowcaseCameraController _showcaseCamera;
@@ -28,6 +30,9 @@ public class BodyNavigationController : MonoBehaviour
     Coroutine _safeAreaRefreshRoutine;
     SimulationSidePanelController _sidePanelController;
 
+    public IReadOnlyList<BodyNavigationOrder.NavigationEntry> NavigationEntries => _entries;
+    public int CurrentIndex => _currentIndex;
+
     void Awake()
     {
         if (barRect == null)
@@ -40,8 +45,25 @@ public class BodyNavigationController : MonoBehaviour
             prevButton.onClick.AddListener(OnPrevClicked);
         if (nextButton != null)
             nextButton.onClick.AddListener(OnNextClicked);
-        if (bodyNameButton != null)
-            bodyNameButton.onClick.AddListener(OnBodyNameClicked);
+
+        EnsureBodyNameInputHandler();
+    }
+
+    void EnsureBodyNameInputHandler()
+    {
+        if (bodyNameButton == null)
+            return;
+
+        if (bodyNavigationPicker == null)
+            bodyNavigationPicker = FindFirstObjectByType<BodyNavigationPickerController>();
+
+        if (bodyNameLongPressHandler == null)
+        {
+            if (!bodyNameButton.TryGetComponent(out bodyNameLongPressHandler))
+                bodyNameLongPressHandler = bodyNameButton.gameObject.AddComponent<BodyNameLongPressHandler>();
+        }
+
+        bodyNameLongPressHandler.Configure(this, bodyNavigationPicker);
     }
 
     void OnEnable()
@@ -290,11 +312,20 @@ public class BodyNavigationController : MonoBehaviour
         NavigateRelative(1);
     }
 
-    void OnBodyNameClicked()
+    public void OnBodyNameShortClicked()
     {
         PlayClickSound();
         if (_currentIndex >= 0 && _currentIndex < _entries.Count)
             NavigateToEntry(_entries[_currentIndex], showDescription: true);
+    }
+
+    public void NavigateToEntryByIndex(int index, bool showDescription)
+    {
+        if (index < 0 || index >= _entries.Count)
+            return;
+
+        _currentIndex = index;
+        NavigateToEntry(_entries[index], showDescription);
     }
 
     void NavigateRelative(int delta)

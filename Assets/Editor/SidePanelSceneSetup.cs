@@ -9,7 +9,10 @@ using UnityEngine.UI;
 public static class SidePanelSceneSetup
 {
     const string MenuPath = "Solar System/Setup SidePanel UI";
+    const string PickerMenuPath = "Solar System/Setup Body Navigation Picker";
     const string GearIconPath = "Assets/Icons/icons8-settings-256.png";
+    const string RoundedPanelSpritePath = "Assets/Unity UI Samples/Textures and Sprites/Rounded UI/UIPanel.png";
+    const string AntonFontPath = "Assets/Resources/Fonts & Materials/Anton SDF.asset";
     const float PanelWidth = SidePanelUiBootstrap.PanelWidth;
     const float RowHeight = SidePanelUiBootstrap.RowHeight;
     const float RowSpacing = SidePanelUiBootstrap.RowSpacing;
@@ -41,6 +44,7 @@ public static class SidePanelSceneSetup
         EnsureMenuButton(navigationBar);
         EnsureSimulationControlButton(navigationBar);
         EnableBodyNameAutoSize(canvasTransform);
+        EnsureBodyNavigationPicker(canvasTransform, navigationBar);
 
         var panel = Object.FindFirstObjectByType<SimulationSidePanelController>();
         if (panel == null)
@@ -81,6 +85,7 @@ public static class SidePanelSceneSetup
         EnsureSimulationControlButton(navigationBar);
         SimulationSidePanelController controller = EnsurePanel(canvasTransform, menuButton);
         RemoveLegacyGravityGridUi(canvasTransform);
+        EnsureBodyNavigationPicker(canvasTransform, navigationBar);
 
         if (markSceneDirty)
         {
@@ -89,6 +94,268 @@ public static class SidePanelSceneSetup
         }
 
         Selection.activeGameObject = controller.gameObject;
+    }
+
+    [MenuItem(PickerMenuPath)]
+    public static void SetupPickerFromMenu()
+    {
+        Transform canvasTransform = FindMainScreenCanvas();
+        if (canvasTransform == null)
+        {
+            Debug.LogError("MainScreenCanvas not found. Open Level1 scene first.");
+            return;
+        }
+
+        Transform navigationBar = canvasTransform.Find("BodyNavigationBar");
+        EnsureBodyNavigationPicker(canvasTransform, navigationBar);
+        EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
+        Debug.Log("Body Navigation Picker setup complete on MainScreenCanvas.");
+    }
+
+    public static void ExecuteBatchPickerSetup()
+    {
+        const string scenePath = "Assets/_Scenes/Level1.unity";
+        EditorSceneManager.OpenScene(scenePath);
+        Transform canvasTransform = FindMainScreenCanvas();
+        if (canvasTransform != null)
+        {
+            Transform navigationBar = canvasTransform.Find("BodyNavigationBar");
+            EnsureBodyNavigationPicker(canvasTransform, navigationBar);
+        }
+
+        EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
+        EditorSceneManager.SaveScene(SceneManager.GetActiveScene());
+        EditorApplication.Exit(0);
+    }
+
+    static BodyNavigationPickerController EnsureBodyNavigationPicker(Transform canvasTransform, Transform navigationBar)
+    {
+        Transform existing = canvasTransform.Find("BodyNavigationPicker");
+        GameObject pickerGo;
+        if (existing != null)
+        {
+            pickerGo = existing.gameObject;
+        }
+        else
+        {
+            pickerGo = new GameObject("BodyNavigationPicker", typeof(RectTransform));
+            pickerGo.layer = LayerMask.NameToLayer("UI");
+            pickerGo.transform.SetParent(canvasTransform, false);
+            pickerGo.transform.SetAsLastSibling();
+        }
+
+        var rootRect = pickerGo.GetComponent<RectTransform>();
+        StretchFull(rootRect);
+
+        var pickerController = pickerGo.GetComponent<BodyNavigationPickerController>();
+        if (pickerController == null)
+            pickerController = pickerGo.AddComponent<BodyNavigationPickerController>();
+
+        Transform backdrop = EnsureChild(pickerGo.transform, "Backdrop");
+        var backdropRect = backdrop.GetComponent<RectTransform>();
+        StretchFull(backdropRect);
+        var backdropImage = EnsureComponent<Image>(backdrop.gameObject);
+        backdropImage.color = new Color(0f, 0f, 0f, 0.35f);
+        backdropImage.raycastTarget = true;
+        var backdropButton = EnsureComponent<Button>(backdrop.gameObject);
+        backdropButton.transition = Selectable.Transition.None;
+
+        Transform panel = EnsureChild(pickerGo.transform, "Panel");
+        var panelRect = panel.GetComponent<RectTransform>();
+        panelRect.anchorMin = new Vector2(0f, 1f);
+        panelRect.anchorMax = new Vector2(1f, 1f);
+        panelRect.pivot = new Vector2(0.5f, 1f);
+        panelRect.anchoredPosition = new Vector2(0f, -56f);
+        panelRect.sizeDelta = new Vector2(-16f, 280f);
+
+        Transform panelBackground = EnsureChild(panel, "PanelBackground");
+        var panelBackgroundRect = panelBackground.GetComponent<RectTransform>();
+        StretchFull(panelBackgroundRect);
+        var panelBackgroundImage = EnsureComponent<Image>(panelBackground.gameObject);
+        panelBackgroundImage.sprite = LoadRoundedPanelSprite();
+        panelBackgroundImage.type = Image.Type.Sliced;
+        panelBackgroundImage.color = new Color(0.14f, 0.18f, 0.28f, 0.96f);
+        panelBackgroundImage.raycastTarget = true;
+
+        Transform scrollView = EnsureChild(panel, "ScrollView");
+        var scrollViewRect = scrollView.GetComponent<RectTransform>();
+        StretchFull(scrollViewRect);
+        var scrollRect = EnsureComponent<ScrollRect>(scrollView.gameObject);
+        scrollRect.horizontal = false;
+        scrollRect.vertical = true;
+        scrollRect.movementType = ScrollRect.MovementType.Clamped;
+        scrollRect.scrollSensitivity = 24f;
+
+        Transform viewport = EnsureChild(scrollView, "Viewport");
+        var viewportRect = viewport.GetComponent<RectTransform>();
+        StretchFull(viewportRect);
+        EnsureComponent<RectMask2D>(viewport.gameObject);
+        var viewportImage = EnsureComponent<Image>(viewport.gameObject);
+        viewportImage.color = new Color(1f, 1f, 1f, 0.02f);
+        scrollRect.viewport = viewportRect;
+
+        Transform content = EnsureChild(viewport, "Content");
+        var contentRect = content.GetComponent<RectTransform>();
+        contentRect.anchorMin = new Vector2(0f, 1f);
+        contentRect.anchorMax = new Vector2(1f, 1f);
+        contentRect.pivot = new Vector2(0.5f, 1f);
+        contentRect.anchoredPosition = Vector2.zero;
+        contentRect.sizeDelta = new Vector2(0f, 0f);
+
+        var contentLayout = EnsureComponent<VerticalLayoutGroup>(content.gameObject);
+        contentLayout.padding = new RectOffset(6, 6, 6, 6);
+        contentLayout.spacing = 2f;
+        contentLayout.childAlignment = TextAnchor.UpperCenter;
+        contentLayout.childControlWidth = true;
+        contentLayout.childControlHeight = true;
+        contentLayout.childForceExpandWidth = true;
+        contentLayout.childForceExpandHeight = false;
+
+        var contentFitter = EnsureComponent<ContentSizeFitter>(content.gameObject);
+        contentFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+        contentFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        scrollRect.content = contentRect;
+
+        Transform itemRowTemplate = EnsureChild(content, "ItemRowTemplate");
+        itemRowTemplate.gameObject.SetActive(false);
+        var itemRowRect = itemRowTemplate.GetComponent<RectTransform>();
+        itemRowRect.anchorMin = new Vector2(0f, 1f);
+        itemRowRect.anchorMax = new Vector2(1f, 1f);
+        itemRowRect.pivot = new Vector2(0.5f, 1f);
+        itemRowRect.sizeDelta = new Vector2(0f, 48f);
+
+        var rowLayoutElement = EnsureComponent<LayoutElement>(itemRowTemplate.gameObject);
+        rowLayoutElement.minHeight = 48f;
+        rowLayoutElement.preferredHeight = 48f;
+        rowLayoutElement.flexibleHeight = 0f;
+
+        Transform rowBackground = EnsureChild(itemRowTemplate, "RowBackground");
+        var rowBackgroundRect = rowBackground.GetComponent<RectTransform>();
+        StretchFull(rowBackgroundRect);
+        var rowBackgroundImage = EnsureComponent<Image>(rowBackground.gameObject);
+        rowBackgroundImage.color = new Color(0.08f, 0.11f, 0.18f, 0.80f);
+        rowBackgroundImage.raycastTarget = true;
+
+        Transform selectionStripe = EnsureChild(itemRowTemplate, "SelectionStripe");
+        var selectionStripeRect = selectionStripe.GetComponent<RectTransform>();
+        selectionStripeRect.anchorMin = new Vector2(0f, 0f);
+        selectionStripeRect.anchorMax = new Vector2(0f, 1f);
+        selectionStripeRect.pivot = new Vector2(0f, 0.5f);
+        selectionStripeRect.anchoredPosition = Vector2.zero;
+        selectionStripeRect.sizeDelta = new Vector2(3f, 0f);
+        var selectionStripeImage = EnsureComponent<Image>(selectionStripe.gameObject);
+        selectionStripeImage.color = new Color(0.55f, 0.72f, 1f, 1f);
+        selectionStripeImage.raycastTarget = false;
+        selectionStripe.gameObject.SetActive(false);
+
+        Transform thumbnail = EnsureChild(itemRowTemplate, "Thumbnail");
+        var thumbnailRect = thumbnail.GetComponent<RectTransform>();
+        thumbnailRect.anchorMin = new Vector2(1f, 0.5f);
+        thumbnailRect.anchorMax = new Vector2(1f, 0.5f);
+        thumbnailRect.pivot = new Vector2(1f, 0.5f);
+        thumbnailRect.anchoredPosition = new Vector2(-10f, 0f);
+        thumbnailRect.sizeDelta = new Vector2(40f, 40f);
+        var thumbnailImage = EnsureComponent<RawImage>(thumbnail.gameObject);
+        thumbnailImage.raycastTarget = false;
+
+        Transform label = EnsureChild(itemRowTemplate, "Label");
+        var labelRect = label.GetComponent<RectTransform>();
+        labelRect.anchorMin = new Vector2(0f, 0f);
+        labelRect.anchorMax = new Vector2(1f, 1f);
+        labelRect.offsetMin = new Vector2(12f, 4f);
+        labelRect.offsetMax = new Vector2(-58f, -4f);
+        var labelText = EnsureComponent<TextMeshProUGUI>(label.gameObject);
+        labelText.text = "Earth";
+        labelText.font = LoadAntonFont();
+        labelText.fontSize = 15f;
+        labelText.enableAutoSizing = true;
+        labelText.fontSizeMin = 12f;
+        labelText.fontSizeMax = 15f;
+        labelText.alignment = TextAlignmentOptions.MidlineLeft;
+        labelText.color = new Color(0.78f, 0.85f, 0.95f, 1f);
+        labelText.raycastTarget = false;
+
+        var serializedPicker = new SerializedObject(pickerController);
+        serializedPicker.FindProperty("panelRoot").objectReferenceValue = pickerGo;
+        serializedPicker.FindProperty("backdropRect").objectReferenceValue = backdropRect;
+        serializedPicker.FindProperty("panelRect").objectReferenceValue = panelRect;
+        serializedPicker.FindProperty("backdropButton").objectReferenceValue = backdropButton;
+        serializedPicker.FindProperty("scrollRect").objectReferenceValue = scrollRect;
+        serializedPicker.FindProperty("contentRoot").objectReferenceValue = contentRect;
+        serializedPicker.FindProperty("itemRowTemplate").objectReferenceValue = itemRowRect;
+        serializedPicker.ApplyModifiedPropertiesWithoutUndo();
+
+        BodyNavigationController navigationController = navigationBar != null
+            ? navigationBar.GetComponent<BodyNavigationController>()
+            : Object.FindFirstObjectByType<BodyNavigationController>();
+
+        if (navigationController != null)
+        {
+            var serializedNav = new SerializedObject(navigationController);
+            serializedNav.FindProperty("bodyNavigationPicker").objectReferenceValue = pickerController;
+            serializedNav.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        Transform bodyNameButton = navigationBar != null ? navigationBar.Find("BodyNameButton") : null;
+        if (bodyNameButton != null)
+        {
+            var longPressHandler = bodyNameButton.GetComponent<BodyNameLongPressHandler>();
+            if (longPressHandler == null)
+                longPressHandler = bodyNameButton.gameObject.AddComponent<BodyNameLongPressHandler>();
+
+            longPressHandler.Configure(navigationController, pickerController);
+
+            if (navigationController != null)
+            {
+                var serializedNav = new SerializedObject(navigationController);
+                serializedNav.FindProperty("bodyNameLongPressHandler").objectReferenceValue = longPressHandler;
+                serializedNav.ApplyModifiedPropertiesWithoutUndo();
+            }
+        }
+
+        pickerGo.SetActive(false);
+        return pickerController;
+    }
+
+    static Transform EnsureChild(Transform parent, string childName)
+    {
+        Transform child = parent.Find(childName);
+        if (child != null)
+            return child;
+
+        var childGo = new GameObject(childName, typeof(RectTransform));
+        childGo.layer = parent.gameObject.layer;
+        childGo.transform.SetParent(parent, false);
+        return childGo.transform;
+    }
+
+    static void StretchFull(RectTransform rect)
+    {
+        if (rect == null)
+            return;
+
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = Vector2.zero;
+        rect.sizeDelta = Vector2.zero;
+    }
+
+    static T EnsureComponent<T>(GameObject go) where T : Component
+    {
+        if (!go.TryGetComponent(out T component))
+            component = go.AddComponent<T>();
+        return component;
+    }
+
+    static Sprite LoadRoundedPanelSprite()
+    {
+        return AssetDatabase.LoadAssetAtPath<Sprite>(RoundedPanelSpritePath);
+    }
+
+    static TMP_FontAsset LoadAntonFont()
+    {
+        return AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(AntonFontPath);
     }
 
     static Transform FindMainScreenCanvas()
