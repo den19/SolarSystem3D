@@ -92,6 +92,7 @@ public class SimulationViewBootstrap : MonoBehaviour
         cleanView.Initialize(cometSystem, sidePanel);
 
         gameObject.AddComponent<SimulationShareController>();
+        gameObject.AddComponent<TransientMessageController>();
 
         yield return null;
 

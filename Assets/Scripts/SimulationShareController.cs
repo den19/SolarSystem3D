@@ -13,6 +13,14 @@ public class SimulationShareController : MonoBehaviour
     const int CaptureWidth = 1080;
     const int CaptureHeight = 1920;
 
+    const string KeyShareNoInternet = "ShareNoInternetMessage";
+    const string KeyShareFailed = "ShareFailedMessage";
+    const string KeyShareCaptureFailed = "ShareCaptureFailedMessage";
+
+    const string FallbackShareNoInternet = "No internet connection. Sharing is unavailable.";
+    const string FallbackShareFailed = "Unable to share. Please try again.";
+    const string FallbackShareCaptureFailed = "Failed to capture screenshot.";
+
     LookAtTarget _lookAtTarget;
     Camera _minimapCamera;
     bool _isSharing;
@@ -50,11 +58,14 @@ public class SimulationShareController : MonoBehaviour
     IEnumerator CaptureAndShareRoutine()
     {
         _isSharing = true;
+        string pngPath = null;
+        bool captureFailed = false;
 
         Camera captureCamera = ResolveCaptureCamera();
         if (captureCamera == null)
         {
             Debug.LogError("SimulationShareController: no active camera found for capture.");
+            ShowShareCaptureFailed();
             _isSharing = false;
             yield break;
         }
@@ -63,8 +74,8 @@ public class SimulationShareController : MonoBehaviour
         float previousAspect = captureCamera.aspect;
         bool minimapWasEnabled = _minimapCamera != null && _minimapCamera.enabled;
         RenderTexture renderTexture = RenderTexture.GetTemporary(CaptureWidth, CaptureHeight, 24, RenderTextureFormat.ARGB32);
-        string pngPath = null;
         string shareText = BuildShareText();
+        Texture2D texture = null;
 
         if (_minimapCamera != null)
             _minimapCamera.enabled = false;
@@ -75,7 +86,6 @@ public class SimulationShareController : MonoBehaviour
 
         yield return new WaitForEndOfFrame();
 
-        Texture2D texture = null;
         try
         {
             RenderTexture previousActive = RenderTexture.active;
@@ -94,6 +104,7 @@ public class SimulationShareController : MonoBehaviour
         }
         catch (Exception exception)
         {
+            captureFailed = true;
             Debug.LogError("SimulationShareController: capture failed. " + exception.Message);
         }
 
@@ -109,8 +120,30 @@ public class SimulationShareController : MonoBehaviour
         if (texture != null)
             Destroy(texture);
 
-        if (!string.IsNullOrEmpty(pngPath))
-            AndroidShareHelper.ShareImageWithText(pngPath, shareText);
+        if (captureFailed || string.IsNullOrEmpty(pngPath))
+        {
+            ShowShareCaptureFailed();
+            _isSharing = false;
+            yield break;
+        }
+
+        if (!NetworkReachabilityHelper.HasInternet)
+        {
+            ShowShareNoInternet();
+            _isSharing = false;
+            yield break;
+        }
+
+        try
+        {
+            if (!AndroidShareHelper.TryShareImageWithText(pngPath, shareText))
+                ShowShareFailed();
+        }
+        catch (Exception exception)
+        {
+            Debug.LogError("SimulationShareController: share failed. " + exception.Message);
+            ShowShareFailed();
+        }
 
         _isSharing = false;
     }
@@ -138,6 +171,21 @@ public class SimulationShareController : MonoBehaviour
         }
 
         return null;
+    }
+
+    static void ShowShareNoInternet()
+    {
+        TransientMessageController.ShowLocalized(KeyShareNoInternet, FallbackShareNoInternet);
+    }
+
+    static void ShowShareFailed()
+    {
+        TransientMessageController.ShowLocalized(KeyShareFailed, FallbackShareFailed);
+    }
+
+    static void ShowShareCaptureFailed()
+    {
+        TransientMessageController.ShowLocalized(KeyShareCaptureFailed, FallbackShareCaptureFailed);
     }
 
     static string BuildShareText()

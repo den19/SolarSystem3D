@@ -34,6 +34,6 @@ public class ShareButtonController : MonoBehaviour
         if (SimulationShareController.Instance != null)
             SimulationShareController.Instance.RequestShare();
         else
-            Debug.LogWarning("SimulationShareController is not ready yet.");
+            TransientMessageController.ShowLocalized("ShareFailedMessage", "Unable to share. Please try again.");
     }
 }

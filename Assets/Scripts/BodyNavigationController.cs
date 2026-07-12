@@ -29,6 +29,63 @@ public class BodyNavigationController : MonoBehaviour
     int _lastScreenHeight;
     Coroutine _safeAreaRefreshRoutine;
     SimulationSidePanelController _sidePanelController;
+    HorizontalLayoutGroup _barLayoutGroup;
+
+    struct ToolbarLayoutProfile
+    {
+        public float IconButtonSize;
+        public float SimControlPreferred;
+        public float SimControlMin;
+        public float NameMinWidth;
+        public float NamePreferredWidth;
+        public float NameMinHeight;
+        public float NamePreferredHeight;
+        public float Spacing;
+        public int PaddingHorizontal;
+        public int PaddingVertical;
+
+        public static ToolbarLayoutProfile Normal => new ToolbarLayoutProfile
+        {
+            IconButtonSize = 44f,
+            SimControlPreferred = 88f,
+            SimControlMin = 72f,
+            NameMinWidth = 48f,
+            NamePreferredWidth = 120f,
+            NameMinHeight = 40f,
+            NamePreferredHeight = 40f,
+            Spacing = 4f,
+            PaddingHorizontal = 8,
+            PaddingVertical = 4
+        };
+
+        public static ToolbarLayoutProfile Compact => new ToolbarLayoutProfile
+        {
+            IconButtonSize = 36f,
+            SimControlPreferred = 72f,
+            SimControlMin = 60f,
+            NameMinWidth = 36f,
+            NamePreferredWidth = 96f,
+            NameMinHeight = 36f,
+            NamePreferredHeight = 36f,
+            Spacing = 2f,
+            PaddingHorizontal = 8,
+            PaddingVertical = 4
+        };
+
+        public static ToolbarLayoutProfile Tight => new ToolbarLayoutProfile
+        {
+            IconButtonSize = 32f,
+            SimControlPreferred = 60f,
+            SimControlMin = 52f,
+            NameMinWidth = 28f,
+            NamePreferredWidth = 72f,
+            NameMinHeight = 32f,
+            NamePreferredHeight = 32f,
+            Spacing = 2f,
+            PaddingHorizontal = 4,
+            PaddingVertical = 4
+        };
+    }
 
     public IReadOnlyList<BodyNavigationOrder.NavigationEntry> NavigationEntries => _entries;
     public int CurrentIndex => _currentIndex;
@@ -71,6 +128,7 @@ public class BodyNavigationController : MonoBehaviour
         LocalizationManager.OnLanguageChanged += RefreshLabel;
         CometMovementSettings.UseCometMovementChanged += OnCometMovementChanged;
         LookAtTarget.OnTargetChanged += OnTargetChanged;
+        SimulationViewSettings.ShowSimulationUiChanged += OnShowSimulationUiChanged;
     }
 
     void OnDisable()
@@ -78,12 +136,18 @@ public class BodyNavigationController : MonoBehaviour
         LocalizationManager.OnLanguageChanged -= RefreshLabel;
         CometMovementSettings.UseCometMovementChanged -= OnCometMovementChanged;
         LookAtTarget.OnTargetChanged -= OnTargetChanged;
+        SimulationViewSettings.ShowSimulationUiChanged -= OnShowSimulationUiChanged;
 
         if (_safeAreaRefreshRoutine != null)
         {
             StopCoroutine(_safeAreaRefreshRoutine);
             _safeAreaRefreshRoutine = null;
         }
+    }
+
+    void OnShowSimulationUiChanged(bool showSimulationUi)
+    {
+        RequestSafeAreaRefresh();
     }
 
     void Start()
@@ -166,14 +230,12 @@ public class BodyNavigationController : MonoBehaviour
         if (canvas == null)
             return;
 
-        ConfigureNameButtonLayout();
+        ConfigureNameButtonLayout(ToolbarLayoutProfile.Normal);
         ShareButtonUiBootstrap.EnsureShareButton(barRect);
-        EnsureBarChildButton(FindUiTransform(canvas.transform, "SidePanelMenuButton"), 3, 44f, 44f);
-        EnsureBarChildButton(FindUiTransform(canvas.transform, "ShareButton"), 4, 44f, 44f);
-        EnsureBarChildButton(FindUiTransform(canvas.transform, "SimulationControlButton"), 5, 88f, 44f, 72f);
+        ApplyAdaptiveToolbarLayout();
     }
 
-    void ConfigureNameButtonLayout()
+    void ConfigureNameButtonLayout(ToolbarLayoutProfile profile)
     {
         if (bodyNameButton == null)
             return;
@@ -181,12 +243,163 @@ public class BodyNavigationController : MonoBehaviour
         if (!bodyNameButton.TryGetComponent(out LayoutElement layoutElement))
             layoutElement = bodyNameButton.gameObject.AddComponent<LayoutElement>();
 
-        layoutElement.minWidth = 48f;
-        layoutElement.preferredWidth = 120f;
+        layoutElement.minWidth = profile.NameMinWidth;
+        layoutElement.preferredWidth = profile.NamePreferredWidth;
         layoutElement.flexibleWidth = 1f;
-        layoutElement.minHeight = 40f;
-        layoutElement.preferredHeight = 40f;
+        layoutElement.minHeight = profile.NameMinHeight;
+        layoutElement.preferredHeight = profile.NamePreferredHeight;
         layoutElement.flexibleHeight = 0f;
+    }
+
+    void ApplyAdaptiveToolbarLayout()
+    {
+        if (barRect == null)
+            return;
+
+        if (_barLayoutGroup == null)
+            _barLayoutGroup = barRect.GetComponent<HorizontalLayoutGroup>();
+
+        Canvas canvas = barRect.GetComponentInParent<Canvas>();
+        if (canvas == null)
+            return;
+
+        bool cleanView = !SimulationViewSettings.ShowSimulationUi;
+        if (_barLayoutGroup != null)
+            _barLayoutGroup.childAlignment = cleanView ? TextAnchor.UpperRight : TextAnchor.MiddleCenter;
+
+        float availableWidth = barRect.rect.width;
+        if (_barLayoutGroup != null)
+            availableWidth -= _barLayoutGroup.padding.horizontal;
+
+        ToolbarLayoutProfile profile = SelectToolbarProfile(availableWidth, cleanView);
+        ApplyToolbarProfile(profile, canvas);
+
+        if (_barLayoutGroup != null)
+        {
+            _barLayoutGroup.spacing = profile.Spacing;
+            _barLayoutGroup.padding = new RectOffset(
+                profile.PaddingHorizontal,
+                profile.PaddingHorizontal,
+                profile.PaddingVertical,
+                profile.PaddingVertical);
+        }
+
+        LayoutRebuilder.ForceRebuildLayoutImmediate(barRect);
+    }
+
+    ToolbarLayoutProfile SelectToolbarProfile(float availableWidth, bool cleanView)
+    {
+        if (cleanView || availableWidth <= 0f)
+            return ToolbarLayoutProfile.Normal;
+
+        ToolbarLayoutProfile[] profiles =
+        {
+            ToolbarLayoutProfile.Normal,
+            ToolbarLayoutProfile.Compact,
+            ToolbarLayoutProfile.Tight
+        };
+
+        for (int i = 0; i < profiles.Length; i++)
+        {
+            if (EstimateRequiredWidth(profiles[i]) <= availableWidth)
+                return profiles[i];
+        }
+
+        return ToolbarLayoutProfile.Tight;
+    }
+
+    float EstimateRequiredWidth(ToolbarLayoutProfile profile)
+    {
+        int activeCount = 0;
+        float width = profile.PaddingHorizontal * 2f;
+
+        if (IsBarChildActive(prevButton))
+        {
+            width += profile.IconButtonSize;
+            activeCount++;
+        }
+
+        if (IsBarChildActive(bodyNameButton))
+        {
+            width += profile.NameMinWidth;
+            activeCount++;
+        }
+
+        if (IsBarChildActive(nextButton))
+        {
+            width += profile.IconButtonSize;
+            activeCount++;
+        }
+
+        Transform menuButton = FindUiTransform(barRect, "SidePanelMenuButton");
+        if (IsBarChildActive(menuButton))
+        {
+            width += profile.IconButtonSize;
+            activeCount++;
+        }
+
+        Transform shareButton = FindUiTransform(barRect, "ShareButton");
+        if (IsBarChildActive(shareButton))
+        {
+            width += profile.IconButtonSize;
+            activeCount++;
+        }
+
+        Transform simControlButton = FindUiTransform(barRect, "SimulationControlButton");
+        if (IsBarChildActive(simControlButton))
+        {
+            width += profile.SimControlMin;
+            activeCount++;
+        }
+
+        if (activeCount > 1)
+            width += profile.Spacing * (activeCount - 1);
+
+        return width;
+    }
+
+    void ApplyToolbarProfile(ToolbarLayoutProfile profile, Canvas canvas)
+    {
+        ConfigureNameButtonLayout(profile);
+        EnsureBarChildButton(FindUiTransform(canvas.transform, "SidePanelMenuButton"), 3, profile.IconButtonSize, profile.IconButtonSize);
+        EnsureBarChildButton(FindUiTransform(canvas.transform, "ShareButton"), 4, profile.IconButtonSize, profile.IconButtonSize);
+        EnsureBarChildButton(
+            FindUiTransform(canvas.transform, "SimulationControlButton"),
+            5,
+            profile.SimControlPreferred,
+            profile.IconButtonSize,
+            profile.SimControlMin);
+
+        if (prevButton != null)
+            ApplyIconButtonSize(prevButton.transform, profile.IconButtonSize);
+        if (nextButton != null)
+            ApplyIconButtonSize(nextButton.transform, profile.IconButtonSize);
+    }
+
+    static void ApplyIconButtonSize(Transform button, float size)
+    {
+        if (button == null || !button.TryGetComponent(out LayoutElement layoutElement))
+            return;
+
+        layoutElement.minWidth = size;
+        layoutElement.preferredWidth = size;
+        layoutElement.minHeight = size;
+        layoutElement.preferredHeight = size;
+    }
+
+    static bool IsBarChildActive(Component component)
+    {
+        return component != null && component.gameObject.activeInHierarchy;
+    }
+
+    static bool IsBarChildActive(Transform transform)
+    {
+        return transform != null && transform.gameObject.activeInHierarchy;
+    }
+
+    void ConfigureNameButtonLayout()
+    {
+        ConfigureNameButtonLayout(ToolbarLayoutProfile.Normal);
     }
 
     static void EnsureBarChildButton(Transform button, int siblingIndex, float preferredWidth, float preferredHeight, float minWidth = -1f)
@@ -452,6 +665,7 @@ public class BodyNavigationController : MonoBehaviour
 
         SidePanelUiBootstrap.ApplyBarRectLayout(barRect, left, right, top);
         LayoutRebuilder.ForceRebuildLayoutImmediate(barRect);
+        ApplyAdaptiveToolbarLayout();
         CacheScreenLayoutState();
     }
 

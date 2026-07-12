@@ -6,7 +6,7 @@ using UnityEngine;
 /// </summary>
 public static class AndroidShareHelper
 {
-    public static void ShareImageWithText(string imagePath, string text)
+    public static bool TryShareImageWithText(string imagePath, string text)
     {
 #if UNITY_ANDROID && !UNITY_EDITOR
         try
@@ -39,13 +39,22 @@ public static class AndroidShareHelper
                     }
                 }
             }
+
+            return true;
         }
         catch (Exception exception)
         {
             Debug.LogError("AndroidShareHelper: failed to share image. " + exception.Message);
+            return false;
         }
 #else
         Debug.Log("AndroidShareHelper: share skipped outside Android build. Image: " + imagePath + ", text: " + text);
+        return true;
 #endif
+    }
+
+    public static void ShareImageWithText(string imagePath, string text)
+    {
+        TryShareImageWithText(imagePath, text);
     }
 }
