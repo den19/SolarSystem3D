@@ -126,6 +126,24 @@ public class CometVisualController : MonoBehaviour
                 _comaMaterial = comaRenderer.material;
             }
         }
+        else if (comaRenderer != null && _comaMaterial == null)
+        {
+            _comaMaterial = comaRenderer.material;
+        }
+
+        if (nucleus != null)
+        {
+            var nucleusRenderer = nucleus.GetComponent<Renderer>();
+            if (nucleusRenderer != null && nucleusRenderer.sharedMaterial == null)
+            {
+                string variant = _profileLoaded ? _profile.nucleusMaterialVariant : "dusty";
+                var nucleusMat = CometGraphicsLibrary.LoadNucleusMaterial(variant);
+                if (nucleusMat != null)
+                    nucleusRenderer.sharedMaterial = nucleusMat;
+            }
+
+            CacheNucleusMaterial();
+        }
 
         if (dustTrail != null && dustTrail.sharedMaterial == null)
         {
@@ -265,26 +283,29 @@ public class CometVisualController : MonoBehaviour
         if (coma == null)
             return;
 
-        bool visible = activity > 0.03f;
         if (comaRenderer != null)
-            comaRenderer.enabled = visible;
+            comaRenderer.enabled = true;
 
-        if (!visible)
-            return;
-
+        bool active = activity > 0.03f;
         float maxScale = _baseComaScale * _profile.comaMaxScale * 2.5f;
-        float scale = Mathf.Lerp(_baseComaScale * 0.15f, maxScale, activity);
+        float scale = active
+            ? Mathf.Lerp(_baseComaScale * 0.15f, maxScale, activity)
+            : _baseComaScale * 0.12f;
         coma.localScale = Vector3.one * scale;
 
         if (_comaMaterial != null)
         {
             Color baseColor = _profile.comaColor;
-            baseColor.a = Mathf.Lerp(0f, 0.7f, activity);
+            baseColor.a = active
+                ? Mathf.Lerp(0f, 0.7f, activity)
+                : 0.12f;
             if (stage == ActivityStage.Outburst)
                 baseColor.a = Mathf.Min(0.85f, baseColor.a * 1.2f);
 
             _comaMaterial.SetColor("_AtmosphereColor", baseColor);
-            _comaMaterial.SetFloat("_SunInfluence", Mathf.Lerp(0.15f, 0.95f, activity));
+            _comaMaterial.SetFloat("_SunInfluence", active
+                ? Mathf.Lerp(0.15f, 0.95f, activity)
+                : 0.2f);
         }
     }
 

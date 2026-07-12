@@ -10,16 +10,14 @@ public class BodyNameLongPressHandler : MonoBehaviour, IPointerDownHandler, IPoi
     const float LongPressThreshold = 0.45f;
 
     [SerializeField] BodyNavigationController bodyNavigationController;
-    [SerializeField] BodyNavigationPickerController bodyNavigationPicker;
 
     Coroutine _holdRoutine;
     bool _pointerDown;
     bool _longPressTriggered;
 
-    public void Configure(BodyNavigationController navigationController, BodyNavigationPickerController pickerController)
+    public void Configure(BodyNavigationController navigationController)
     {
         bodyNavigationController = navigationController;
-        bodyNavigationPicker = pickerController;
     }
 
     public void OnPointerDown(PointerEventData eventData)
@@ -82,15 +80,8 @@ public class BodyNameLongPressHandler : MonoBehaviour, IPointerDownHandler, IPoi
         if (bodyNavigationController == null)
             bodyNavigationController = FindFirstObjectByType<BodyNavigationController>();
 
-        if (bodyNavigationPicker == null)
-            bodyNavigationPicker = FindFirstObjectByType<BodyNavigationPickerController>();
-
-        if (bodyNavigationController == null || bodyNavigationPicker == null)
-            return;
-
-        bodyNavigationPicker.Toggle(
-            bodyNavigationController.NavigationEntries,
-            bodyNavigationController.CurrentIndex);
+        if (bodyNavigationController != null)
+            bodyNavigationController.TryOpenBodyPicker();
     }
 
     void TriggerShortClick()
@@ -111,4 +102,4 @@ public class BodyNameLongPressHandler : MonoBehaviour, IPointerDownHandler, IPoi
         }
     }
 }
-
+

@@ -65,6 +65,13 @@ public static class BodyNavigationThumbnailCatalog
         if (_cometFallbackTexture != null)
             return _cometFallbackTexture;
 
+        var loaded = Resources.Load<Texture2D>("CometTextures/CometNucleus_Dusty_2k");
+        if (loaded != null)
+        {
+            _cometFallbackTexture = loaded;
+            return _cometFallbackTexture;
+        }
+
         const int size = 64;
         var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
         texture.name = "CometThumbnailFallback";

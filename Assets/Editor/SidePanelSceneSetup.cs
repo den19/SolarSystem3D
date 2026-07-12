@@ -303,7 +303,7 @@ public static class SidePanelSceneSetup
             if (longPressHandler == null)
                 longPressHandler = bodyNameButton.gameObject.AddComponent<BodyNameLongPressHandler>();
 
-            longPressHandler.Configure(navigationController, pickerController);
+            longPressHandler.Configure(navigationController);
 
             if (navigationController != null)
             {

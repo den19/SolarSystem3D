@@ -55,7 +55,7 @@ public class BodyNavigationController : MonoBehaviour
             return;
 
         if (bodyNavigationPicker == null)
-            bodyNavigationPicker = FindFirstObjectByType<BodyNavigationPickerController>();
+            bodyNavigationPicker = FindFirstObjectByType<BodyNavigationPickerController>(FindObjectsInactive.Include);
 
         if (bodyNameLongPressHandler == null)
         {
@@ -63,7 +63,7 @@ public class BodyNavigationController : MonoBehaviour
                 bodyNameLongPressHandler = bodyNameButton.gameObject.AddComponent<BodyNameLongPressHandler>();
         }
 
-        bodyNameLongPressHandler.Configure(this, bodyNavigationPicker);
+        bodyNameLongPressHandler.Configure(this);
     }
 
     void OnEnable()
@@ -88,6 +88,7 @@ public class BodyNavigationController : MonoBehaviour
 
     void Start()
     {
+        RebuildNavigationList();
         StartCoroutine(LayoutAfterCanvasReady());
         StartCoroutine(InitializeWhenReady());
     }
@@ -319,6 +320,39 @@ public class BodyNavigationController : MonoBehaviour
             NavigateToEntry(_entries[_currentIndex], showDescription: true);
     }
 
+    public bool EnsureNavigationReady()
+    {
+        if (_entries.Count == 0)
+            RebuildNavigationList();
+
+        if (_lookAtTarget == null)
+            _lookAtTarget = FindFirstObjectByType<LookAtTarget>();
+
+        if (_currentIndex < 0 && _lookAtTarget != null)
+            SyncFromCurrentTarget();
+
+        if (_currentIndex < 0 && _entries.Count > 0)
+            _currentIndex = 0;
+
+        UpdateButtonInteractable();
+        return _entries.Count > 0;
+    }
+
+    public bool TryOpenBodyPicker()
+    {
+        if (!EnsureNavigationReady())
+            return false;
+
+        if (bodyNavigationPicker == null)
+            bodyNavigationPicker = FindFirstObjectByType<BodyNavigationPickerController>(FindObjectsInactive.Include);
+
+        if (bodyNavigationPicker == null)
+            return false;
+
+        bodyNavigationPicker.Toggle(NavigationEntries, CurrentIndex);
+        return true;
+    }
+
     public void NavigateToEntryByIndex(int index, bool showDescription)
     {
         if (index < 0 || index >= _entries.Count)
@@ -401,7 +435,7 @@ public class BodyNavigationController : MonoBehaviour
         if (nextButton != null)
             nextButton.interactable = canNavigate;
         if (bodyNameButton != null)
-            bodyNameButton.interactable = _currentIndex >= 0 && _currentIndex < _entries.Count;
+            bodyNameButton.interactable = _entries.Count > 0;
     }
 
     void ApplySafeAreaInset()

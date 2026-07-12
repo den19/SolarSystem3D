@@ -121,15 +121,26 @@ public class BodyNavigationPickerController : MonoBehaviour
         if (entries == null || entries.Count == 0)
             return;
 
+        if (currentIndex < 0 || currentIndex >= entries.Count)
+            currentIndex = 0;
+
         _entries = new List<BodyNavigationOrder.NavigationEntry>(entries);
         _currentIndex = currentIndex;
         _isOpen = true;
+
+        if (panelRoot == null)
+            panelRoot = gameObject;
+
+        gameObject.SetActive(true);
         panelRoot.SetActive(true);
+
+        if (bodyNavigationController == null)
+            bodyNavigationController = FindFirstObjectByType<BodyNavigationController>();
 
         CacheNavigationBarRect();
         RefreshLayout();
         RebuildRows();
-        StartCoroutine(ScrollToCurrentAfterLayout());
+        StartScrollAfterLayout();
     }
 
     public void Hide()
@@ -332,6 +343,47 @@ public class BodyNavigationPickerController : MonoBehaviour
         return label;
     }
 
+    void StartScrollAfterLayout()
+    {
+        ScrollToCurrentNow();
+
+        if (bodyNavigationController != null && bodyNavigationController.isActiveAndEnabled)
+            bodyNavigationController.StartCoroutine(ScrollToCurrentAfterLayout());
+        else if (isActiveAndEnabled)
+            StartCoroutine(ScrollToCurrentAfterLayout());
+    }
+
+    void ScrollToCurrentNow()
+    {
+        if (scrollRect == null || contentRoot == null || _currentIndex < 0)
+            return;
+
+        Canvas.ForceUpdateCanvases();
+        LayoutRebuilder.ForceRebuildLayoutImmediate(contentRoot);
+        ApplyScrollToCurrentIndex();
+    }
+
+    void ApplyScrollToCurrentIndex()
+    {
+        if (scrollRect == null || contentRoot == null || _currentIndex < 0)
+            return;
+
+        float contentHeight = contentRoot.rect.height;
+        RectTransform viewport = scrollRect.viewport;
+        float viewportHeight = viewport != null ? viewport.rect.height : 0f;
+        if (contentHeight <= viewportHeight || viewportHeight <= 0f)
+        {
+            scrollRect.verticalNormalizedPosition = 1f;
+            return;
+        }
+
+        float rowTop = ContentPaddingTop + _currentIndex * (RowHeight + RowSpacing);
+        float rowCenter = rowTop + RowHeight * 0.5f;
+        float scrollRange = contentHeight - viewportHeight;
+        float target = Mathf.Clamp(rowCenter - viewportHeight * 0.5f, 0f, scrollRange);
+        scrollRect.verticalNormalizedPosition = 1f - target / scrollRange;
+    }
+
     IEnumerator ScrollToCurrentAfterLayout()
     {
         yield return null;
@@ -341,21 +393,7 @@ public class BodyNavigationPickerController : MonoBehaviour
             yield break;
 
         LayoutRebuilder.ForceRebuildLayoutImmediate(contentRoot);
-
-        float contentHeight = contentRoot.rect.height;
-        RectTransform viewport = scrollRect.viewport;
-        float viewportHeight = viewport != null ? viewport.rect.height : 0f;
-        if (contentHeight <= viewportHeight || viewportHeight <= 0f)
-        {
-            scrollRect.verticalNormalizedPosition = 1f;
-            yield break;
-        }
-
-        float rowTop = ContentPaddingTop + _currentIndex * (RowHeight + RowSpacing);
-        float rowCenter = rowTop + RowHeight * 0.5f;
-        float scrollRange = contentHeight - viewportHeight;
-        float target = Mathf.Clamp(rowCenter - viewportHeight * 0.5f, 0f, scrollRange);
-        scrollRect.verticalNormalizedPosition = 1f - target / scrollRange;
+        ApplyScrollToCurrentIndex();
     }
 
     void ClearRows()

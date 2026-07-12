@@ -556,6 +556,8 @@ public class SunCoronalVfxController : MonoBehaviour
 
     static void ConfigureCmeParticleSystem(ParticleSystem ps)
     {
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
         var main = ps.main;
         main.loop = true;
         main.prewarm = false;

@@ -79,6 +79,11 @@ public static class CometGraphicsLibrary
         var mat = new Material(shader);
         mat.SetColor("_BaseColor", color);
         mat.color = color;
+        if (mat.HasProperty("_Surface"))
+            mat.SetFloat("_Surface", 1f);
+        if (mat.HasProperty("_Blend"))
+            mat.SetFloat("_Blend", 0f);
+        mat.renderQueue = 3000;
         return mat;
     }
 
