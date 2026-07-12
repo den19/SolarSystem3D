@@ -91,6 +91,8 @@ public class SimulationViewBootstrap : MonoBehaviour
         var cleanView = gameObject.AddComponent<CleanViewController>();
         cleanView.Initialize(cometSystem, sidePanel);
 
+        gameObject.AddComponent<SimulationShareController>();
+
         yield return null;
 
         SystemsReady = true;

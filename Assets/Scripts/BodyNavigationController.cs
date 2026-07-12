@@ -167,8 +167,10 @@ public class BodyNavigationController : MonoBehaviour
             return;
 
         ConfigureNameButtonLayout();
+        ShareButtonUiBootstrap.EnsureShareButton(barRect);
         EnsureBarChildButton(FindUiTransform(canvas.transform, "SidePanelMenuButton"), 3, 44f, 44f);
-        EnsureBarChildButton(FindUiTransform(canvas.transform, "SimulationControlButton"), 4, 88f, 44f, 72f);
+        EnsureBarChildButton(FindUiTransform(canvas.transform, "ShareButton"), 4, 44f, 44f);
+        EnsureBarChildButton(FindUiTransform(canvas.transform, "SimulationControlButton"), 5, 88f, 44f, 72f);
     }
 
     void ConfigureNameButtonLayout()

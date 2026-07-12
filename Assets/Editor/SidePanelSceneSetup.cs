@@ -11,6 +11,7 @@ public static class SidePanelSceneSetup
     const string MenuPath = "Solar System/Setup SidePanel UI";
     const string PickerMenuPath = "Solar System/Setup Body Navigation Picker";
     const string GearIconPath = "Assets/Icons/icons8-settings-256.png";
+    const string ShareIconPath = "Assets/Icons/icons8-share-256.png";
     const string RoundedPanelSpritePath = "Assets/Unity UI Samples/Textures and Sprites/Rounded UI/UIPanel.png";
     const string AntonFontPath = "Assets/Resources/Fonts & Materials/Anton SDF.asset";
     const float PanelWidth = SidePanelUiBootstrap.PanelWidth;
@@ -42,6 +43,7 @@ public static class SidePanelSceneSetup
 
         Transform navigationBar = EnsureBodyNavigationBarLayout(canvasTransform);
         EnsureMenuButton(navigationBar);
+        EnsureShareButton(navigationBar);
         EnsureSimulationControlButton(navigationBar);
         EnableBodyNameAutoSize(canvasTransform);
         EnsureBodyNavigationPicker(canvasTransform, navigationBar);
@@ -82,6 +84,7 @@ public static class SidePanelSceneSetup
 
         Transform navigationBar = EnsureBodyNavigationBarLayout(canvasTransform);
         Button menuButton = EnsureMenuButton(navigationBar);
+        EnsureShareButton(navigationBar);
         EnsureSimulationControlButton(navigationBar);
         SimulationSidePanelController controller = EnsurePanel(canvasTransform, menuButton);
         RemoveLegacyGravityGridUi(canvasTransform);
@@ -416,6 +419,79 @@ public static class SidePanelSceneSetup
         return buttonGo.GetComponent<Button>();
     }
 
+    static Button EnsureShareButton(Transform navigationBar)
+    {
+        Transform canvas = navigationBar.parent;
+        Transform existing = FindUiTransform(canvas, "ShareButton");
+        if (existing != null)
+        {
+            existing.SetParent(navigationBar, false);
+            existing.SetSiblingIndex(4);
+            UpgradeShareButton(existing);
+            return existing.GetComponent<Button>();
+        }
+
+        var buttonGo = new GameObject("ShareButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button), typeof(LayoutElement), typeof(ShareButtonController));
+        buttonGo.layer = LayerMask.NameToLayer("UI");
+        buttonGo.transform.SetParent(navigationBar, false);
+        buttonGo.transform.SetSiblingIndex(4);
+
+        StyleMenuButton(buttonGo);
+        EnsureShareButtonIcon(buttonGo.transform);
+        ApplyMenuButtonLayout(buttonGo.GetComponent<LayoutElement>());
+
+        return buttonGo.GetComponent<Button>();
+    }
+
+    static void UpgradeShareButton(Transform button)
+    {
+        ApplyLayoutChildRect(button.GetComponent<RectTransform>());
+        StyleMenuButton(button.gameObject);
+        EnsureShareButtonIcon(button);
+
+        if (button.GetComponent<LayoutElement>() == null)
+            button.gameObject.AddComponent<LayoutElement>();
+        ApplyMenuButtonLayout(button.GetComponent<LayoutElement>());
+
+        if (button.GetComponent<ShareButtonController>() == null)
+            button.gameObject.AddComponent<ShareButtonController>();
+
+        Transform label = button.Find("Label");
+        if (label != null)
+            Object.DestroyImmediate(label.gameObject);
+    }
+
+    static void EnsureShareButtonIcon(Transform button)
+    {
+        Transform iconTransform = button.Find("Icon");
+        GameObject iconGo;
+        if (iconTransform != null)
+        {
+            iconGo = iconTransform.gameObject;
+        }
+        else
+        {
+            iconGo = new GameObject("Icon", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            iconGo.layer = button.gameObject.layer;
+            iconGo.transform.SetParent(button, false);
+        }
+
+        var iconRect = iconGo.GetComponent<RectTransform>();
+        iconRect.anchorMin = Vector2.zero;
+        iconRect.anchorMax = Vector2.one;
+        iconRect.offsetMin = new Vector2(IconPadding, IconPadding);
+        iconRect.offsetMax = new Vector2(-IconPadding, -IconPadding);
+
+        var iconImage = iconGo.GetComponent<Image>();
+        iconImage.sprite = LoadShareIconSprite();
+        iconImage.color = IconColor;
+        iconImage.preserveAspect = true;
+        iconImage.raycastTarget = false;
+
+        var buttonComponent = button.GetComponent<Button>();
+        buttonComponent.targetGraphic = iconImage;
+    }
+
     static void UpgradeMenuButton(Transform button)
     {
         ApplyLayoutChildRect(button.GetComponent<RectTransform>());
@@ -452,7 +528,7 @@ public static class SidePanelSceneSetup
             return;
 
         existing.SetParent(navigationBar, false);
-        existing.SetAsLastSibling();
+        existing.SetSiblingIndex(5);
         ApplyLayoutChildRect(existing.GetComponent<RectTransform>());
 
         LayoutElement layoutElement = existing.GetComponent<LayoutElement>();
@@ -529,6 +605,11 @@ public static class SidePanelSceneSetup
     static Sprite LoadGearIconSprite()
     {
         return AssetDatabase.LoadAssetAtPath<Sprite>(GearIconPath);
+    }
+
+    static Sprite LoadShareIconSprite()
+    {
+        return AssetDatabase.LoadAssetAtPath<Sprite>(ShareIconPath);
     }
 
     static SimulationSidePanelController EnsurePanel(Transform canvasTransform, Button menuButton)
