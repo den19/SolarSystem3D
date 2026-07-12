@@ -83,6 +83,14 @@ public class SolarSystemScaleController : MonoBehaviour
         ApplyDistances();
     }
 
+    /// <summary>
+    /// Snap bodies to circular layout for the active scale mode before elliptical motion starts.
+    /// </summary>
+    public void SyncCircularLayoutBeforeRealOrbits()
+    {
+        ApplyDistances(force: true);
+    }
+
     public float GetOrbitSemiMajorAxis(string bodyName)
     {
         for (int i = 0; i < _baselines.Count; i++)
@@ -168,9 +176,9 @@ public class SolarSystemScaleController : MonoBehaviour
         RefreshGravityGridBodies();
     }
 
-    void ApplyDistances()
+    void ApplyDistances(bool force = false)
     {
-        if (OrbitSettings.UseRealOrbits)
+        if (!force && OrbitSettings.UseRealOrbits)
             return;
 
         for (int i = 0; i < _baselines.Count; i++)

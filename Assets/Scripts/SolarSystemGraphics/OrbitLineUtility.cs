@@ -34,16 +34,33 @@ public static class OrbitLineUtility
 
     public static Vector3 EllipsePoint(float angleRad, float semiMajorAxis, float eccentricity, float inclinationDeg)
     {
-        float b = SemiMinorAxis(semiMajorAxis, eccentricity);
+        float e = Mathf.Clamp01(eccentricity);
+        float a = semiMajorAxis;
+        float oneMinusESq = 1f - e * e;
+        float denom = 1f + e * Mathf.Cos(angleRad);
+        float r = denom > 0.0001f ? a * oneMinusESq / denom : a;
+
+        float x = r * Mathf.Cos(angleRad);
+        float zFlat = r * Mathf.Sin(angleRad);
+        return ApplyOrbitalInclination(x, zFlat, inclinationDeg);
+    }
+
+    static Vector3 ApplyOrbitalInclination(float x, float zFlat, float inclinationDeg)
+    {
         float inclRad = inclinationDeg * Mathf.Deg2Rad;
         float cosIncl = Mathf.Cos(inclRad);
         float sinIncl = Mathf.Sin(inclRad);
-
-        float x = Mathf.Cos(angleRad) * semiMajorAxis;
-        float zFlat = Mathf.Sin(angleRad) * b;
         float y = zFlat * sinIncl;
         float z = zFlat * cosIncl;
         return new Vector3(x, y, z);
+    }
+
+    static float RemoveOrbitalInclinationZFlat(Vector3 offset, float inclinationDeg)
+    {
+        float inclRad = inclinationDeg * Mathf.Deg2Rad;
+        float cosIncl = Mathf.Cos(inclRad);
+        float sinIncl = Mathf.Sin(inclRad);
+        return offset.y * sinIncl + offset.z * cosIncl;
     }
 
     public static float ComputePhaseFromOffset(Vector3 offset, float semiMajorAxis, float eccentricity, float inclinationDeg)
@@ -51,20 +68,8 @@ public static class OrbitLineUtility
         if (semiMajorAxis < 0.0001f)
             return 0f;
 
-        float b = SemiMinorAxis(semiMajorAxis, eccentricity);
-        float inclRad = inclinationDeg * Mathf.Deg2Rad;
-        float cosIncl = Mathf.Cos(inclRad);
-        float sinIncl = Mathf.Sin(inclRad);
-
-        float zFlat;
-        if (Mathf.Abs(sinIncl) >= Mathf.Abs(cosIncl))
-            zFlat = Mathf.Abs(sinIncl) > 0.0001f ? offset.y / sinIncl : offset.z;
-        else
-            zFlat = Mathf.Abs(cosIncl) > 0.0001f ? offset.z / cosIncl : offset.y;
-
-        float xNorm = offset.x / semiMajorAxis;
-        float zNorm = b > 0.0001f ? zFlat / b : 0f;
-        return Mathf.Atan2(zNorm, xNorm);
+        float zFlat = RemoveOrbitalInclinationZFlat(offset, inclinationDeg);
+        return Mathf.Atan2(zFlat, offset.x);
     }
 
     public static Vector3[] BuildEllipse(int segments, float semiMajorAxis, float eccentricity, float inclinationDeg, Vector3 center, float phaseOffsetRad)

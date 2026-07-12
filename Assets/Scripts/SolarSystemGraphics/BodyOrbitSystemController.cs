@@ -90,6 +90,9 @@ public class BodyOrbitSystemController : MonoBehaviour
     {
         if (OrbitSettings.UseRealOrbits)
         {
+            if (_scaleController != null)
+                _scaleController.SyncCircularLayoutBeforeRealOrbits();
+
             for (int i = 0; i < _entries.Count; i++)
             {
                 BodyOrbitEntry entry = _entries[i];

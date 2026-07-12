@@ -98,21 +98,21 @@ public class CometOrbitController : MonoBehaviour
 
     void UpdateEllipticalPosition()
     {
-        float inclRad = _definition.inclinationDeg * Mathf.Deg2Rad;
-        float cosIncl = Mathf.Cos(inclRad);
-        float sinIncl = Mathf.Sin(inclRad);
+        Vector3 orbitalPoint = OrbitLineUtility.EllipsePoint(
+            _angle,
+            _definition.semiMajorAxis,
+            _definition.eccentricity,
+            _definition.inclinationDeg);
 
-        float x = Mathf.Cos(_angle) * _definition.semiMajorAxis;
-        float zFlat = Mathf.Sin(_angle) * _semiMinorAxis;
-        float y = zFlat * sinIncl;
-        float z = zFlat * cosIncl;
+        transform.position = _sun.position + orbitalPoint;
 
-        transform.position = _sun.position + new Vector3(x, y, z);
-
-        Vector3 tangent = new Vector3(
-            -Mathf.Sin(_angle) * _definition.semiMajorAxis,
-            zFlat * cosIncl * sinIncl,
-            Mathf.Cos(_angle) * _semiMinorAxis * cosIncl);
+        const float delta = 0.01f;
+        Vector3 nextPoint = OrbitLineUtility.EllipsePoint(
+            _angle + delta,
+            _definition.semiMajorAxis,
+            _definition.eccentricity,
+            _definition.inclinationDeg);
+        Vector3 tangent = nextPoint - orbitalPoint;
         if (tangent.sqrMagnitude > 0.0001f)
             transform.rotation = Quaternion.LookRotation(tangent.normalized, Vector3.up);
     }
