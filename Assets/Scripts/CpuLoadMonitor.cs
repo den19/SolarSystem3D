@@ -15,11 +15,11 @@ public class CpuLoadMonitor : MonoBehaviour
     const string FallbackUnavailable = "CPU: --%";
     const string FallbackZero = "CPU: 0.0%";
     const string FallbackFormat = "CPU: {0:F1}%";
-    const float HorizontalMargin = 16f;
-    const float BottomMarginLandscape = 16f;
-    const float GapAboveTimeBar = 8f;
-    const float PanelWidth = 140f;
-    const float PanelHeight = 32f;
+    public const float HorizontalMargin = 16f;
+    public const float BottomMarginLandscape = 16f;
+    public const float GapAboveTimeBar = 8f;
+    public const float PanelWidth = 140f;
+    public const float PanelHeight = 32f;
 
     TextMeshProUGUI label;
     Image panel;

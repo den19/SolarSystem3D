@@ -94,6 +94,7 @@ public class SimulationViewBootstrap : MonoBehaviour
             {
                 CometDescriptionPanel.EnsureOnCanvas(canvas.transform);
                 TimeControlUiBootstrap.EnsureTimeControlBar(canvas.transform);
+                ScaleBarController.EnsureOnCanvas(canvas.transform);
             }
 
             var cleanView = gameObject.AddComponent<CleanViewController>();

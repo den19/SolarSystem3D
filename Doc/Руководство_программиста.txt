@@ -30,7 +30,7 @@ MainMenu ──► PauseAndResume (New / Continue)
         ├── CometSystemController
         ├── OrbitLinesManager / BodyLabelManager / MinimapController
         ├── CleanViewController
-        └── UI: SidePanel, TimeControl, Share, Descriptions
+        └── UI: SidePanel, TimeControl, ScaleBar, Share, Descriptions
                 │
                 ▼
      SimulationSessionRestorer / Autosave (PlayerPrefs)
@@ -124,6 +124,7 @@ TouchInputBridge  |  Enhanced Touch + fallback
 - Вид Солнца: SunAppearanceSettings / SunCoronalVfxController (Real Sun VFX)  
 - Extra Graphics: GraphicsSettings + PlanetTextureManager (HD-материалы)  
 - Graphics Tier (mobile): GraphicsTierSettings + MobileUrpQualityApplicator  
+- Линейка масштаба: ScaleBarController (AU / км; tap → подсказка про а.е.)  
 - Clean view: CleanViewController — скрывает HUD, оставляет доступ к side panel / time bar  
 
 
@@ -218,10 +219,11 @@ GraphicsTierControlController создаёт строку Settings под Extra 
 3. Масштаб TrueScale — компромисс: истинные отношения орбит, но размеры не 1:1 (иначе внутренние планеты исчезают).  
 4. TimeScale глобален — ускорение влияет на всё, что использует deltaTime (включая showcase).  
 5. Scene-first UI — панель, time bar, навбар живут на сцене; Editor menu Solar System/Setup … + runtime bootstrap как fallback.  
-6. Safe area — SafeAreaInsets для навбара, side panel, time bar, CpuLoadMonitor.  
+6. Safe area — SafeAreaInsets для навбара, side panel, time bar, CpuLoadMonitor, ScaleBar.  
 7. CpuLoadMonitor в portrait поднимается над time bar (bottom-right), в landscape остаётся у нижнего правого края.  
-8. Share — скриншот + Android share; сообщения локализованы.  
-9. Mobile graphics tier — High поднимает renderScale/MSAA только на устройстве; в Editor (PC quality) картинка изначально сильнее.  
+8. ScaleBar — линейка расстояния на MainScreenCanvas (runtime через ScaleBarController.EnsureOnCanvas): portrait/landscape bottom-right над CPU (если CPU выкл — на его месте), не пересекается с minimap (левый низ) и time bar (центр/лево). Подпись в AU (SolarSystemScaleController.AuToUnity + SolarSystemCatalog.AuKm); при близком зуме — км. Tap открывает локализованную подсказку (ключи ScaleBarAu*). В clean view скрывается вместе с HUD.  
+9. Share — скриншот + Android share; сообщения локализованы.  
+10. Mobile graphics tier — High поднимает renderScale/MSAA только на устройстве; в Editor (PC quality) картинка изначально сильнее.  
 
 Ключевые пути:
 
@@ -231,6 +233,7 @@ GraphicsTierControlController создаёт строку Settings под Extra 
 - Assets/Scripts/SolarSystemGraphics/GraphicsTierSettings.cs  
 - Assets/Scripts/MobileUrpQualityApplicator.cs  
 - Assets/Scripts/SolarSystemGraphics/SunCoronalVfxController.cs  
+- Assets/Scripts/ScaleBarController.cs  
 - Assets/Scripts/SimulationViewBootstrap.cs  
 - Assets/Editor/SidePanelSceneSetup.cs, TimeControlSceneSetup.cs  
 
@@ -319,7 +322,7 @@ Mars  |  —  |  Phobos/Deimos уже есть
 4. Аудиогид / короткий narrator tour по телам (PlanEn).  
 5. Режим «учитель»: скрыть UI, оставить time bar + крупный заголовок тела.  
 6. Схема затмений / фазы Луны (упрощённо).  
-7. Связь единиц: AU ↔ км, период ↔ земные сутки — в описаниях.  
+7. Связь единиц: AU ↔ км на линейке масштаба (ScaleBarController) и в описаниях; период ↔ земные сутки — в описаниях.  
 8. Локализация описаний планет полностью во всех 5 языках (проверить полноту ключей).  
 
 
@@ -330,7 +333,7 @@ Mars  |  —  |  Phobos/Deimos уже есть
 2. Иконки pause/play вместо текста «II» / «>».  
 3. Подсказки первого запуска (coach marks) для side panel и time bar.  
 4. Явное разделение «настройки симуляции» vs «настройки сессии» в меню Continue.  
-5. Адаптив: избежать наложений (как CpuLoadMonitor над time bar) для minimap и описаний.  
+5. Адаптив: избежать наложений (CpuLoadMonitor / ScaleBar над time bar, minimap слева) для описаний и toast.  
 6. Accessibility: крупные hit-area, контраст, TalkBack/VoiceOver labels (ключи уже частично есть для time control).  
 7. Плавный переход New/Continue с превью сохранённого тела.  
 8. Редизайн About / Settings в одном визуальном языке с Level1 HUD.  
