@@ -12,6 +12,8 @@ public static class SolarSystemConfigurationReset
         GravityGridSettings.ResetToDefaults();
         GraphicsSettings.ResetToDefaults();
         CpuMonitorSettings.ResetToDefaults();
+        SunAppearanceSettings.ResetToDefaults();
+        GraphicsTierSettings.ResetToDefaults();
         SimulationSessionState.Clear();
 
         if (AudioManager.Instance != null)

@@ -22,6 +22,15 @@ public class SettingsResetController : MonoBehaviour
         volumeControl?.RefreshFromSaved();
         languageChanger?.RefreshFromSaved();
 
+        var extraGraphics = GetComponentInChildren<ExtraGraphicsControlController>(true);
+        if (extraGraphics != null)
+        {
+            // Extra graphics toggle refreshes via event from ResetToDefaults.
+        }
+
+        var graphicsTier = GraphicsTierControlController.EnsureRow();
+        graphicsTier?.RefreshFromSaved();
+
         if (AudioManager.Instance != null)
         {
             AudioManager.Instance.PlaySound();

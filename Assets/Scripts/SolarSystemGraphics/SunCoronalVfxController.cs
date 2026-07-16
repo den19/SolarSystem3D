@@ -23,11 +23,11 @@ public class SunCoronalVfxController : MonoBehaviour
     const float GranulationLocalScale = 1.022f;
     const float GranulationFullZoomNorm = 4.5f;
     const float GranulationFadeEndNorm = 9f;
-    const float GranulationDisableThreshold = 0.02f;
+    const float GranulationDisableThreshold = 0.35f;
     const float RealSunFlickerIntensity = 0.6f;
-    const float CloseZoomFlickerIntensity = 0.15f;
+    const float CloseZoomFlickerIntensity = 0.42f;
     const float RealSunSpotStrength = 1f;
-    const float CloseZoomSpotStrength = 0.35f;
+    const float CloseZoomSpotStrength = 0.72f;
     const float CmeEmitLocalRadius = 0.52f;
     const float ReferenceSunWorldRadius = 5f;
     const string CmeMaterialResourcePath = "SunCmeLoopParticle";
@@ -192,9 +192,10 @@ public class SunCoronalVfxController : MonoBehaviour
             Color.Lerp(deep, bright, 0.5f),
             emission,
             Mathf.Lerp(1f, 0.55f, detailBlend));
-        // Dim the base emission strongly when zoomed in so the bright HDR sphere and
-        // its bloom don't wash out the granulation overlay drawn on top.
-        float emissionDim = Mathf.Lerp(1f, 0.18f, detailBlend);
+        // Dim base emission when zoomed in so granulation stays readable, but keep
+        // a stronger floor on High tier so the Sun still feels "HDR wow" on mobile.
+        float emissionDimFloor = GraphicsTierSettings.IsHighEffective ? 0.42f : 0.28f;
+        float emissionDim = Mathf.Lerp(1f, emissionDimFloor, detailBlend);
         emission *= emissionDim;
 
         var uniformBase = new Color(1f, 0.55f, 0.12f);
@@ -223,7 +224,8 @@ public class SunCoronalVfxController : MonoBehaviour
                     Color.Lerp(bloomDeep, bloomBright, 0.5f),
                     bloomEmission,
                     Mathf.Lerp(1f, 0.7f, detailBlend));
-                bloomEmission *= Mathf.Lerp(1f, 0.28f, detailBlend);
+                float bloomDimFloor = GraphicsTierSettings.IsHighEffective ? 0.62f : 0.45f;
+                bloomEmission *= Mathf.Lerp(1f, bloomDimFloor, detailBlend);
                 bloomMat.SetColor("_EmissionColor", bloomEmission);
             }
         }
@@ -296,7 +298,8 @@ public class SunCoronalVfxController : MonoBehaviour
                 _granulationPropertyBlock ??= new MaterialPropertyBlock();
                 _granulationRenderer.GetPropertyBlock(_granulationPropertyBlock);
                 _granulationPropertyBlock.SetFloat(DetailBlendId, detailBlend);
-                _granulationPropertyBlock.SetFloat(OverlayAlphaId, 0.95f);
+                float overlayAlpha = GraphicsTierSettings.IsHighEffective ? 1f : 0.95f;
+                _granulationPropertyBlock.SetFloat(OverlayAlphaId, overlayAlpha);
                 _granulationRenderer.SetPropertyBlock(_granulationPropertyBlock);
             }
         }
@@ -994,8 +997,9 @@ public class SunCoronalVfxController : MonoBehaviour
 
         if (_granulationRenderer)
         {
-            _granulationRenderer.enabled = false;
             ApplyGranulationMaterialProfile(_granulationRenderer.sharedMaterial);
+            // Visibility is driven by ApplySunSurfaceLod based on camera distance.
+            _granulationRenderer.enabled = false;
         }
 
         _lastDetailBlend = -1f;
