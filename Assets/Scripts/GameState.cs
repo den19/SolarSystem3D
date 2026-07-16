@@ -5,7 +5,7 @@ public class GameState : MonoBehaviour
     public static GameState instance;
 
     public int score;
-    public static bool isPaused;
+    public static bool isPaused => SimulationTimeController.IsPaused;
     public static Language language;
 
     private void Awake()

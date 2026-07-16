@@ -14,6 +14,8 @@ public static class SimulationSessionState
     private const string KeySelectedPlanet = "SolarSystem_SelectedPlanet";
     private const string KeyIsDetailCamera = "SolarSystem_IsDetailCamera";
     private const string KeyTimeScale = "SolarSystem_TimeScale";
+    private const string KeySpeedMultiplier = "SolarSystem_SpeedMultiplier";
+    private const string KeyIsPaused = "SolarSystem_IsPaused";
     private const string KeyMainCamX = "SolarSystem_MainCamX";
     private const string KeyMainCamY = "SolarSystem_MainCamY";
     private const string KeyMainCamDistance = "SolarSystem_MainCamDistance";
@@ -29,6 +31,8 @@ public static class SimulationSessionState
     public static string SelectedPlanetName { get; private set; } = "Earth";
     public static bool IsDetailCamera { get; private set; }
     public static float TimeScale { get; private set; } = 1f;
+    public static float SpeedMultiplier { get; private set; } = SimulationTimeController.DefaultSpeedMultiplier;
+    public static bool IsSimulationPaused { get; private set; }
     public static float MainCamX { get; private set; }
     public static float MainCamY { get; private set; }
     public static float MainCamDistance { get; private set; } = 8f;
@@ -75,7 +79,9 @@ public static class SimulationSessionState
 
         SelectedPlanetName = lookAt.currentTarget != null ? lookAt.currentTarget.name : "Earth";
         IsDetailCamera = lookAt.mainCamera != null && !lookAt.mainCamera.enabled;
-        TimeScale = UnityEngine.Time.timeScale > 0f ? UnityEngine.Time.timeScale : 1f;
+        SpeedMultiplier = SimulationTimeController.SpeedMultiplier;
+        IsSimulationPaused = SimulationTimeController.IsPaused;
+        TimeScale = SpeedMultiplier;
 
         Transform observedTarget = lookAt.currentTarget != null ? lookAt.currentTarget.transform : null;
 
@@ -183,6 +189,8 @@ public static class SimulationSessionState
         PlayerPrefs.SetString(KeySelectedPlanet, SelectedPlanetName ?? "Earth");
         PlayerPrefs.SetInt(KeyIsDetailCamera, IsDetailCamera ? 1 : 0);
         PlayerPrefs.SetFloat(KeyTimeScale, TimeScale);
+        PlayerPrefs.SetFloat(KeySpeedMultiplier, SpeedMultiplier);
+        PlayerPrefs.SetInt(KeyIsPaused, IsSimulationPaused ? 1 : 0);
         PlayerPrefs.SetFloat(KeyMainCamX, MainCamX);
         PlayerPrefs.SetFloat(KeyMainCamY, MainCamY);
         PlayerPrefs.SetFloat(KeyMainCamDistance, MainCamDistance);
@@ -205,6 +213,8 @@ public static class SimulationSessionState
         PlayerPrefs.DeleteKey(KeySelectedPlanet);
         PlayerPrefs.DeleteKey(KeyIsDetailCamera);
         PlayerPrefs.DeleteKey(KeyTimeScale);
+        PlayerPrefs.DeleteKey(KeySpeedMultiplier);
+        PlayerPrefs.DeleteKey(KeyIsPaused);
         PlayerPrefs.DeleteKey(KeyMainCamX);
         PlayerPrefs.DeleteKey(KeyMainCamY);
         PlayerPrefs.DeleteKey(KeyMainCamDistance);
@@ -219,6 +229,9 @@ public static class SimulationSessionState
         SelectedPlanetName = "Earth";
         IsDetailCamera = false;
         TimeScale = 1f;
+        SpeedMultiplier = SimulationTimeController.DefaultSpeedMultiplier;
+        IsSimulationPaused = false;
+        SimulationTimeController.ResetToDefaults(apply: false);
         MainCamX = 0f;
         MainCamY = 0f;
         MainCamDistance = 8f;
@@ -236,6 +249,16 @@ public static class SimulationSessionState
         SelectedPlanetName = PlayerPrefs.GetString(KeySelectedPlanet, "Earth");
         IsDetailCamera = PlayerPrefs.GetInt(KeyIsDetailCamera, 0) == 1;
         TimeScale = PlayerPrefs.GetFloat(KeyTimeScale, 1f);
+        if (PlayerPrefs.HasKey(KeySpeedMultiplier))
+        {
+            SpeedMultiplier = SimulationTimeController.ClampSpeed(PlayerPrefs.GetFloat(KeySpeedMultiplier, TimeScale));
+        }
+        else
+        {
+            SpeedMultiplier = SimulationTimeController.ClampSpeed(TimeScale);
+        }
+
+        IsSimulationPaused = PlayerPrefs.GetInt(KeyIsPaused, 0) == 1;
         MainCamX = PlayerPrefs.GetFloat(KeyMainCamX, 0f);
         MainCamY = PlayerPrefs.GetFloat(KeyMainCamY, 0f);
         MainCamDistance = PlayerPrefs.GetFloat(KeyMainCamDistance, 8f);
@@ -245,9 +268,10 @@ public static class SimulationSessionState
         ActiveCameraDistance = PlayerPrefs.GetFloat(KeyActiveCamDistance, MainCamDistance);
 
         if (TimeScale <= 0f)
-        {
-            TimeScale = 1f;
-        }
+            TimeScale = SimulationTimeController.DefaultSpeedMultiplier;
+
+        SpeedMultiplier = SimulationTimeController.ClampSpeed(SpeedMultiplier);
+        TimeScale = SpeedMultiplier;
 
         string motionJson = PlayerPrefs.GetString(KeyMotionSnapshot, string.Empty);
         if (!string.IsNullOrEmpty(motionJson))
@@ -390,7 +414,7 @@ public static class SimulationSessionState
             }
         }
 
-        UnityEngine.Time.timeScale = TimeScale;
+        SimulationTimeController.RestoreState(SpeedMultiplier, IsSimulationPaused);
     }
 
     static GameObject GetActiveCameraGameObject(LookAtTarget lookAt)

@@ -89,6 +89,7 @@ public static class SidePanelSceneSetup
         SimulationSidePanelController controller = EnsurePanel(canvasTransform, menuButton);
         RemoveLegacyGravityGridUi(canvasTransform);
         EnsureBodyNavigationPicker(canvasTransform, navigationBar);
+        TimeControlSceneSetup.EnsureTimeControlBarPublic(canvasTransform);
 
         if (markSceneDirty)
         {

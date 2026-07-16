@@ -11,7 +11,8 @@ public class CleanViewController : MonoBehaviour
     static readonly HashSet<string> ExcludedCanvasChildren = new HashSet<string>
     {
         "BodyNavigationBar",
-        "SimulationSidePanel"
+        "SimulationSidePanel",
+        TimeControlUiBootstrap.BarObjectName
     };
 
     static readonly HashSet<string> NavigationBarChildrenToHide = new HashSet<string>

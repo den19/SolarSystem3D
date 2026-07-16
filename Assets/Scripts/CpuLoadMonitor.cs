@@ -15,13 +15,26 @@ public class CpuLoadMonitor : MonoBehaviour
     const string FallbackUnavailable = "CPU: --%";
     const string FallbackZero = "CPU: 0.0%";
     const string FallbackFormat = "CPU: {0:F1}%";
+    const float HorizontalMargin = 16f;
+    const float BottomMarginLandscape = 16f;
+    const float GapAboveTimeBar = 8f;
+    const float PanelWidth = 140f;
+    const float PanelHeight = 32f;
 
     TextMeshProUGUI label;
     Image panel;
+    RectTransform rect;
+    Canvas canvas;
     float accumulatedDelta;
     int frameCount;
     float nextUpdateTime;
     bool settingEnabled = true;
+    Rect lastSafeArea;
+    int lastScreenWidth;
+    int lastScreenHeight;
+    bool layoutCached;
+
+    static bool IsLandscape => Screen.width > Screen.height;
 
     void Awake()
     {
@@ -29,6 +42,7 @@ public class CpuLoadMonitor : MonoBehaviour
         transform.SetAsLastSibling();
         ApplySetting(CpuMonitorSettings.UseCpuMonitor);
         nextUpdateTime = Time.unscaledTime + updateInterval;
+        RefreshSafeAreaLayout();
     }
 
     void OnEnable()
@@ -36,6 +50,7 @@ public class CpuLoadMonitor : MonoBehaviour
         LocalizationManager.OnLanguageChanged += OnLanguageChanged;
         CpuMonitorSettings.UseCpuMonitorChanged += OnUseCpuMonitorChanged;
         RefreshDisplay();
+        RefreshSafeAreaLayout();
     }
 
     void OnDisable()
@@ -46,6 +61,17 @@ public class CpuLoadMonitor : MonoBehaviour
 
     void Update()
     {
+        if (layoutCached)
+        {
+            Rect safeArea = Screen.safeArea;
+            if (safeArea != lastSafeArea
+                || Screen.width != lastScreenWidth
+                || Screen.height != lastScreenHeight)
+            {
+                RefreshSafeAreaLayout();
+            }
+        }
+
         if (!settingEnabled)
             return;
 
@@ -63,15 +89,16 @@ public class CpuLoadMonitor : MonoBehaviour
 
     void BuildUi()
     {
-        var rect = GetComponent<RectTransform>();
+        rect = GetComponent<RectTransform>();
         if (rect == null)
             rect = gameObject.AddComponent<RectTransform>();
+
+        canvas = GetComponentInParent<Canvas>();
 
         rect.anchorMin = new Vector2(1f, 0f);
         rect.anchorMax = new Vector2(1f, 0f);
         rect.pivot = new Vector2(1f, 0f);
-        rect.anchoredPosition = new Vector2(-16f, 16f);
-        rect.sizeDelta = new Vector2(140f, 32f);
+        rect.sizeDelta = new Vector2(PanelWidth, PanelHeight);
 
         if (GetComponent<CanvasRenderer>() == null)
             gameObject.AddComponent<CanvasRenderer>();
@@ -83,8 +110,17 @@ public class CpuLoadMonitor : MonoBehaviour
         panel.color = new Color(0f, 0f, 0f, 0.65f);
         panel.raycastTarget = false;
 
-        var labelGo = new GameObject("Label", typeof(RectTransform));
-        labelGo.transform.SetParent(transform, false);
+        Transform existingLabel = transform.Find("Label");
+        GameObject labelGo;
+        if (existingLabel != null)
+        {
+            labelGo = existingLabel.gameObject;
+        }
+        else
+        {
+            labelGo = new GameObject("Label", typeof(RectTransform));
+            labelGo.transform.SetParent(transform, false);
+        }
 
         var labelRect = labelGo.GetComponent<RectTransform>();
         labelRect.anchorMin = Vector2.zero;
@@ -92,7 +128,10 @@ public class CpuLoadMonitor : MonoBehaviour
         labelRect.offsetMin = new Vector2(8f, 4f);
         labelRect.offsetMax = new Vector2(-8f, -4f);
 
-        label = labelGo.AddComponent<TextMeshProUGUI>();
+        label = labelGo.GetComponent<TextMeshProUGUI>();
+        if (label == null)
+            label = labelGo.AddComponent<TextMeshProUGUI>();
+
         var lang = LocalizationManager.CurrentLanguage;
         label.font = LocalizationFontHelper.GetFontForLanguage(lang);
         var overlay = LocalizationFontHelper.GetOverlayMaterialForLanguage(lang);
@@ -104,6 +143,43 @@ public class CpuLoadMonitor : MonoBehaviour
         label.textWrappingMode = TextWrappingModes.NoWrap;
         label.raycastTarget = false;
         label.text = GetUnavailableText();
+    }
+
+    public void RefreshSafeAreaLayout()
+    {
+        if (rect == null)
+            rect = GetComponent<RectTransform>();
+
+        if (canvas == null)
+            canvas = GetComponentInParent<Canvas>();
+
+        SafeAreaInsets.GetCanvasInsets(canvas, out _, out float safeRight, out _, out float safeBottom);
+
+        float x = -(safeRight + HorizontalMargin);
+        float y;
+        if (IsLandscape)
+        {
+            y = safeBottom + BottomMarginLandscape;
+        }
+        else
+        {
+            // Sit above SimulationTimeControlBar so they do not overlap in portrait.
+            y = safeBottom
+                + TimeControlUiBootstrap.BarBottomMargin
+                + TimeControlUiBootstrap.BarHeight
+                + GapAboveTimeBar;
+        }
+
+        rect.anchorMin = new Vector2(1f, 0f);
+        rect.anchorMax = new Vector2(1f, 0f);
+        rect.pivot = new Vector2(1f, 0f);
+        rect.sizeDelta = new Vector2(PanelWidth, PanelHeight);
+        rect.anchoredPosition = new Vector2(x, y);
+
+        lastSafeArea = Screen.safeArea;
+        lastScreenWidth = Screen.width;
+        lastScreenHeight = Screen.height;
+        layoutCached = true;
     }
 
     void OnLanguageChanged()

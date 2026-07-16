@@ -12,13 +12,22 @@ public class PauseAndResume : MonoBehaviour
 
         if (SceneManager.GetActiveScene().name == gameSceneName)
         {
-            GameState.isPaused = true;
+            if (SimulationSessionState.HasSavedState
+                && SimulationSessionState.PendingLaunchMode == SimulationLaunchMode.Continue)
+            {
+                SimulationTimeController.RestoreState(
+                    SimulationSessionState.SpeedMultiplier,
+                    SimulationSessionState.IsSimulationPaused);
+            }
+            else
+            {
+                SimulationTimeController.ResetToDefaults();
+            }
         }
-
-        Time.timeScale = SimulationSessionState.HasSavedState
-            && SimulationSessionState.PendingLaunchMode == SimulationLaunchMode.Continue
-            ? SimulationSessionState.TimeScale
-            : 1f;
+        else if (SceneManager.GetActiveScene().name == mainMenuSceneName)
+        {
+            Time.timeScale = 1f;
+        }
     }
 
     public void EnterMenu()
@@ -35,7 +44,7 @@ public class PauseAndResume : MonoBehaviour
     {
         SimulationSessionState.Clear();
         SimulationSessionState.PendingLaunchMode = SimulationLaunchMode.New;
-        GameState.isPaused = true;
+        SimulationTimeController.ResetToDefaults();
         Time.timeScale = 1f;
     }
 
@@ -49,7 +58,9 @@ public class PauseAndResume : MonoBehaviour
         }
 
         SimulationSessionState.PendingLaunchMode = SimulationLaunchMode.Continue;
-        GameState.isPaused = true;
-        Time.timeScale = SimulationSessionState.TimeScale;
+        SimulationTimeController.RestoreState(
+            SimulationSessionState.SpeedMultiplier,
+            SimulationSessionState.IsSimulationPaused,
+            apply: false);
     }
 }

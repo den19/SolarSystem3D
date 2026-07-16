@@ -41,6 +41,6 @@ public class ApplicationManager : MonoBehaviour {
 
 	public void StartGame()
 	{
-		GameState.isPaused = true;
+		SimulationTimeController.SetPaused(true);
 	}
 }

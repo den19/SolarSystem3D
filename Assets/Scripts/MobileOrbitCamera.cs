@@ -202,12 +202,12 @@ public class MobileOrbitCamera : MonoBehaviour
             if (!_tapGestureCancelled &&
                 (touch.position - _activeTouchBeganPosition).sqrMagnitude <= tapSlopPixels * tapSlopPixels)
             {
-                float timeSinceLastTap = Time.time - lastTapTime;
+                float timeSinceLastTap = Time.unscaledTime - lastTapTime;
                 if (timeSinceLastTap <= doubleTapDelay)
                     OnDoubleTap(touch.position);
                 else
                     OnSingleTap(touch.position, touch.fingerId);
-                lastTapTime = Time.time;
+                lastTapTime = Time.unscaledTime;
             }
         }
     }
