@@ -13,6 +13,8 @@ public class GraphicsTierControlController : MonoBehaviour
     const string RowName = "GraphicsTier";
     const string LabelName = "GraphicsTierLabel";
     const string DropdownName = "GraphicsTierDropdown";
+    const string CpuMonitorRowName = "CpuMonitor";
+    const float RowStep = 69f;
 
     [SerializeField] Dropdown tierDropdown;
     [SerializeField] Text labelText;
@@ -41,6 +43,7 @@ public class GraphicsTierControlController : MonoBehaviour
         if (existing != null)
         {
             existing.ResolveReferences();
+            LayoutUnderExtraGraphics(existing.transform as RectTransform);
             return existing;
         }
 
@@ -61,8 +64,43 @@ public class GraphicsTierControlController : MonoBehaviour
         if (controller == null)
             controller = rowGo.AddComponent<GraphicsTierControlController>();
 
+        LayoutUnderExtraGraphics(rowGo.transform as RectTransform);
         controller.ResolveReferences();
         return controller;
+    }
+
+    static void LayoutUnderExtraGraphics(RectTransform graphicsTierRect)
+    {
+        if (graphicsTierRect == null)
+            return;
+
+        Transform parent = graphicsTierRect.parent;
+        if (parent == null)
+            return;
+
+        Transform extraGraphics = parent.Find("ExtraGraphics");
+        var extraGraphicsRect = extraGraphics as RectTransform;
+        float tierY = extraGraphicsRect != null
+            ? extraGraphicsRect.anchoredPosition.y - RowStep
+            : -387f;
+
+        graphicsTierRect.anchorMin = new Vector2(0.5f, 1f);
+        graphicsTierRect.anchorMax = new Vector2(0.5f, 1f);
+        graphicsTierRect.pivot = new Vector2(0.5f, 1f);
+        graphicsTierRect.anchoredPosition = new Vector2(0f, tierY);
+
+        if (extraGraphics != null)
+            graphicsTierRect.SetSiblingIndex(extraGraphics.GetSiblingIndex() + 1);
+
+        Transform cpuMonitor = parent.Find(CpuMonitorRowName);
+        if (cpuMonitor is RectTransform cpuRect)
+        {
+            cpuRect.anchorMin = new Vector2(0.5f, 1f);
+            cpuRect.anchorMax = new Vector2(0.5f, 1f);
+            cpuRect.pivot = new Vector2(0.5f, 1f);
+            cpuRect.anchoredPosition = new Vector2(0f, tierY - RowStep);
+            cpuRect.SetSiblingIndex(graphicsTierRect.GetSiblingIndex() + 1);
+        }
     }
 
     static GameObject CreateRow(Transform parent, RectTransform extraGraphicsRect)
@@ -76,7 +114,7 @@ public class GraphicsTierControlController : MonoBehaviour
         rowRect.anchorMax = new Vector2(0.5f, 1f);
         rowRect.pivot = new Vector2(0.5f, 1f);
         rowRect.sizeDelta = new Vector2(360f, 80f);
-        float y = extraGraphicsRect != null ? extraGraphicsRect.anchoredPosition.y - 90f : -387f;
+        float y = extraGraphicsRect != null ? extraGraphicsRect.anchoredPosition.y - RowStep : -387f;
         rowRect.anchoredPosition = new Vector2(0f, y);
 
         int sibling = extraGraphicsRect != null ? extraGraphicsRect.GetSiblingIndex() + 1 : parent.childCount;
