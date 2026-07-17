@@ -180,6 +180,24 @@ public class CometSystemController : MonoBehaviour
         }
     }
 
+    public void ApplyKeplerAngles(double daysSinceJ2000)
+    {
+        for (int i = 0; i < _cometOrbits.Count; i++)
+        {
+            CometOrbitController orbit = _cometOrbits[i];
+            if (orbit == null)
+                continue;
+
+            CometCatalog.CometDefinition definition = orbit.Definition;
+            float trueAnomaly = KeplerOrbitMath.TrueAnomalyRad(
+                daysSinceJ2000,
+                definition.SiderealPeriodDays,
+                definition.eccentricity,
+                definition.phaseOffsetRad);
+            orbit.SetOrbitAngle(trueAnomaly);
+        }
+    }
+
     void RebuildCometOrbitLines(float auToUnity, bool useRealDistances)
     {
         if (_orbitLinesManager == null)

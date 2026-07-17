@@ -13,8 +13,11 @@ public static class SolarSystemConfigurationReset
         GraphicsSettings.ResetToDefaults();
         CpuMonitorSettings.ResetToDefaults();
         SunAppearanceSettings.ResetToDefaults();
+        TimeMachineSettings.ResetToDefaults();
         GraphicsTierSettings.ResetToDefaults();
         SimulationSessionState.Clear();
+        SimulationClock.ResetToSweepStart();
+        SimulationClock.SetActive(false);
 
         if (AudioManager.Instance != null)
         {

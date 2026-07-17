@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using SolarSystemApp;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class PauseAndResume : MonoBehaviour
@@ -45,6 +46,8 @@ public class PauseAndResume : MonoBehaviour
         SimulationSessionState.Clear();
         SimulationSessionState.PendingLaunchMode = SimulationLaunchMode.New;
         SimulationTimeController.ResetToDefaults();
+        // Time Machine is manual-only; never auto-start on New.
+        TimeMachineSettings.SetUseTimeMachine(false);
         Time.timeScale = 1f;
     }
 

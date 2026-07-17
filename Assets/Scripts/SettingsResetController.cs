@@ -28,7 +28,7 @@ public class SettingsResetController : MonoBehaviour
             // Extra graphics toggle refreshes via event from ResetToDefaults.
         }
 
-        var graphicsTier = GraphicsTierControlController.EnsureRow();
+        var graphicsTier = GraphicsTierControlController.FindInScene();
         graphicsTier?.RefreshFromSaved();
 
         if (AudioManager.Instance != null)

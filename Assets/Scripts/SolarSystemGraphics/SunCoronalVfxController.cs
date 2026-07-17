@@ -73,6 +73,8 @@ public class SunCoronalVfxController : MonoBehaviour
     static readonly int FlickerIntensityId = Shader.PropertyToID("_FlickerIntensity");
     static readonly int SpotStrengthId = Shader.PropertyToID("_SpotStrength");
 
+    static float _activityScale = 1f;
+
     GameObject _vfxRoot;
     Renderer _sunspotsRenderer;
     Renderer _flickerRenderer;
@@ -93,6 +95,26 @@ public class SunCoronalVfxController : MonoBehaviour
     LookAtTarget _lookAtTarget;
     MobileOrbitCamera _orbitCamera;
     float _lastDetailBlend = -1f;
+
+    /// <summary>
+    /// Time Machine sun activity multiplier (1 = present-day baseline). Monotonic growth over calendar years.
+    /// </summary>
+    public static void SetActivityScale(float scale)
+    {
+        float clamped = Mathf.Max(0.05f, scale);
+        if (Mathf.Approximately(_activityScale, clamped))
+            return;
+
+        _activityScale = clamped;
+        if (_instance != null)
+        {
+            _instance._lastDetailBlend = -1f;
+            if (SunAppearanceSettings.UseRealSun && _instance._cmeParticles != null)
+                _instance.SetCmeContinuousEmission(true);
+        }
+    }
+
+    public static float ActivityScale => _activityScale;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Bootstrap()
@@ -196,7 +218,7 @@ public class SunCoronalVfxController : MonoBehaviour
         // a stronger floor on High tier so the Sun still feels "HDR wow" on mobile.
         float emissionDimFloor = GraphicsTierSettings.IsHighEffective ? 0.42f : 0.28f;
         float emissionDim = Mathf.Lerp(1f, emissionDimFloor, detailBlend);
-        emission *= emissionDim;
+        emission *= emissionDim * Mathf.Clamp(_activityScale, 0.5f, 3f);
 
         var uniformBase = new Color(1f, 0.55f, 0.12f);
         var animatedBase = new Color(1f, Mathf.Lerp(0.42f, 0.82f, blend), Mathf.Lerp(0.06f, 0.28f, blend));
@@ -226,6 +248,7 @@ public class SunCoronalVfxController : MonoBehaviour
                     Mathf.Lerp(1f, 0.7f, detailBlend));
                 float bloomDimFloor = GraphicsTierSettings.IsHighEffective ? 0.62f : 0.45f;
                 bloomEmission *= Mathf.Lerp(1f, bloomDimFloor, detailBlend);
+                bloomEmission *= Mathf.Clamp(_activityScale, 0.5f, 3f);
                 bloomMat.SetColor("_EmissionColor", bloomEmission);
             }
         }
@@ -310,7 +333,7 @@ public class SunCoronalVfxController : MonoBehaviour
             _flickerRenderer.GetPropertyBlock(_flickerPropertyBlock);
             _flickerPropertyBlock.SetFloat(
                 FlickerIntensityId,
-                Mathf.Lerp(RealSunFlickerIntensity, CloseZoomFlickerIntensity, detailBlend));
+                Mathf.Lerp(RealSunFlickerIntensity, CloseZoomFlickerIntensity, detailBlend) * Mathf.Clamp(_activityScale, 0.5f, 2.5f));
             _flickerRenderer.SetPropertyBlock(_flickerPropertyBlock);
         }
 
@@ -320,7 +343,7 @@ public class SunCoronalVfxController : MonoBehaviour
             _sunspotsRenderer.GetPropertyBlock(_sunspotsPropertyBlock);
             _sunspotsPropertyBlock.SetFloat(
                 SpotStrengthId,
-                Mathf.Lerp(RealSunSpotStrength, CloseZoomSpotStrength, detailBlend));
+                Mathf.Lerp(RealSunSpotStrength, CloseZoomSpotStrength, detailBlend) * Mathf.Clamp(_activityScale, 0.5f, 2.5f));
             _sunspotsRenderer.SetPropertyBlock(_sunspotsPropertyBlock);
         }
     }
@@ -957,7 +980,7 @@ public class SunCoronalVfxController : MonoBehaviour
             return;
 
         var emission = _cmeParticles.emission;
-        emission.rateOverTime = active ? CmeContinuousRate : 0f;
+        emission.rateOverTime = active ? CmeContinuousRate * Mathf.Clamp(_activityScale, 0.35f, 4f) : 0f;
     }
 
     void ApplyHdState()
@@ -1036,11 +1059,15 @@ public class SunCoronalVfxController : MonoBehaviour
         float initialMax = CmeInitialDelayMax * CmeInitialDelayScaleRealSun;
         yield return new WaitForSecondsRealtime(Random.Range(initialMin, initialMax));
 
-        float intervalMin = CmeBurstIntervalMin * CmeBurstIntervalScaleRealSun;
-        float intervalMax = CmeBurstIntervalMax * CmeBurstIntervalScaleRealSun;
+        float activityIntervalScale = 1f / Mathf.Clamp(_activityScale, 0.35f, 4f);
+        float intervalMin = CmeBurstIntervalMin * CmeBurstIntervalScaleRealSun * activityIntervalScale;
+        float intervalMax = CmeBurstIntervalMax * CmeBurstIntervalScaleRealSun * activityIntervalScale;
 
         while (_vfxRoot != null && _vfxRoot.activeInHierarchy && SunAppearanceSettings.UseRealSun)
         {
+            activityIntervalScale = 1f / Mathf.Clamp(_activityScale, 0.35f, 4f);
+            intervalMin = CmeBurstIntervalMin * CmeBurstIntervalScaleRealSun * activityIntervalScale;
+            intervalMax = CmeBurstIntervalMax * CmeBurstIntervalScaleRealSun * activityIntervalScale;
             yield return new WaitForSecondsRealtime(Random.Range(intervalMin, intervalMax));
             if (_vfxRoot == null || !_vfxRoot.activeInHierarchy || !SunAppearanceSettings.UseRealSun)
                 yield break;
@@ -1064,8 +1091,9 @@ public class SunCoronalVfxController : MonoBehaviour
         _cmeTransform.localRotation = baseRotation * Quaternion.AngleAxis(Random.Range(0f, 360f), localNormal);
 
         int burstCount = Random.Range(Mathf.RoundToInt(_pendingBurstMin), Mathf.RoundToInt(_pendingBurstMax) + 1);
+        burstCount = Mathf.Max(1, Mathf.RoundToInt(burstCount * Mathf.Clamp(_activityScale, 0.5f, 3f)));
         _cmeParticles.Emit(burstCount);
-        StartCoroutine(PulseSunLight(_pendingLightPulse, _pendingLightDuration));
+        StartCoroutine(PulseSunLight(_pendingLightPulse * Mathf.Clamp(_activityScale, 0.5f, 2.5f), _pendingLightDuration));
     }
 
     IEnumerator PulseSunLight(float pulseFraction, float duration)

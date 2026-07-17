@@ -68,6 +68,9 @@ public class BodyOrbitController : MonoBehaviour
         if (_center == null)
             return;
 
+        if (SolarSystemApp.SimulationClock.DrivesMotion)
+            return;
+
         _phaseRad += _angularSpeedDegPerSec * Mathf.Deg2Rad * Time.deltaTime;
         ApplyPosition();
     }

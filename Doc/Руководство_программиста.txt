@@ -15,7 +15,7 @@
 1. Обзор архитектуры
 --------------------
 
-Приложение — образовательный 3D-симулятор Солнечной системы на Unity (UGUI, TextMeshPro, URP). Нет единого «тика» симуляции: движение тел идёт в Update() через Time.deltaTime, глобально управляемый Time.timeScale.
+Приложение — образовательный 3D-симулятор Солнечной системы на Unity (UGUI, TextMeshPro, URP). Нет единого «тика» симуляции: вне Машины времени движение тел идёт в Update() через Time.deltaTime (Time.timeScale = SpeedMultiplier); в режиме Машины времени календарь и Kepler ведутся через unscaledDeltaTime × SpeedMultiplier при базе Phase A/B (50 или 1 год/с), а Time.timeScale остаётся 1 (подробности — §2.4).
 
 ----------------------------------------
 MainMenu ──► PauseAndResume (New / Continue)
@@ -91,14 +91,81 @@ TrueScale (2)  |  Реальные отношения орбит; размеры
 2.4. Управление симуляционным временем
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-SimulationTimeController (статический):
+Панель скорости (SimulationTimeController)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- Скорость: 0.25× … 256× (шаги ÷2 / ×2).  
-- Пауза отдельно от скорости: при паузе Time.timeScale = 0, множитель не сбрасывается.  
-- UI: SimulationTimeControlBar на MainScreenCanvas (scene + TimeControlUiBootstrap / TimeControlSceneSetup).  
-- В portrait панель по центру низа; в landscape — слева внизу; учитывается safe area.
+Статический контроллер паузы и множителя:
 
-Почти вся симуляция (орбиты, кометы, showcase-камера, часть VFX) использует Time.deltaTime и следует timeScale. UI и жесты камеры опираются на unscaledDeltaTime / unscaledTime.
+- Диапазон 0.25× … 256× (кнопки ÷2 / ×2), значение в SpeedMultiplier.  
+- Пауза отдельно от скорости: при паузе Time.timeScale = 0, множитель не затирается. Его можно менять на паузе; после Play симуляция идёт с актуальным SpeedMultiplier.  
+- Apply():
+  - вне Машины времени → Time.timeScale = SpeedMultiplier;
+  - в Машине времени (SimulationClock.DrivesMotion) → Time.timeScale = 1 (панель ускоряет только календарь, не весь deltaTime);
+  - при паузе → 0.  
+- ForceSpeedOneX() — принудительно SpeedMultiplier = 1 и обновление UI (используется на рубежах TM).  
+- UI: SimulationTimeControlBar на MainScreenCanvas (TimeControlUiBootstrap / TimeControlSceneSetup); portrait — центр низа, landscape — слева внизу; safe area.
+
+Режим «Машина времени»
+^^^^^^^^^^^^^^^^^^^^^^
+
+Классы: TimeMachineSettings (тумблер / PlayerPrefs), SimulationClock (календарь), TimeMachineController (тик + Kepler), TimeMachineDateHud (дата над ScaleBar).
+
+Включение: только тумблер на боковой панели (дефолт выкл.). New принудительно выключает режим. Автостарта нет.
+
+Календарный проход:
+
+1. Старт: −100000-01-01 (ResetToSweepStart).  
+2. Sweep до +100000.  
+3. Мгновенный snap на текущее земное время UTC+3.  
+4. Дальше фаза Live (бесконечность вперёд).
+
+Двухслойная модель темпа (важно для рубежей):
+
+- База календаря — лет симуляции за 1 реальную секунду при панели 1×  
+  (SimulationClock: PhaseAYearsPerSecond / PhaseBYearsPerSecond, флаг _useSlowSweepRate).  
+- Множитель панели — 0.25× … 256× (SimulationTimeController.SpeedMultiplier).
+
+Итоговый темп: years/s = GetYearsPerSecond() × SpeedMultiplier,  
+где dt в TimeMachineController = unscaledDeltaTime × SpeedMultiplier.
+
+База при 1× / пример при ×256:
+
+- Phase A (до первого рубежа): 50 лет/с → при ×256 = 12800 лет/с.  
+- Phase B / slow Sweep (после рубежа): 1 год/с → при ×256 = 256 лет/с.  
+- Live (после snap +100000): 1 год/с → при ×256 = 256 лет/с.
+
+Почему одного сброса панели в 1× мало: при базе 50 лет/с и панели 1× Земля всё ещё делает ~50 оборотов/с — визуально «ускоренная» симуляция. Поэтому на рубежах сбрасывается и панель, и база.
+
+Рубежи автосброса (каждый — один раз за проход; пороги в ResetSpeedMilestones при старте TM):
+
+1. Год 0 (н.э.) — continuous year 0.0 (HUD ≈ 0000-…).  
+2. Текущая дата UTC+3 — полный continuous year «сейчас» (DateTimeOffsetToContinuousYear), не 1 января; на HUD должна совпасть yyyy-MM-dd «сегодня».
+
+При пересечении рубежа (SimulationClock.Tick, split-tick):
+
+1. Календарь останавливается ровно на рубеже (остаток большого прыжка на высокой скорости отбрасывается).  
+2. ForceSpeedOneX() — панель → 1×, UI обновляется.  
+3. _useSlowSweepRate = true — база Sweep 50 лет/с → 1 год/с до конца прохода (и для Live).  
+4. Со следующего кадра Kepler идёт с медленной базой × текущий SpeedMultiplier.
+
+После первого рубежа можно снова поднять панель (×2 … ×256); темп от базы 1 год/с. На втором рубеже снова принудительно 1× (база уже медленная).
+
+Сброс рубежей и быстрой базы: ResetToSweepStart / ResetSpeedMilestones при новом включении TM.
+
+Движение тел в TM: только TimeMachineController → ApplyKeplerPhases / ApplyKeplerAngles по DaysSinceJ2000. Инкрементальные RotateAround / BodyOrbitController.Update отключены (PrepareForTimeMachine). Kepler-периоды: SolarSystemCatalog / a^(3/2), аномалия — KeplerOrbitMath.
+
+Дата HUD: TimeMachineDateHud, формат yyyy-MM-dd (BCE: -YYYYY-MM-DD). Длина года на HUD — 365/366 (високосные / пролептический григорианский), как у порога «сегодня». Видна только при включённом TM и ShowSimulationUi.
+
+Солнце: SunCoronalVfxController.ActivityScale растёт с календарным годом (EvaluateSunActivityScale).
+
+Пауза в TM:
+
+- IsPaused → тик календаря и Kepler не выполняются.  
+- SpeedMultiplier сохраняется; правки на паузе учитываются после Play.  
+- Pause/resume не вызывают ForceSpeedOneX и не возвращают базу Phase A.  
+- После Play: Apply() + один apply позиций с текущим множителем.
+
+Вне Машины времени почти вся симуляция (орбиты, кометы, showcase-камера, часть VFX) использует Time.deltaTime и следует timeScale. UI и жесты камеры — unscaledDeltaTime / unscaledTime.
 
 
 2.5. Камера и навигация
@@ -125,6 +192,7 @@ TouchInputBridge  |  Enhanced Touch + fallback
 - Extra Graphics: GraphicsSettings + PlanetTextureManager (HD-материалы)  
 - Graphics Tier (mobile): GraphicsTierSettings + MobileUrpQualityApplicator  
 - Линейка масштаба: ScaleBarController (AU / км; tap → подсказка про а.е.)  
+- Дата Машины времени: TimeMachineDateHud (над ScaleBar)  
 - Clean view: CleanViewController — скрывает HUD, оставляет доступ к side panel / time bar  
 
 
@@ -163,7 +231,7 @@ Effective High включается только если Extra Graphics ON и:
 ~~~~~~~~~~~~~~~~~
 
 Режим  |  API  |  Поведение
-New  |  PauseAndResume.StartNewSimulation()  |  Очистка снимка сессии; старт Level1 с дефолтами камеры/движения/времени
+New  |  PauseAndResume.StartNewSimulation()  |  Очистка снимка сессии; старт Level1 с дефолтами камеры/движения/времени; Time Machine выкл.
 Continue  |  PauseAndResume.ResumeGame()  |  Восстановление камеры, фокуса, фаз орбит, скорости и паузы
 Enter menu  |  PauseAndResume.EnterMenu()  |  Capture сессии → MainMenu (timeScale = 1 для UI меню)
 
@@ -186,6 +254,7 @@ Minimap  |  ShowMinimap  |  вкл
 Движение комет  |  UseCometMovement  |  вкл
 Свободное наблюдение  |  UseFreeObservation  |  выкл
 Реальное Солнце  |  UseRealSun  |  вкл
+Машина времени  |  UseTimeMachine  |  выкл (только ручной тумблер)
 
 
 3.3. MainMenu
@@ -196,7 +265,7 @@ Minimap  |  ShowMinimap  |  вкл
 - Громкость, Extra Graphics, Graphics quality (Auto / Balanced / High), CPU Monitor  
 - About, Reset настроек  
 
-GraphicsTierControlController создаёт строку Settings под Extra Graphics в runtime, если её нет в сцене.
+GraphicsTier (Graphics quality) — объект сцены MainMenu под Extra Graphics (не runtime). Настройка: Solar System / Setup Graphics Tier UI.
 
 
 3.4. Языки и локализация
@@ -318,7 +387,7 @@ Mars  |  —  |  Phobos/Deimos уже есть
 
 1. Карточки фактов: масса, период обращения, температура, число спутников — из расширенного каталога.  
 2. Сравнение «если Солнце — мяч…» в Educational mode.  
-3. Временна́я шкала: дата/юлианский день симуляции (сейчас только множитель скорости).  
+3. Временна́я шкала: режим «Машина времени» (SimulationClock / KeplerOrbitMath) — см. §2.4: двухслойный темп (база × панель), рубежи года 0 и текущей даты UTC+3 (панель 1× + база 50→1 год/с), HUD, пауза.  
 4. Аудиогид / короткий narrator tour по телам (PlanEn).  
 5. Режим «учитель»: скрыть UI, оставить time bar + крупный заголовок тела.  
 6. Схема затмений / фазы Луны (упрощённо).  

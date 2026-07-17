@@ -31,7 +31,8 @@ public static class SidePanelUiBootstrap
         ("SidePanelRealOrbitsLabel_Row", "SidePanelRealOrbitsLabel"),
         ("SidePanelCometMovementLabel_Row", "SidePanelCometMovementLabel"),
         ("SidePanelFreeObservationLabel_Row", "SidePanelFreeObservationLabel"),
-        ("SidePanelRealSunLabel_Row", "SidePanelRealSunLabel")
+        ("SidePanelRealSunLabel_Row", "SidePanelRealSunLabel"),
+        ("SidePanelTimeMachineLabel_Row", "SidePanelTimeMachineLabel")
     };
 
     public static float ComputePanelHeight(int rowCount)

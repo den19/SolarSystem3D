@@ -2,8 +2,10 @@ using System;
 using UnityEngine;
 
 /// <summary>
-/// Central simulation time control: pause/resume and speed multiplier via Time.timeScale.
-/// Speed is stored separately from pause so resume restores the previous multiplier.
+/// Central simulation time control: pause/resume and speed multiplier.
+/// SpeedMultiplier is independent of pause; resume continues at the last set multiplier.
+/// Outside Time Machine, speed maps to Time.timeScale; during TM, timeScale stays 1 (or 0 if paused)
+/// and the calendar advances with unscaledDeltaTime × SpeedMultiplier.
 /// </summary>
 public static class SimulationTimeController
 {
@@ -33,8 +35,14 @@ public static class SimulationTimeController
     {
         float clamped = ClampSpeed(multiplier);
         if (Mathf.Approximately(_speedMultiplier, clamped))
+        {
+            // Still re-apply timeScale — it can drift from the stored multiplier.
+            if (apply && !_isPaused)
+                Apply();
             return;
+        }
 
+        // Always store and notify UI — including while paused so Play resumes at the chosen speed.
         _speedMultiplier = clamped;
         SpeedMultiplierChanged?.Invoke(_speedMultiplier);
 
@@ -42,11 +50,26 @@ public static class SimulationTimeController
             Apply();
     }
 
+    /// <summary>
+    /// Forces panel speed to 1× and syncs Time.timeScale (used by Time Machine milestones).
+    /// Does not clear pause; while paused timeScale stays 0 and SpeedMultiplier becomes 1× for resume.
+    /// </summary>
+    public static void ForceSpeedOneX()
+    {
+        _speedMultiplier = DefaultSpeedMultiplier;
+        SpeedMultiplierChanged?.Invoke(_speedMultiplier);
+        if (!_isPaused)
+            Apply();
+        else
+            Time.timeScale = 0f;
+    }
+
     public static void SetPaused(bool paused, bool apply = true)
     {
         if (_isPaused == paused)
             return;
 
+        // Pause/resume must not alter SpeedMultiplier — only timeScale via Apply().
         _isPaused = paused;
         IsPausedChanged?.Invoke(_isPaused);
 
@@ -71,7 +94,21 @@ public static class SimulationTimeController
 
     public static void Apply()
     {
-        Time.timeScale = _isPaused ? 0f : _speedMultiplier;
+        if (_isPaused)
+        {
+            Time.timeScale = 0f;
+            return;
+        }
+
+        // Time Machine advances the calendar via SpeedMultiplier × unscaledDeltaTime.
+        // Keep timeScale at 1 so leftover deltaTime systems (spin, VFX) do not also multiply.
+        if (SolarSystemApp.SimulationClock.DrivesMotion)
+        {
+            Time.timeScale = 1f;
+            return;
+        }
+
+        Time.timeScale = _speedMultiplier;
     }
 
     public static void ResetToDefaults(bool apply = true)

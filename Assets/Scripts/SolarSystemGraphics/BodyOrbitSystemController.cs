@@ -88,6 +88,13 @@ public class BodyOrbitSystemController : MonoBehaviour
 
     void ApplyOrbitMode()
     {
+        // Time Machine owns motion: refresh SMA only — do not re-snap circular layout.
+        if (SolarSystemApp.SimulationClock.DrivesMotion)
+        {
+            RefreshTimeMachineOrbitParameters();
+            return;
+        }
+
         if (OrbitSettings.UseRealOrbits)
         {
             if (_scaleController != null)
@@ -125,6 +132,12 @@ public class BodyOrbitSystemController : MonoBehaviour
 
     void UpdateOrbitParameters()
     {
+        if (SolarSystemApp.SimulationClock.DrivesMotion)
+        {
+            RefreshTimeMachineOrbitParameters();
+            return;
+        }
+
         for (int i = 0; i < _entries.Count; i++)
         {
             BodyOrbitEntry entry = _entries[i];
@@ -139,6 +152,10 @@ public class BodyOrbitSystemController : MonoBehaviour
 
     void RebuildOrbitLinesIfReady()
     {
+        // Avoid SetParent while SimulationViewSystems is activating/deactivating.
+        if (!isActiveAndEnabled || !gameObject.activeInHierarchy)
+            return;
+
         if (_scaleController != null)
             _scaleController.RebuildOrbitLinesOnly();
     }
@@ -230,5 +247,69 @@ public class BodyOrbitSystemController : MonoBehaviour
 
             ConfigureOrbitController(entry, capturePhaseFromPosition: false, overridePhase: phase);
         }
+    }
+
+    /// <summary>
+    /// One-shot setup when Time Machine turns on: snap layout once, enable orbit controllers.
+    /// </summary>
+    public void PrepareForTimeMachine()
+    {
+        if (_scaleController != null)
+            _scaleController.SyncCircularLayoutBeforeRealOrbits();
+
+        RefreshTimeMachineOrbitParameters();
+    }
+
+    /// <summary>
+    /// Keep RotateAround off and refresh SMA without re-snapping circular layout.
+    /// </summary>
+    public void RefreshTimeMachineOrbitParameters()
+    {
+        for (int i = 0; i < _entries.Count; i++)
+        {
+            BodyOrbitEntry entry = _entries[i];
+            if (entry.RotateAround != null)
+                entry.RotateAround.enabled = false;
+
+            if (entry.OrbitController != null)
+            {
+                ConfigureOrbitController(entry, capturePhaseFromPosition: false);
+                entry.OrbitController.enabled = true;
+            }
+        }
+
+        RebuildOrbitLinesIfReady();
+    }
+
+    public void ApplyKeplerPhases(double daysSinceJ2000)
+    {
+        // Planets first, then satellites (centers must be placed).
+        for (int pass = 0; pass < 2; pass++)
+        {
+            for (int i = 0; i < _entries.Count; i++)
+            {
+                BodyOrbitEntry entry = _entries[i];
+                bool isSatellite = !string.IsNullOrEmpty(entry.Definition.orbitCenterName);
+                if (pass == 0 && isSatellite)
+                    continue;
+                if (pass == 1 && !isSatellite)
+                    continue;
+
+                if (entry.OrbitController == null || !entry.OrbitController.enabled)
+                    continue;
+
+                double periodDays = SolarSystemCatalog.GetSiderealPeriodDays(entry.Definition);
+                float trueAnomaly = KeplerOrbitMath.TrueAnomalyRad(
+                    daysSinceJ2000,
+                    periodDays,
+                    entry.Definition.orbitalEccentricity);
+                entry.OrbitController.SetPhaseRad(trueAnomaly);
+            }
+        }
+    }
+
+    public void RestoreAfterTimeMachine()
+    {
+        ApplyOrbitMode();
     }
 }

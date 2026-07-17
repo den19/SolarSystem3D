@@ -16,6 +16,9 @@ public static class CometCatalog
         public float inclinationDeg;
         public float simPeriodSec;
         public float phaseOffsetRad;
+
+        /// <summary>Approximate sidereal period in days from Kepler's third law (a in AU).</summary>
+        public double SiderealPeriodDays => KeplerOrbitMath.PeriodDaysFromAu(semiMajorAxisAu);
     }
 
     public static bool TryGetByObjectName(string objectName, out CometDefinition definition)

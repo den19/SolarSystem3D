@@ -204,6 +204,37 @@ public static class SolarSystemCatalog
         return ByName.TryGetValue(objectName, out definition);
     }
 
+    /// <summary>
+    /// Sidereal orbital period in days. Planets use Kepler a^(3/2); moons use catalog values.
+    /// </summary>
+    public static double GetSiderealPeriodDays(BodyDefinition definition)
+    {
+        if (!string.IsNullOrEmpty(definition.orbitCenterName))
+            return GetSatellitePeriodDays(definition.objectName);
+
+        if (definition.orbitalRadiusAu <= 0f)
+            return 365.25;
+
+        return KeplerOrbitMath.PeriodDaysFromAu(definition.orbitalRadiusAu);
+    }
+
+    public static double GetSatellitePeriodDays(string objectName)
+    {
+        switch (objectName)
+        {
+            case "Moon": return 27.321661;
+            case "Phobos": return 0.318910;
+            case "Deimos": return 1.26244;
+            case "Io": return 1.769137786;
+            case "Europa": return 3.551181;
+            case "Ganymede": return 7.15455296;
+            case "Callisto": return 16.6890184;
+            case "Titan": return 15.945;
+            case "Triton": return 5.876854;
+            default: return 30.0;
+        }
+    }
+
     public static float MaxHeliocentricAu()
     {
         float max = 0f;

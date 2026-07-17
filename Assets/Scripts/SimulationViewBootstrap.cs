@@ -76,6 +76,7 @@ public class SimulationViewBootstrap : MonoBehaviour
 
             gameObject.AddComponent<SolarSystemScaleController>();
             gameObject.AddComponent<BodyOrbitSystemController>();
+            TimeMachineController.EnsureOnHost(gameObject);
 
             Canvas canvas = null;
             GameObject canvasGo = GameObject.Find("MainScreenCanvas");
@@ -95,6 +96,7 @@ public class SimulationViewBootstrap : MonoBehaviour
                 CometDescriptionPanel.EnsureOnCanvas(canvas.transform);
                 TimeControlUiBootstrap.EnsureTimeControlBar(canvas.transform);
                 ScaleBarController.EnsureOnCanvas(canvas.transform);
+                // TimeMachineDateHud is created only when Time Machine mode is enabled.
             }
 
             var cleanView = gameObject.AddComponent<CleanViewController>();

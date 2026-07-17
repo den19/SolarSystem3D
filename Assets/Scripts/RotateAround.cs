@@ -18,6 +18,12 @@ public class RotateAround : MonoBehaviour {
 
 	// Update is called once per frame
 	void Update () {
+		// Time Machine drives orbital placement; keep self-spin (target == this) running.
+		if (SolarSystemApp.SimulationClock.DrivesMotion
+			&& target != null
+			&& target != transform)
+			return;
+
 		// RotateAround takes three arguments, first is the Vector to rotate around
 		// second is a vector that axis to rotate around
 		// third is the degrees to rotate, in this case the speed per second

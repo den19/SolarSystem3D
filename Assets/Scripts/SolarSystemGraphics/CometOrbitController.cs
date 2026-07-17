@@ -81,6 +81,9 @@ public class CometOrbitController : MonoBehaviour
         if (_sun == null)
             return;
 
+        if (SolarSystemApp.SimulationClock.DrivesMotion)
+            return;
+
         _angle += (Mathf.PI * 2f / _definition.simPeriodSec) * Time.deltaTime;
         UpdatePosition();
     }
