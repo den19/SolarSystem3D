@@ -8,7 +8,9 @@ using UnityEngine.UI;
 /// <summary>
 /// Map-style distance scale bar (AU / km) for Level1. Portrait: bottom-right above CPU.
 /// Tap opens a localized AU hint with kilometre equivalent.
+/// Runs after MobileOrbitCamera so pinch/scroll distance is current when measuring.
 /// </summary>
+[DefaultExecutionOrder(50)]
 public class ScaleBarController : MonoBehaviour
 {
     public const string ObjectName = "ScaleBar";
@@ -122,8 +124,14 @@ public class ScaleBarController : MonoBehaviour
         {
             RefreshSafeAreaLayout();
         }
+    }
 
-        if (Time.unscaledTime < _nextUpdateTime)
+    void LateUpdate()
+    {
+        // After MobileOrbitCamera updates distance in LateUpdate so pinch/scroll is current.
+        EnsureOrbitCamera();
+        bool userZooming = _orbitCamera != null && _orbitCamera.IsUserControlling;
+        if (!userZooming && Time.unscaledTime < _nextUpdateTime)
             return;
 
         _nextUpdateTime = Time.unscaledTime + UpdateInterval;
@@ -351,12 +359,7 @@ public class ScaleBarController : MonoBehaviour
         if (_label == null)
             return;
 
-        if (_scaleController == null)
-            _scaleController = FindFirstObjectByType<SolarSystemScaleController>();
-
-        float auToUnity = _scaleController != null && _scaleController.AuToUnity > 0.001f
-            ? _scaleController.AuToUnity
-            : SolarSystemLayout.DefaultAuToUnity;
+        float auToUnity = ResolveAuToUnity();
 
         if (!TryMeasureWorldLength(TargetBarSegmentWidth, out float worldLength) || worldLength <= 0f)
         {
@@ -383,6 +386,47 @@ public class ScaleBarController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 1 AU = current Earth–Sun horizontal distance when available.
+    /// Prefers ScaleController baseline, then live scene measure, then default.
+    /// </summary>
+    float ResolveAuToUnity()
+    {
+        if (_scaleController == null)
+            _scaleController = FindFirstObjectByType<SolarSystemScaleController>();
+
+        if (_scaleController != null && _scaleController.AuToUnity > 0.001f)
+            return _scaleController.AuToUnity;
+
+        float live = MeasureLiveEarthSunAuToUnity();
+        if (live > 0.001f)
+            return live;
+
+        return SolarSystemLayout.DefaultAuToUnity;
+    }
+
+    static float MeasureLiveEarthSunAuToUnity()
+    {
+        GameObject earthGo = GameObject.Find("Earth");
+        GameObject sunGo = GameObject.Find("Sun");
+        if (earthGo == null || sunGo == null)
+            return 0f;
+
+        return Vector3.ProjectOnPlane(
+            earthGo.transform.position - sunGo.transform.position,
+            Vector3.up).magnitude;
+    }
+
+    void EnsureOrbitCamera()
+    {
+        if (_orbitCamera != null)
+            return;
+
+        Camera cam = Camera.main;
+        if (cam != null)
+            _orbitCamera = cam.GetComponent<MobileOrbitCamera>();
+    }
+
     bool TryMeasureWorldLength(float canvasBarWidth, out float worldLength)
     {
         worldLength = 0f;
@@ -390,8 +434,7 @@ public class ScaleBarController : MonoBehaviour
         if (cam == null || !cam.enabled)
             return false;
 
-        if (_orbitCamera == null)
-            _orbitCamera = cam.GetComponent<MobileOrbitCamera>();
+        EnsureOrbitCamera();
 
         float distance;
         if (_orbitCamera != null && _orbitCamera.distance > 0.01f)
