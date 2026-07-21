@@ -7,6 +7,7 @@ using UnityEngine;
 /// Rubber-sheet spacetime grid deformed by Sun, planets, and major moons in Level1.
 /// Educational mode uses two layers: a soft Sun bowl plus boosted local planet/moon wells.
 /// </summary>
+[DefaultExecutionOrder(-50)]
 public class SpacetimeGridController : MonoBehaviour
 {
     const string GridMaterialResourcePath = "SpacetimeGrid";
@@ -70,6 +71,8 @@ public class SpacetimeGridController : MonoBehaviour
     Vector3[] _baseVertices;
     bool _built;
     bool _dualLayerActive;
+    int _segmentsX = 96;
+    int _segmentsZ = 96;
 
     void Awake()
     {
@@ -144,6 +147,105 @@ public class SpacetimeGridController : MonoBehaviour
             RebuildGridMesh();
     }
 
+    /// <summary>
+    /// World-space Y of the visible deformed grid surface at (x, z).
+    /// Prefers bilinear sample of mesh vertices so projections sit on the well, not below the analytic center.
+    /// </summary>
+    public float SampleSurfaceWorldY(float x, float z)
+    {
+        // Live mesh only while the grid is deforming; otherwise analytical with half-cell floor.
+        if (IsAnyLayerEnabled() && TrySampleMeshWorldY(x, z, out float meshY))
+            return meshY;
+
+        return SampleAnalyticalSurfaceWorldY(x, z);
+    }
+
+    /// <summary>Grid half-extent on X/Z (world units).</summary>
+    public float HalfExtent => halfExtentX;
+
+    /// <summary>True if (x, z) lies on the grid mesh square (local XZ within half-extents).</summary>
+    public bool ContainsWorldXZ(float x, float z)
+    {
+        float lx = x - transform.position.x;
+        float lz = z - transform.position.z;
+        return Mathf.Abs(lx) <= halfExtentX && Mathf.Abs(lz) <= halfExtentZ;
+    }
+
+    bool TrySampleMeshWorldY(float x, float z, out float worldY)
+    {
+        worldY = 0f;
+
+        if (!_built || _segmentsX < 1 || _segmentsZ < 1)
+            return false;
+
+        Vector3[] verts = null;
+        if (_dualLayerActive && _localLayer.workingVertices != null && _localLayer.workingVertices.Length > 0)
+            verts = _localLayer.workingVertices;
+        else if (_globalLayer.workingVertices != null && _globalLayer.workingVertices.Length > 0)
+            verts = _globalLayer.workingVertices;
+
+        if (verts == null)
+            return false;
+
+        float localX = x - transform.position.x;
+        float localZ = z - transform.position.z;
+
+        float extentX = Mathf.Max(0.0001f, halfExtentX);
+        float extentZ = Mathf.Max(0.0001f, halfExtentZ);
+        float tx = (localX + extentX) / (2f * extentX);
+        float tz = (localZ + extentZ) / (2f * extentZ);
+        tx = Mathf.Clamp01(tx);
+        tz = Mathf.Clamp01(tz);
+
+        float fx = tx * _segmentsX;
+        float fz = tz * _segmentsZ;
+        int x0 = Mathf.Clamp(Mathf.FloorToInt(fx), 0, _segmentsX - 1);
+        int z0 = Mathf.Clamp(Mathf.FloorToInt(fz), 0, _segmentsZ - 1);
+        int x1 = x0 + 1;
+        int z1 = z0 + 1;
+        float u = fx - x0;
+        float v = fz - z0;
+
+        int stride = _segmentsX + 1;
+        int i00 = z0 * stride + x0;
+        int i10 = z0 * stride + x1;
+        int i01 = z1 * stride + x0;
+        int i11 = z1 * stride + x1;
+
+        if (i11 >= verts.Length)
+            return false;
+
+        float y00 = verts[i00].y;
+        float y10 = verts[i10].y;
+        float y01 = verts[i01].y;
+        float y11 = verts[i11].y;
+        float y0 = Mathf.Lerp(y00, y10, u);
+        float y1 = Mathf.Lerp(y01, y11, u);
+        float localY = Mathf.Lerp(y0, y1, v);
+
+        worldY = transform.position.y + localY;
+        return true;
+    }
+
+    float SampleAnalyticalSurfaceWorldY(float x, float z)
+    {
+        if (_bodies.Count == 0)
+            CacheBodies();
+
+        float cell = 2f * Mathf.Max(halfExtentX, 0.0001f) / Mathf.Max(1, _segmentsX);
+        float minHoriz = cell * 0.5f;
+        Vector3 world = new Vector3(x, baseY, z);
+
+        if (IsDualLayerMode())
+        {
+            float sunDisplacement = ComputeDisplacement(world, BodyFilter.SunOnly, softening, 1f, minHoriz);
+            float planetDisplacement = ComputeDisplacement(world, BodyFilter.PlanetsAndMoonsOnly, localSoftening, 1f, minHoriz);
+            return baseY + sunDisplacement + planetDisplacement;
+        }
+
+        return baseY + ComputeDisplacement(world, BodyFilter.All, softening, 1f, minHoriz);
+    }
+
     bool IsDualLayerMode() => ScaleSettings.Mode == SolarScaleMode.Educational;
 
     bool IsAnyLayerEnabled()
@@ -172,6 +274,8 @@ public class SpacetimeGridController : MonoBehaviour
         CacheBodies();
 
         int segments = GetSegmentCount();
+        _segmentsX = segments;
+        _segmentsZ = segments;
         _globalLayer.mesh = GravityGridMeshUtility.BuildFlatGrid(halfExtentX, halfExtentZ, segments, segments);
         _baseVertices = _globalLayer.mesh.vertices;
         _globalLayer.workingVertices = new Vector3[_baseVertices.Length];
@@ -196,6 +300,8 @@ public class SpacetimeGridController : MonoBehaviour
         CacheBodies();
 
         int segments = GetSegmentCount();
+        _segmentsX = segments;
+        _segmentsZ = segments;
         _globalLayer.gameObject = gameObject;
         _globalLayer.mesh = GravityGridMeshUtility.BuildFlatGrid(halfExtentX, halfExtentZ, segments, segments);
         _baseVertices = _globalLayer.mesh.vertices;
@@ -486,9 +592,17 @@ public class SpacetimeGridController : MonoBehaviour
         return localMassBoost;
     }
 
-    float ComputeDisplacement(Vector3 worldPos, BodyFilter filter, float softeningRadius, float massBoost)
+    float ComputeDisplacement(
+        Vector3 worldPos,
+        BodyFilter filter,
+        float softeningRadius,
+        float massBoost,
+        float minHorizontalDistance = 0f)
     {
         float softeningSq = softeningRadius * softeningRadius;
+        float minHorizSq = minHorizontalDistance > 0f
+            ? minHorizontalDistance * minHorizontalDistance
+            : 0f;
         float effectiveDepthScale = GetEffectiveDepthScale();
         float displacement = 0f;
 
@@ -504,7 +618,10 @@ public class SpacetimeGridController : MonoBehaviour
             Vector3 bodyPos = body.position;
             float dx = worldPos.x - bodyPos.x;
             float dz = worldPos.z - bodyPos.z;
-            float distSq = dx * dx + dz * dz + softeningSq;
+            float horizSq = dx * dx + dz * dz;
+            if (minHorizSq > 0f && horizSq < minHorizSq)
+                horizSq = minHorizSq;
+            float distSq = horizSq + softeningSq;
             float boost = filter == BodyFilter.PlanetsAndMoonsOnly ? GetBodyMassBoost(i) : 1f;
             displacement -= effectiveDepthScale * _masses[i] * massBoost * boost / distSq;
         }

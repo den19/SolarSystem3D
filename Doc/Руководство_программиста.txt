@@ -188,6 +188,7 @@ TouchInputBridge  |  Enhanced Touch + fallback
 - Подписи тел: BodyLabelManager  
 - Minimap: MinimapController  
 - Гравитационная сетка: SpacetimeGridController + GravityGridSettings  
+- Проекция на сетку: BodyGridProjectionController + ProjectionSettings (дефолт выкл.; зелёные пятна и вертикали планет/спутников на поверхность колодца; независима от видимости сетки, высота через SampleSurfaceWorldY)  
 - Вид Солнца: SunAppearanceSettings / SunCoronalVfxController (Real Sun VFX)  
 - Extra Graphics: GraphicsSettings + PlanetTextureManager (HD-материалы)  
 - Graphics Tier (mobile): GraphicsTierSettings + MobileUrpQualityApplicator  
@@ -246,6 +247,7 @@ Autosave: SimulationSessionAutosave при pause/quit приложения на 
 UI  |  Настройка  |  По умолчанию
 Орбиты  |  ShowOrbitLines  |  вкл
 Гравитационная сетка  |  UseGravityGrid  |  вкл
+Проекция  |  UseProjection  |  выкл (только ручной тумблер)
 Подписи  |  ShowBodyLabels  |  вкл
 Minimap  |  ShowMinimap  |  вкл
 Интерфейс  |  ShowSimulationUi (выкл = clean view)  |  вкл
@@ -429,7 +431,7 @@ TimeScale  |  При очень высоких скоростях — fixed subs
 7. Быстрый справочник PlayerPrefs
 ---------------------------------
 
-Настройки: SolarSystem_ScaleMode, SolarSystem_UseRealOrbits, SolarSystem_UseCometMovement, SolarSystem_ShowOrbitLines, SolarSystem_ShowBodyLabels, SolarSystem_ShowMinimap, SolarSystem_ShowSimulationUi, SolarSystem_UseFreeObservation, SolarSystem_UseGravityGrid, SolarSystem_UseExtraGraphics, SolarSystem_UseRealSun, SolarSystem_GraphicsTier (Auto=0 / Balanced=1 / High=2), SelectedLanguage, ключи аудио.
+Настройки: SolarSystem_ScaleMode, SolarSystem_UseRealOrbits, SolarSystem_UseCometMovement, SolarSystem_ShowOrbitLines, SolarSystem_ShowBodyLabels, SolarSystem_ShowMinimap, SolarSystem_ShowSimulationUi, SolarSystem_UseFreeObservation, SolarSystem_UseGravityGrid, SolarSystem_UseProjection, SolarSystem_UseExtraGraphics, SolarSystem_UseRealSun, SolarSystem_GraphicsTier (Auto=0 / Balanced=1 / High=2), SelectedLanguage, ключи аудио.
 
 Сессия: SolarSystem_HasSessionState, SolarSystem_SelectedPlanet, SolarSystem_IsDetailCamera, SolarSystem_TimeScale / SpeedMultiplier / IsPaused, камера (Main/Detail X/Y/Distance), SolarSystem_MotionSnapshot.
 

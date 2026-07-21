@@ -76,6 +76,7 @@ public class SimulationViewBootstrap : MonoBehaviour
 
             gameObject.AddComponent<SolarSystemScaleController>();
             gameObject.AddComponent<BodyOrbitSystemController>();
+            gameObject.AddComponent<BodyGridProjectionController>();
             TimeMachineController.EnsureOnHost(gameObject);
 
             Canvas canvas = null;

@@ -646,6 +646,7 @@ public static class SidePanelSceneSetup
         float y = RowStartY;
         Toggle orbitsToggle = null;
         Toggle gravityGridToggle = null;
+        Toggle projectionToggle = null;
         Toggle labelsToggle = null;
         Toggle minimapToggle = null;
         Toggle uiToggle = null;
@@ -666,6 +667,7 @@ public static class SidePanelSceneSetup
             {
                 case "SidePanelOrbitsLabel_Row": orbitsToggle = toggle; break;
                 case "SidePanelGravityGridLabel_Row": gravityGridToggle = toggle; break;
+                case "SidePanelProjectionLabel_Row": projectionToggle = toggle; break;
                 case "SidePanelLabelsLabel_Row": labelsToggle = toggle; break;
                 case "SidePanelMinimapLabel_Row": minimapToggle = toggle; break;
                 case "SidePanelUiLabel_Row": uiToggle = toggle; break;
@@ -683,6 +685,7 @@ public static class SidePanelSceneSetup
         serializedController.FindProperty("panelRect").objectReferenceValue = panelGo.GetComponent<RectTransform>();
         serializedController.FindProperty("orbitsToggle").objectReferenceValue = orbitsToggle;
         serializedController.FindProperty("gravityGridToggle").objectReferenceValue = gravityGridToggle;
+        serializedController.FindProperty("projectionToggle").objectReferenceValue = projectionToggle;
         serializedController.FindProperty("labelsToggle").objectReferenceValue = labelsToggle;
         serializedController.FindProperty("minimapToggle").objectReferenceValue = minimapToggle;
         serializedController.FindProperty("uiToggle").objectReferenceValue = uiToggle;
@@ -701,6 +704,8 @@ public static class SidePanelSceneSetup
             realOrbitsToggle.isOn = false;
         if (freeObservationToggle != null)
             freeObservationToggle.isOn = false;
+        if (projectionToggle != null)
+            projectionToggle.isOn = false;
 
         SidePanelUiBootstrap.ApplyCompactLayout(panelGo.transform);
         EnableBodyNameAutoSize(canvasTransform);

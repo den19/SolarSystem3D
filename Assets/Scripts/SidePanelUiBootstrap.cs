@@ -23,6 +23,7 @@ public static class SidePanelUiBootstrap
     {
         ("SidePanelOrbitsLabel_Row", "SidePanelOrbitsLabel"),
         ("SidePanelGravityGridLabel_Row", "GravityGridLabel"),
+        ("SidePanelProjectionLabel_Row", "SidePanelProjectionLabel"),
         ("SidePanelLabelsLabel_Row", "SidePanelLabelsLabel"),
         ("SidePanelMinimapLabel_Row", "SidePanelMinimapLabel"),
         ("SidePanelUiLabel_Row", "SidePanelUiLabel"),
@@ -72,7 +73,8 @@ public static class SidePanelUiBootstrap
             Transform row = panel.Find(ToggleRows[i].rowName);
             if (row == null)
             {
-                row = EnsureToggleRow(panel, ToggleRows[i].rowName, ToggleRows[i].labelName, ref y, i);
+                bool defaultOn = !IsDefaultOffRow(ToggleRows[i].rowName);
+                row = EnsureToggleRow(panel, ToggleRows[i].rowName, ToggleRows[i].labelName, ref y, i, defaultOn);
                 if (row == null)
                     continue;
             }
@@ -194,7 +196,15 @@ public static class SidePanelUiBootstrap
         toggleRect.offsetMax = Vector2.zero;
     }
 
-    static Transform EnsureToggleRow(Transform panel, string rowName, string labelName, ref float y, int siblingIndex)
+    static bool IsDefaultOffRow(string rowName)
+    {
+        return rowName == "SidePanelProjectionLabel_Row"
+            || rowName == "SidePanelRealOrbitsLabel_Row"
+            || rowName == "SidePanelFreeObservationLabel_Row"
+            || rowName == "SidePanelTimeMachineLabel_Row";
+    }
+
+    static Transform EnsureToggleRow(Transform panel, string rowName, string labelName, ref float y, int siblingIndex, bool defaultOn = true)
     {
         var rowGo = new GameObject(rowName, typeof(RectTransform));
         rowGo.layer = panel.gameObject.layer;
@@ -202,7 +212,7 @@ public static class SidePanelUiBootstrap
 
         ApplyRowLayout(rowGo.transform, ref y, siblingIndex);
         EnsureLabel(rowGo.transform, labelName);
-        EnsureToggle(rowGo.transform, defaultOn: true);
+        EnsureToggle(rowGo.transform, defaultOn: defaultOn);
         ApplyRowChildLayouts(rowGo.transform, labelName);
         return rowGo.transform;
     }

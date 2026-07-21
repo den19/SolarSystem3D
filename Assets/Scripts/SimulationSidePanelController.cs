@@ -20,6 +20,7 @@ public class SimulationSidePanelController : MonoBehaviour
     [SerializeField] RectTransform panelRect;
     [SerializeField] Toggle orbitsToggle;
     [SerializeField] Toggle gravityGridToggle;
+    [SerializeField] Toggle projectionToggle;
     [SerializeField] Toggle labelsToggle;
     [SerializeField] Toggle minimapToggle;
     [SerializeField] Toggle uiToggle;
@@ -92,6 +93,8 @@ public class SimulationSidePanelController : MonoBehaviour
             orbitsToggle = FindToggle("SidePanelOrbitsLabel_Row");
         if (gravityGridToggle == null)
             gravityGridToggle = FindToggle("SidePanelGravityGridLabel_Row");
+        if (projectionToggle == null)
+            projectionToggle = FindToggle("SidePanelProjectionLabel_Row");
         if (labelsToggle == null)
             labelsToggle = FindToggle("SidePanelLabelsLabel_Row");
         if (minimapToggle == null)
@@ -226,6 +229,13 @@ public class SimulationSidePanelController : MonoBehaviour
             gravityGridToggle.onValueChanged.AddListener(OnGravityGridToggleChanged);
         }
 
+        if (projectionToggle != null)
+        {
+            projectionToggle.SetIsOnWithoutNotify(ProjectionSettings.UseProjection);
+            projectionToggle.onValueChanged.RemoveAllListeners();
+            projectionToggle.onValueChanged.AddListener(OnProjectionToggleChanged);
+        }
+
         if (labelsToggle != null)
         {
             labelsToggle.SetIsOnWithoutNotify(SimulationViewSettings.ShowBodyLabels);
@@ -292,6 +302,7 @@ public class SimulationSidePanelController : MonoBehaviour
         SimulationViewSettings.ShowSimulationUiChanged += OnUiSettingChanged;
         SimulationViewSettings.UseFreeObservationChanged += OnFreeObservationSettingChanged;
         GravityGridSettings.UseGravityGridChanged += OnGravityGridSettingChanged;
+        ProjectionSettings.UseProjectionChanged += OnProjectionSettingChanged;
         ScaleSettings.ModeChanged += OnScaleModeSettingChanged;
         OrbitSettings.UseRealOrbitsChanged += OnRealOrbitsSettingChanged;
         CometMovementSettings.UseCometMovementChanged += OnCometMovementSettingChanged;
@@ -311,6 +322,7 @@ public class SimulationSidePanelController : MonoBehaviour
         SimulationViewSettings.ShowSimulationUiChanged -= OnUiSettingChanged;
         SimulationViewSettings.UseFreeObservationChanged -= OnFreeObservationSettingChanged;
         GravityGridSettings.UseGravityGridChanged -= OnGravityGridSettingChanged;
+        ProjectionSettings.UseProjectionChanged -= OnProjectionSettingChanged;
         ScaleSettings.ModeChanged -= OnScaleModeSettingChanged;
         OrbitSettings.UseRealOrbitsChanged -= OnRealOrbitsSettingChanged;
         CometMovementSettings.UseCometMovementChanged -= OnCometMovementSettingChanged;
@@ -331,6 +343,12 @@ public class SimulationSidePanelController : MonoBehaviour
     {
         if (isInitializing) return;
         GravityGridSettings.SetUseGravityGrid(isOn);
+    }
+
+    void OnProjectionToggleChanged(bool isOn)
+    {
+        if (isInitializing) return;
+        ProjectionSettings.SetUseProjection(isOn);
     }
 
     void OnLabelsToggleChanged(bool isOn)
@@ -438,6 +456,12 @@ public class SimulationSidePanelController : MonoBehaviour
     {
         if (gravityGridToggle != null)
             gravityGridToggle.SetIsOnWithoutNotify(isOn);
+    }
+
+    void OnProjectionSettingChanged(bool isOn)
+    {
+        if (projectionToggle != null)
+            projectionToggle.SetIsOnWithoutNotify(isOn);
     }
 
     void OnLabelsSettingChanged(bool isOn)

@@ -10,6 +10,7 @@ public static class SolarSystemConfigurationReset
         OrbitSettings.ResetToDefaults();
         CometMovementSettings.ResetToDefaults();
         GravityGridSettings.ResetToDefaults();
+        ProjectionSettings.ResetToDefaults();
         GraphicsSettings.ResetToDefaults();
         CpuMonitorSettings.ResetToDefaults();
         SunAppearanceSettings.ResetToDefaults();
