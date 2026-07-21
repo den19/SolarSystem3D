@@ -4,7 +4,8 @@ using SolarScaleMode = SolarSystemApp.ScaleMode;
 using UnityEngine;
 
 /// <summary>
-/// Projects planets and moons onto the gravity grid as soft green glows and vertical drop lines.
+/// Projects planets and moons onto the gravity grid as soft green glows, drop lines,
+/// and a long fading surface trail that stays on the deformed fabric.
 /// Default off via ProjectionSettings; independent of GravityGridSettings visibility.
 /// </summary>
 [DefaultExecutionOrder(50)]
@@ -13,6 +14,8 @@ public class BodyGridProjectionController : MonoBehaviour
     const string GlowMaterialResourcePath = "GridProjectionGlow";
     const string GlowShaderName = "Custom/GridProjectionGlow";
     const string RootName = "BodyGridProjections";
+    const int TrailPointCapacity = 96;
+    const int OutsideClearFrames = 120;
 
     static readonly string[] BodyNames =
     {
@@ -27,6 +30,7 @@ public class BodyGridProjectionController : MonoBehaviour
 
     static readonly Color ProjectionGreen = new Color(0.24f, 0.86f, 0.48f, 0.55f);
     static readonly Color LineGreen = new Color(0.3f, 0.9f, 0.55f, 0.42f);
+    static readonly Color TrailGreen = new Color(0.24f, 0.86f, 0.48f, 0.72f);
 
     [SerializeField] float minSpotRadius = 0.9f;
     [SerializeField] float maxSpotRadius = 14f;
@@ -35,22 +39,33 @@ public class BodyGridProjectionController : MonoBehaviour
     [SerializeField] float extentSpotFactor = 0.012f;
     [SerializeField] float surfaceLift = 0.04f;
     [SerializeField] float lineWidth = 0.06f;
+    [SerializeField] float trailLengthFactor = 0.45f;
+    [SerializeField] float trailMinLength = 24f;
+    [SerializeField] float moonTrailLengthScale = 0.55f;
+    [SerializeField] float trailSpacingFactor = 0.0025f;
+    [SerializeField] float trailMinSpacing = 0.35f;
 
-    struct ProjectionVisual
+    sealed class ProjectionVisual
     {
         public Transform body;
         public string name;
         public GameObject root;
-        public LineRenderer line;
+        public LineRenderer dropLine;
+        public LineRenderer trail;
         public Transform glow;
         public MeshRenderer glowRenderer;
+        public readonly List<Vector3> trailPoints = new List<Vector3>(TrailPointCapacity);
+        public int outsideFrames;
+        public bool isMoon;
     }
 
     readonly List<ProjectionVisual> _visuals = new List<ProjectionVisual>();
+    readonly Vector3[] _trailPositionScratch = new Vector3[TrailPointCapacity];
 
     Transform _root;
     Material _glowMaterial;
     Material _lineMaterial;
+    Material _trailMaterial;
     Mesh _quadMesh;
     SpacetimeGridController _grid;
     bool _active;
@@ -86,6 +101,8 @@ public class BodyGridProjectionController : MonoBehaviour
             Destroy(_glowMaterial);
         if (_lineMaterial != null)
             Destroy(_lineMaterial);
+        if (_trailMaterial != null)
+            Destroy(_trailMaterial);
         if (_quadMesh != null)
             Destroy(_quadMesh);
         if (_root != null)
@@ -159,6 +176,9 @@ public class BodyGridProjectionController : MonoBehaviour
         if (_lineMaterial == null)
             _lineMaterial = CreateFallbackUnlit(LineGreen);
 
+        if (_trailMaterial == null)
+            _trailMaterial = CreateTrailMaterial();
+
         if (_quadMesh == null)
             _quadMesh = BuildUnitQuad();
     }
@@ -173,6 +193,21 @@ public class BodyGridProjectionController : MonoBehaviour
         material.color = color;
         if (material.HasProperty("_BaseColor"))
             material.SetColor("_BaseColor", color);
+        material.renderQueue = 2960;
+        return material;
+    }
+
+    static Material CreateTrailMaterial()
+    {
+        // Sprites/Default multiplies vertex colors — needed for LineRenderer length fade.
+        Shader shader = Shader.Find("Sprites/Default");
+        if (shader == null)
+            shader = Shader.Find("Universal Render Pipeline/Unlit");
+
+        var material = new Material(shader);
+        material.color = Color.white;
+        if (material.HasProperty("_BaseColor"))
+            material.SetColor("_BaseColor", Color.white);
         material.renderQueue = 2960;
         return material;
     }
@@ -233,8 +268,7 @@ public class BodyGridProjectionController : MonoBehaviour
             if (bodyGo == null)
                 continue;
 
-            var visual = CreateVisual(BodyNames[i], bodyGo.transform);
-            _visuals.Add(visual);
+            _visuals.Add(CreateVisual(BodyNames[i], bodyGo.transform));
         }
 
         _built = true;
@@ -248,8 +282,13 @@ public class BodyGridProjectionController : MonoBehaviour
 
         var lineGo = new GameObject("DropLine");
         lineGo.transform.SetParent(root.transform, false);
-        var line = lineGo.AddComponent<LineRenderer>();
-        ConfigureLine(line);
+        var dropLine = lineGo.AddComponent<LineRenderer>();
+        ConfigureDropLine(dropLine);
+
+        var trailGo = new GameObject("Trail");
+        trailGo.transform.SetParent(root.transform, false);
+        var trail = trailGo.AddComponent<LineRenderer>();
+        ConfigureTrail(trail);
 
         var glowGo = new GameObject("Glow");
         glowGo.transform.SetParent(root.transform, false);
@@ -265,13 +304,15 @@ public class BodyGridProjectionController : MonoBehaviour
             body = body,
             name = bodyName,
             root = root,
-            line = line,
+            dropLine = dropLine,
+            trail = trail,
             glow = glowGo.transform,
-            glowRenderer = renderer
+            glowRenderer = renderer,
+            isMoon = MoonNames.Contains(bodyName)
         };
     }
 
-    void ConfigureLine(LineRenderer line)
+    void ConfigureDropLine(LineRenderer line)
     {
         line.positionCount = 2;
         line.useWorldSpace = true;
@@ -289,40 +330,225 @@ public class BodyGridProjectionController : MonoBehaviour
         line.textureMode = LineTextureMode.Stretch;
     }
 
+    void ConfigureTrail(LineRenderer trail)
+    {
+        trail.positionCount = 0;
+        trail.useWorldSpace = true;
+        trail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        trail.receiveShadows = false;
+        trail.allowOcclusionWhenDynamic = false;
+        trail.numCapVertices = 3;
+        trail.numCornerVertices = 2;
+        trail.widthMultiplier = 1f;
+        trail.material = _trailMaterial;
+        trail.textureMode = LineTextureMode.Stretch;
+        trail.alignment = LineAlignment.View;
+        trail.colorGradient = BuildTrailColorGradient();
+        trail.widthCurve = AnimationCurve.Linear(0f, 1f, 1f, 0.12f);
+    }
+
+    static Gradient BuildTrailColorGradient()
+    {
+        var gradient = new Gradient();
+        // Position 0 = trail tail (oldest), 1 = head under the body.
+        gradient.SetKeys(
+            new[]
+            {
+                new GradientColorKey(new Color(0.18f, 0.7f, 0.4f), 0f),
+                new GradientColorKey(TrailGreen, 0.55f),
+                new GradientColorKey(TrailGreen, 1f)
+            },
+            new[]
+            {
+                new GradientAlphaKey(0f, 0f),
+                new GradientAlphaKey(0.12f, 0.25f),
+                new GradientAlphaKey(0.45f, 0.65f),
+                new GradientAlphaKey(0.78f, 1f)
+            });
+        return gradient;
+    }
+
     void UpdateVisuals()
     {
         for (int i = 0; i < _visuals.Count; i++)
         {
-            var visual = _visuals[i];
+            ProjectionVisual visual = _visuals[i];
             if (visual.body == null)
             {
+                SetDropAndGlowVisible(visual, false);
+                ClearTrail(visual);
                 if (visual.root != null)
                     visual.root.SetActive(false);
                 continue;
             }
 
             Vector3 bodyPos = visual.body.position;
-            if (_grid == null || !_grid.ContainsWorldXZ(bodyPos.x, bodyPos.z))
+            bool inside = _grid != null && _grid.ContainsWorldXZ(bodyPos.x, bodyPos.z);
+
+            if (!inside)
             {
-                if (visual.root != null)
-                    visual.root.SetActive(false);
+                visual.outsideFrames++;
+                SetDropAndGlowVisible(visual, false);
+
+                if (visual.outsideFrames >= OutsideClearFrames)
+                {
+                    ClearTrail(visual);
+                    if (visual.root != null)
+                        visual.root.SetActive(false);
+                    continue;
+                }
+
+                if (visual.root != null && !visual.root.activeSelf)
+                    visual.root.SetActive(true);
+
+                RestampTrailHeights(visual);
+                ApplyTrailRenderer(visual, ComputeSpotRadius(visual));
                 continue;
             }
 
+            visual.outsideFrames = 0;
             if (visual.root != null && !visual.root.activeSelf)
                 visual.root.SetActive(true);
 
             float surfaceY = SampleSurfaceY(bodyPos.x, bodyPos.z);
             Vector3 foot = new Vector3(bodyPos.x, surfaceY + surfaceLift, bodyPos.z);
 
-            visual.line.SetPosition(0, bodyPos);
-            visual.line.SetPosition(1, foot);
+            SetDropAndGlowVisible(visual, true);
+            visual.dropLine.SetPosition(0, bodyPos);
+            visual.dropLine.SetPosition(1, foot);
 
             float radius = ComputeSpotRadius(visual);
             visual.glow.position = foot;
             visual.glow.rotation = Quaternion.identity;
             visual.glow.localScale = new Vector3(radius * 2f, 1f, radius * 2f);
+
+            AppendTrailPoint(visual, foot);
+            TrimTrailLength(visual);
+            RestampTrailHeights(visual);
+            ApplyTrailRenderer(visual, radius);
         }
+    }
+
+    static void SetDropAndGlowVisible(ProjectionVisual visual, bool visible)
+    {
+        if (visual.dropLine != null)
+            visual.dropLine.enabled = visible;
+        if (visual.glowRenderer != null)
+            visual.glowRenderer.enabled = visible;
+    }
+
+    void AppendTrailPoint(ProjectionVisual visual, Vector3 foot)
+    {
+        float spacing = GetTrailMinSpacing();
+        if (visual.trailPoints.Count > 0)
+        {
+            Vector3 last = visual.trailPoints[visual.trailPoints.Count - 1];
+            float dx = foot.x - last.x;
+            float dz = foot.z - last.z;
+            if (dx * dx + dz * dz < spacing * spacing)
+            {
+                // Keep head snug under the body even when spacing gate blocks a new point.
+                visual.trailPoints[visual.trailPoints.Count - 1] = foot;
+                return;
+            }
+        }
+
+        visual.trailPoints.Add(foot);
+        while (visual.trailPoints.Count > TrailPointCapacity)
+            visual.trailPoints.RemoveAt(0);
+    }
+
+    void TrimTrailLength(ProjectionVisual visual)
+    {
+        float maxLength = GetMaxTrailLength(visual);
+        float length = 0f;
+        for (int i = visual.trailPoints.Count - 1; i > 0; i--)
+        {
+            Vector3 a = visual.trailPoints[i];
+            Vector3 b = visual.trailPoints[i - 1];
+            float dx = a.x - b.x;
+            float dz = a.z - b.z;
+            length += Mathf.Sqrt(dx * dx + dz * dz);
+            if (length <= maxLength)
+                continue;
+
+            visual.trailPoints.RemoveRange(0, i);
+            break;
+        }
+    }
+
+    void RestampTrailHeights(ProjectionVisual visual)
+    {
+        for (int i = 0; i < visual.trailPoints.Count; i++)
+        {
+            Vector3 p = visual.trailPoints[i];
+            if (_grid != null && !_grid.ContainsWorldXZ(p.x, p.z))
+            {
+                // Drop points that left the fabric after extent changes.
+                visual.trailPoints.RemoveAt(i);
+                i--;
+                continue;
+            }
+
+            float y = SampleSurfaceY(p.x, p.z) + surfaceLift;
+            visual.trailPoints[i] = new Vector3(p.x, y, p.z);
+        }
+    }
+
+    void ApplyTrailRenderer(ProjectionVisual visual, float spotRadius)
+    {
+        LineRenderer trail = visual.trail;
+        if (trail == null)
+            return;
+
+        int count = visual.trailPoints.Count;
+        if (count < 2)
+        {
+            trail.positionCount = 0;
+            trail.enabled = false;
+            return;
+        }
+
+        trail.enabled = true;
+        // LineRenderer: index 0 = start (tail), last = end (head under body).
+        for (int i = 0; i < count; i++)
+            _trailPositionScratch[i] = visual.trailPoints[i];
+
+        trail.positionCount = count;
+        trail.SetPositions(_trailPositionScratch);
+
+        float headWidth = Mathf.Max(0.2f, spotRadius * 0.9f);
+        trail.widthCurve = new AnimationCurve(
+            new Keyframe(0f, 0.12f),
+            new Keyframe(0.55f, 0.45f),
+            new Keyframe(1f, 1f));
+        trail.widthMultiplier = headWidth;
+        trail.colorGradient = BuildTrailColorGradient();
+    }
+
+    void ClearTrail(ProjectionVisual visual)
+    {
+        visual.trailPoints.Clear();
+        if (visual.trail != null)
+        {
+            visual.trail.positionCount = 0;
+            visual.trail.enabled = false;
+        }
+    }
+
+    float GetMaxTrailLength(ProjectionVisual visual)
+    {
+        float halfExtent = _grid != null ? _grid.HalfExtent : 120f;
+        float length = Mathf.Max(trailMinLength, halfExtent * trailLengthFactor);
+        if (visual.isMoon)
+            length *= moonTrailLengthScale;
+        return length;
+    }
+
+    float GetTrailMinSpacing()
+    {
+        float halfExtent = _grid != null ? _grid.HalfExtent : 120f;
+        return Mathf.Max(trailMinSpacing, halfExtent * trailSpacingFactor);
     }
 
     float SampleSurfaceY(float x, float z)
@@ -345,7 +571,7 @@ public class BodyGridProjectionController : MonoBehaviour
             fromExtent = Mathf.Max(1.2f, _grid.HalfExtent * extentSpotFactor);
 
         float radius = Mathf.Max(fromBody, fromExtent * 0.35f);
-        if (MoonNames.Contains(visual.name))
+        if (visual.isMoon)
             radius *= moonRadiusScale;
 
         return Mathf.Clamp(radius, minSpotRadius, maxSpotRadius);
