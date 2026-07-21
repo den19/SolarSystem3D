@@ -718,8 +718,10 @@ public static class SidePanelSceneSetup
             return;
 
         text.enableAutoSizing = true;
-        text.fontSizeMin = 12f;
+        text.fontSizeMin = 9f;
         text.fontSizeMax = 17f;
+        text.textWrappingMode = TextWrappingModes.Normal;
+        text.overflowMode = TextOverflowModes.Ellipsis;
     }
 
     static float ComputePanelHeight(int rowCount) => SidePanelUiBootstrap.ComputePanelHeight(rowCount);

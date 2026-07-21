@@ -51,8 +51,8 @@ public class BodyNavigationController : MonoBehaviour
             SimControlMin = 72f,
             NameMinWidth = 48f,
             NamePreferredWidth = 120f,
-            NameMinHeight = 40f,
-            NamePreferredHeight = 40f,
+            NameMinHeight = 44f,
+            NamePreferredHeight = 44f,
             Spacing = 4f,
             PaddingHorizontal = 8,
             PaddingVertical = 4
@@ -65,8 +65,8 @@ public class BodyNavigationController : MonoBehaviour
             SimControlMin = 60f,
             NameMinWidth = 36f,
             NamePreferredWidth = 96f,
-            NameMinHeight = 36f,
-            NamePreferredHeight = 36f,
+            NameMinHeight = 40f,
+            NamePreferredHeight = 40f,
             Spacing = 2f,
             PaddingHorizontal = 8,
             PaddingVertical = 4
@@ -79,13 +79,17 @@ public class BodyNavigationController : MonoBehaviour
             SimControlMin = 52f,
             NameMinWidth = 28f,
             NamePreferredWidth = 72f,
-            NameMinHeight = 32f,
-            NamePreferredHeight = 32f,
+            NameMinHeight = 36f,
+            NamePreferredHeight = 36f,
             Spacing = 2f,
             PaddingHorizontal = 4,
             PaddingVertical = 4
         };
     }
+
+    const float BodyNameFontSizeMin = 9f;
+    const float BodyNameFontSizeMax = 17f;
+    const char ZeroWidthSpace = '\u200B';
 
     public IReadOnlyList<BodyNavigationOrder.NavigationEntry> NavigationEntries => _entries;
     public int CurrentIndex => _currentIndex;
@@ -97,6 +101,7 @@ public class BodyNavigationController : MonoBehaviour
 
         EnsureToolbarButtonsInBar();
         EnsureTopBarLayout();
+        ConfigureBodyNameText(bodyNameText);
 
         if (prevButton != null)
             prevButton.onClick.AddListener(OnPrevClicked);
@@ -249,6 +254,20 @@ public class BodyNavigationController : MonoBehaviour
         layoutElement.minHeight = profile.NameMinHeight;
         layoutElement.preferredHeight = profile.NamePreferredHeight;
         layoutElement.flexibleHeight = 0f;
+
+        ConfigureBodyNameText(bodyNameText);
+    }
+
+    static void ConfigureBodyNameText(TMP_Text text)
+    {
+        if (text == null)
+            return;
+
+        text.enableAutoSizing = true;
+        text.fontSizeMin = BodyNameFontSizeMin;
+        text.fontSizeMax = BodyNameFontSizeMax;
+        text.textWrappingMode = TextWrappingModes.Normal;
+        text.overflowMode = TextOverflowModes.Ellipsis;
     }
 
     void ApplyAdaptiveToolbarLayout()
@@ -639,7 +658,31 @@ public class BodyNavigationController : MonoBehaviour
                 label = localized;
         }
 
-        bodyNameText.text = label;
+        bodyNameText.text = InsertSoftBreaks(label);
+    }
+
+    /// <summary>
+    /// Inserts zero-width spaces after '/' and em/en dashes so TMP can wrap long comet names
+    /// (e.g. 45P/Хонда—Мркос—Пайдушакова) without changing visible glyphs.
+    /// </summary>
+    static string InsertSoftBreaks(string label)
+    {
+        if (string.IsNullOrEmpty(label))
+            return label;
+
+        var sb = new System.Text.StringBuilder(label.Length + 4);
+        for (int i = 0; i < label.Length; i++)
+        {
+            char c = label[i];
+            sb.Append(c);
+            if (c == '/' || c == '\u2014' || c == '\u2013')
+            {
+                if (i + 1 < label.Length && label[i + 1] != ZeroWidthSpace)
+                    sb.Append(ZeroWidthSpace);
+            }
+        }
+
+        return sb.ToString();
     }
 
     void UpdateButtonInteractable()
