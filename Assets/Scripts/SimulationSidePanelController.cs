@@ -11,7 +11,9 @@ using UnityEngine.UI;
 /// </summary>
 public class SimulationSidePanelController : MonoBehaviour
 {
-    const float PanelWidth = SidePanelUiBootstrap.PanelWidth;
+    const float LandscapeScale = 1.5f;
+    const float MinPanelScale = 0.75f;
+    const float BottomFitPadding = 8f;
     const float SlideDuration = 0.22f;
     const float EdgeMargin = 12f;
     const float PanelBelowMenuGap = 8f;
@@ -41,6 +43,7 @@ public class SimulationSidePanelController : MonoBehaviour
     Rect lastSafeArea;
     bool lastIsLandscape;
     bool safeAreaCached;
+    float lastAppliedScale = -1f;
 
     static readonly List<RaycastResult> s_raycastResults = new List<RaycastResult>(8);
 
@@ -49,7 +52,6 @@ public class SimulationSidePanelController : MonoBehaviour
     void Awake()
     {
         canvas = GetComponentInParent<Canvas>();
-        SidePanelUiBootstrap.ApplyCompactLayout(transform);
         ResolveReferences();
         isPanelOpen = false;
         RefreshSafeAreaLayout();
@@ -136,8 +138,12 @@ public class SimulationSidePanelController : MonoBehaviour
     public void RefreshSafeAreaLayout()
     {
         LayoutPanelBelowMenuButton();
+        ApplyScaledLayout();
 
-        panelClosedX = PanelWidth + GetRightMargin();
+        float panelWidth = panelRect != null
+            ? panelRect.sizeDelta.x
+            : SidePanelUiBootstrap.GetScaledPanelWidth(lastAppliedScale > 0f ? lastAppliedScale : 1f);
+        panelClosedX = panelWidth + GetRightMargin();
         panelOpenX = -GetRightMargin();
 
         if (panelRect == null)
@@ -167,6 +173,50 @@ public class SimulationSidePanelController : MonoBehaviour
         lastSafeArea = Screen.safeArea;
         lastIsLandscape = IsLandscape;
         safeAreaCached = true;
+    }
+
+    void ApplyScaledLayout()
+    {
+        float scale = ComputePanelScale();
+        if (Mathf.Abs(scale - lastAppliedScale) < 0.001f)
+            return;
+
+        SidePanelUiBootstrap.ApplyCompactLayout(transform, scale);
+        lastAppliedScale = scale;
+    }
+
+    float ComputePanelScale()
+    {
+        float maxScale = IsLandscape ? LandscapeScale : 1f;
+        float scale = maxScale;
+        float baseHeight = SidePanelUiBootstrap.ComputePanelHeight(SidePanelUiBootstrap.ToggleRows.Length, 1f);
+        float availableHeight = GetAvailablePanelHeight();
+        if (baseHeight > 0.01f && availableHeight > 0.01f)
+            scale = Mathf.Min(scale, availableHeight / baseHeight);
+
+        return Mathf.Clamp(scale, MinPanelScale, maxScale);
+    }
+
+    float GetAvailablePanelHeight()
+    {
+        float fallback = SidePanelUiBootstrap.ComputePanelHeight(SidePanelUiBootstrap.ToggleRows.Length, LandscapeScale);
+        if (panelRect == null || canvas == null)
+            return fallback;
+
+        Canvas root = canvas.rootCanvas != null ? canvas.rootCanvas : canvas;
+        float scaleFactor = root.scaleFactor;
+        if (scaleFactor < 0.01f)
+            scaleFactor = 1f;
+
+        float canvasHeight = Screen.height / scaleFactor;
+        if (canvasHeight < 1f)
+            return fallback;
+
+        SafeAreaInsets.GetCanvasInsets(canvas, out _, out _, out _, out float bottom);
+        // Panel is top-anchored; anchoredPosition.y is negative offset from canvas top.
+        float fromTop = -panelRect.anchoredPosition.y;
+        float available = canvasHeight - fromTop - bottom - BottomFitPadding;
+        return Mathf.Max(0f, available);
     }
 
     void LayoutPanelBelowMenuButton()

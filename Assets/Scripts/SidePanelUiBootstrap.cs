@@ -14,6 +14,8 @@ public static class SidePanelUiBootstrap
     public const float BarHeight = 56f;
     public const float BarHorizontalMargin = 8f;
     public const float BarTopMargin = 8f;
+    const float RowHorizontalInset = 20f;
+    const float LabelLeftOffset = 8f;
     const float LabelMaxAnchorX = 0.82f;
     const float ToggleMinAnchorX = 0.84f;
     const float ToggleMaxAnchorX = 0.96f;
@@ -36,12 +38,21 @@ public static class SidePanelUiBootstrap
         ("SidePanelTimeMachineLabel_Row", "SidePanelTimeMachineLabel")
     };
 
-    public static float ComputePanelHeight(int rowCount)
-    {
-        if (rowCount <= 0)
-            return RowStartY + PanelBottomPadding;
+    public static float GetScaledPanelWidth(float scale) => PanelWidth * Mathf.Max(0.01f, scale);
 
-        return RowStartY + rowCount * RowHeight + (rowCount - 1) * RowSpacing + PanelBottomPadding;
+    public static float ComputePanelHeight(int rowCount) => ComputePanelHeight(rowCount, 1f);
+
+    public static float ComputePanelHeight(int rowCount, float scale)
+    {
+        scale = Mathf.Max(0.01f, scale);
+        float rowStartY = RowStartY * scale;
+        float bottomPadding = PanelBottomPadding * scale;
+        if (rowCount <= 0)
+            return rowStartY + bottomPadding;
+
+        float rowHeight = RowHeight * scale;
+        float rowSpacing = RowSpacing * scale;
+        return rowStartY + rowCount * rowHeight + (rowCount - 1) * rowSpacing + bottomPadding;
     }
 
     public static void ApplyBarRectLayout(RectTransform bar, float safeLeft, float safeRight, float safeTop)
@@ -60,33 +71,36 @@ public static class SidePanelUiBootstrap
         bar.offsetMax = new Vector2(-(safeRight + BarHorizontalMargin), -topInset);
     }
 
-    public static void ApplyCompactLayout(Transform panel)
+    public static void ApplyCompactLayout(Transform panel) => ApplyCompactLayout(panel, 1f);
+
+    public static void ApplyCompactLayout(Transform panel, float scale)
     {
         if (panel == null)
             return;
 
+        scale = Mathf.Max(0.01f, scale);
         RemoveOrphanRows(panel);
 
-        float y = RowStartY;
+        float y = RowStartY * scale;
         for (int i = 0; i < ToggleRows.Length; i++)
         {
             Transform row = panel.Find(ToggleRows[i].rowName);
             if (row == null)
             {
                 bool defaultOn = !IsDefaultOffRow(ToggleRows[i].rowName);
-                row = EnsureToggleRow(panel, ToggleRows[i].rowName, ToggleRows[i].labelName, ref y, i, defaultOn);
+                row = EnsureToggleRow(panel, ToggleRows[i].rowName, ToggleRows[i].labelName, ref y, i, scale, defaultOn);
                 if (row == null)
                     continue;
             }
             else
             {
-                ApplyRowLayout(row, ref y, i);
-                ApplyRowChildLayouts(row, ToggleRows[i].labelName);
+                ApplyRowLayout(row, ref y, i, scale);
+                ApplyRowChildLayouts(row, ToggleRows[i].labelName, scale);
             }
         }
 
         if (panel.TryGetComponent(out RectTransform panelRect))
-            panelRect.sizeDelta = new Vector2(PanelWidth, ComputePanelHeight(ToggleRows.Length));
+            panelRect.sizeDelta = new Vector2(GetScaledPanelWidth(scale), ComputePanelHeight(ToggleRows.Length, scale));
     }
 
     static void RemoveOrphanRows(Transform panel)
@@ -127,29 +141,32 @@ public static class SidePanelUiBootstrap
         return toggleTransform != null ? toggleTransform.GetComponent<Toggle>() : null;
     }
 
-    static void ApplyRowLayout(Transform row, ref float y, int siblingIndex)
+    static void ApplyRowLayout(Transform row, ref float y, int siblingIndex, float scale)
     {
         row.SetSiblingIndex(siblingIndex);
 
         if (!row.TryGetComponent(out RectTransform rowRect))
             return;
 
+        float rowHeight = RowHeight * scale;
+        float rowSpacing = RowSpacing * scale;
+
         rowRect.anchorMin = new Vector2(0f, 1f);
         rowRect.anchorMax = new Vector2(1f, 1f);
         rowRect.pivot = new Vector2(0.5f, 1f);
         rowRect.anchoredPosition = new Vector2(0f, -y);
-        rowRect.sizeDelta = new Vector2(-20f, RowHeight);
+        rowRect.sizeDelta = new Vector2(-RowHorizontalInset * scale, rowHeight);
 
-        y += RowHeight + RowSpacing;
+        y += rowHeight + rowSpacing;
     }
 
-    static void ApplyRowChildLayouts(Transform row, string labelName)
+    static void ApplyRowChildLayouts(Transform row, string labelName, float scale)
     {
         if (!string.IsNullOrEmpty(labelName))
         {
             Transform label = row.Find(labelName);
             if (label != null)
-                ApplyLabelLayout(label);
+                ApplyLabelLayout(label, scale);
         }
         else
         {
@@ -158,7 +175,7 @@ public static class SidePanelUiBootstrap
                 if (child.name == "Toggle")
                     continue;
 
-                ApplyLabelLayout(child);
+                ApplyLabelLayout(child, scale);
             }
         }
 
@@ -167,19 +184,22 @@ public static class SidePanelUiBootstrap
             ApplyToggleLayout(toggle);
     }
 
-    public static void ApplyLabelLayout(Transform labelTransform)
+    public static void ApplyLabelLayout(Transform labelTransform) => ApplyLabelLayout(labelTransform, 1f);
+
+    public static void ApplyLabelLayout(Transform labelTransform, float scale)
     {
         if (labelTransform == null || !labelTransform.TryGetComponent(out RectTransform labelRect))
             return;
 
+        scale = Mathf.Max(0.01f, scale);
         labelRect.anchorMin = new Vector2(0f, 0f);
         labelRect.anchorMax = new Vector2(LabelMaxAnchorX, 1f);
-        labelRect.offsetMin = new Vector2(8f, 0f);
+        labelRect.offsetMin = new Vector2(LabelLeftOffset * scale, 0f);
         labelRect.offsetMax = Vector2.zero;
 
         if (labelTransform.TryGetComponent(out Text label))
         {
-            label.fontSize = LabelFontSize;
+            label.fontSize = Mathf.Max(1, Mathf.RoundToInt(LabelFontSize * scale));
             label.horizontalOverflow = HorizontalWrapMode.Wrap;
             label.verticalOverflow = VerticalWrapMode.Truncate;
         }
@@ -204,16 +224,16 @@ public static class SidePanelUiBootstrap
             || rowName == "SidePanelTimeMachineLabel_Row";
     }
 
-    static Transform EnsureToggleRow(Transform panel, string rowName, string labelName, ref float y, int siblingIndex, bool defaultOn = true)
+    static Transform EnsureToggleRow(Transform panel, string rowName, string labelName, ref float y, int siblingIndex, float scale, bool defaultOn = true)
     {
         var rowGo = new GameObject(rowName, typeof(RectTransform));
         rowGo.layer = panel.gameObject.layer;
         rowGo.transform.SetParent(panel, false);
 
-        ApplyRowLayout(rowGo.transform, ref y, siblingIndex);
+        ApplyRowLayout(rowGo.transform, ref y, siblingIndex, scale);
         EnsureLabel(rowGo.transform, labelName);
         EnsureToggle(rowGo.transform, defaultOn: defaultOn);
-        ApplyRowChildLayouts(rowGo.transform, labelName);
+        ApplyRowChildLayouts(rowGo.transform, labelName, scale);
         return rowGo.transform;
     }
 
