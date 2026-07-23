@@ -8,12 +8,17 @@ using UnityEngine;
 /// </summary>
 public class BodyLabelManager : MonoBehaviour
 {
+    const float BaseBodyFontSize = 2.4f;
+    const float BaseCometFontSize = 3.2f;
+    const float ObservationFontScale = 2f;
+
     struct LabelEntry
     {
         public Transform target;
         public string labelKey;
         public float verticalOffset;
         public float baselineTargetScale;
+        public float baseFontSize;
         public bool alwaysVisible;
         public TextMeshPro label;
     }
@@ -25,11 +30,13 @@ public class BodyLabelManager : MonoBehaviour
 
     readonly List<LabelEntry> _entries = new List<LabelEntry>();
     Camera _mainCamera;
+    LookAtTarget _lookAtTarget;
     bool _visible;
 
     void Awake()
     {
         _mainCamera = Camera.main;
+        _lookAtTarget = FindFirstObjectByType<LookAtTarget>();
         BuildBodyLabels();
         ApplyVisibility(SimulationViewSettings.ShowBodyLabels);
     }
@@ -54,6 +61,7 @@ public class BodyLabelManager : MonoBehaviour
             labelKey = labelKey,
             verticalOffset = verticalOffset,
             baselineTargetScale = cometTransform.lossyScale.x,
+            baseFontSize = BaseCometFontSize,
             alwaysVisible = true,
             label = CreateCometLabelObject(cometTransform.name + "_Label", labelKey)
         });
@@ -76,6 +84,7 @@ public class BodyLabelManager : MonoBehaviour
                 labelKey = labelKey,
                 verticalOffset = 1.5f,
                 baselineTargetScale = bodyGo.transform.lossyScale.x,
+                baseFontSize = BaseBodyFontSize,
                 label = CreateLabelObject(bodyName + "_OrbitLabel", labelKey)
             });
         }
@@ -88,7 +97,7 @@ public class BodyLabelManager : MonoBehaviour
         var labelGo = new GameObject(objectName);
         labelGo.transform.SetParent(transform, false);
         var tmp = labelGo.AddComponent<TextMeshPro>();
-        tmp.fontSize = 2.4f;
+        tmp.fontSize = BaseBodyFontSize;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color = new Color(0.95f, 0.95f, 1f, 0.92f);
         tmp.textWrappingMode = TextWrappingModes.NoWrap;
@@ -103,7 +112,7 @@ public class BodyLabelManager : MonoBehaviour
         var labelGo = new GameObject(objectName);
         labelGo.transform.SetParent(transform, false);
         var tmp = labelGo.AddComponent<TextMeshPro>();
-        tmp.fontSize = 3.2f;
+        tmp.fontSize = BaseCometFontSize;
         tmp.fontStyle = FontStyles.Bold;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color = new Color(1f, 0.95f, 0.7f, 1f);
@@ -128,6 +137,13 @@ public class BodyLabelManager : MonoBehaviour
         if (_mainCamera == null)
             return;
 
+        if (_lookAtTarget == null)
+            _lookAtTarget = FindFirstObjectByType<LookAtTarget>();
+
+        Transform observedTarget = _lookAtTarget != null && _lookAtTarget.currentTarget != null
+            ? _lookAtTarget.currentTarget.transform
+            : null;
+
         for (int i = 0; i < _entries.Count; i++)
         {
             LabelEntry entry = _entries[i];
@@ -144,19 +160,37 @@ public class BodyLabelManager : MonoBehaviour
             if (!entry.label.gameObject.activeSelf)
                 entry.label.gameObject.SetActive(true);
 
-            Vector3 worldPos = entry.target.position + Vector3.up * GetEffectiveOffset(entry);
+            bool isObserved = IsObservedEntry(entry, observedTarget);
+            float fontScale = isObserved ? ObservationFontScale : 1f;
+            float desiredFontSize = entry.baseFontSize * fontScale;
+            if (!Mathf.Approximately(entry.label.fontSize, desiredFontSize))
+                entry.label.fontSize = desiredFontSize;
+
+            Vector3 worldPos = entry.target.position + Vector3.up * GetEffectiveOffset(entry, fontScale);
             entry.label.transform.position = worldPos;
             entry.label.transform.rotation = Quaternion.LookRotation(_mainCamera.transform.forward, _mainCamera.transform.up);
         }
     }
 
-    static float GetEffectiveOffset(LabelEntry entry)
+    static bool IsObservedEntry(LabelEntry entry, Transform observedTarget)
+    {
+        if (observedTarget == null || entry.target == null)
+            return false;
+
+        if (entry.target == observedTarget)
+            return true;
+
+        // Comet focus may be on a root while the label tracks a child (or vice versa).
+        return entry.target.IsChildOf(observedTarget) || observedTarget.IsChildOf(entry.target);
+    }
+
+    static float GetEffectiveOffset(LabelEntry entry, float fontScale)
     {
         if (entry.target == null)
-            return entry.verticalOffset;
+            return entry.verticalOffset * fontScale;
 
         float meshRadius = 0.5f * Mathf.Max(0.0001f, entry.target.lossyScale.x);
-        return Mathf.Max(0.15f, meshRadius * 1.4f);
+        return Mathf.Max(0.15f, meshRadius * 1.4f) * fontScale;
     }
 
     void RefreshAllTexts()
