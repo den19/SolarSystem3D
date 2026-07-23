@@ -34,8 +34,6 @@ public class CpuLoadMonitor : MonoBehaviour
     int lastScreenHeight;
     bool layoutCached;
 
-    static bool IsLandscape => Screen.width > Screen.height;
-
     void Awake()
     {
         BuildUi();
@@ -156,19 +154,11 @@ public class CpuLoadMonitor : MonoBehaviour
         SafeAreaInsets.GetCanvasInsets(canvas, out _, out float safeRight, out _, out float safeBottom);
 
         float x = -(safeRight + HorizontalMargin);
-        float y;
-        if (IsLandscape)
-        {
-            y = safeBottom + BottomMarginLandscape;
-        }
-        else
-        {
-            // Sit above SimulationTimeControlBar so they do not overlap in portrait.
-            y = safeBottom
-                + TimeControlUiBootstrap.BarBottomMargin
-                + TimeControlUiBootstrap.BarHeight
-                + GapAboveTimeBar;
-        }
+        // Sit above SimulationTimeControlBar (bottom-center in both orientations).
+        float y = safeBottom
+            + TimeControlUiBootstrap.BarBottomMargin
+            + TimeControlUiBootstrap.BarHeight
+            + GapAboveTimeBar;
 
         rect.anchorMin = new Vector2(1f, 0f);
         rect.anchorMax = new Vector2(1f, 0f);

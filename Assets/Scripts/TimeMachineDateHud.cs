@@ -191,24 +191,13 @@ public class TimeMachineDateHud : MonoBehaviour
     float ComputeBottomOffset(float safeBottom)
     {
         // Match ScaleBarController stack, then sit one gap above the scale bar.
-        float y = safeBottom;
-        bool landscape = Screen.width > Screen.height;
+        float y = safeBottom
+            + TimeControlUiBootstrap.BarBottomMargin
+            + TimeControlUiBootstrap.BarHeight
+            + CpuLoadMonitor.GapAboveTimeBar;
 
-        if (landscape)
-        {
-            y += CpuLoadMonitor.BottomMarginLandscape;
-            if (_cpuEnabled)
-                y += CpuLoadMonitor.PanelHeight + 8f;
-        }
-        else
-        {
-            y += TimeControlUiBootstrap.BarBottomMargin
-                + TimeControlUiBootstrap.BarHeight
-                + CpuLoadMonitor.GapAboveTimeBar;
-
-            if (_cpuEnabled)
-                y += CpuLoadMonitor.PanelHeight + 8f;
-        }
+        if (_cpuEnabled)
+            y += CpuLoadMonitor.PanelHeight + 8f;
 
         y += ScaleBarPanelHeight + GapAboveScaleBar;
         return y;

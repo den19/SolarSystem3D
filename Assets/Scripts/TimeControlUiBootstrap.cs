@@ -162,25 +162,28 @@ public static class TimeControlUiBootstrap
             return;
 
         float width = landscape ? BarWidthLandscape : BarWidthPortrait;
-        float bottomInset = safeBottom + BarBottomMargin;
-        float horizontalMargin = BarHorizontalMargin;
+        float bottomInset = Mathf.Max(0f, safeBottom + BarBottomMargin);
 
-        if (landscape)
+        // Bottom-center in both orientations so the bar never sits under a side
+        // cutout or gets pushed off-screen when safe-left is large in landscape.
+        barRect.anchorMin = new Vector2(0.5f, 0f);
+        barRect.anchorMax = new Vector2(0.5f, 0f);
+        barRect.pivot = new Vector2(0.5f, 0f);
+        barRect.sizeDelta = new Vector2(width, BarHeight);
+
+        float x = 0f;
+        if (canvas != null)
         {
-            barRect.anchorMin = new Vector2(0f, 0f);
-            barRect.anchorMax = new Vector2(0f, 0f);
-            barRect.pivot = new Vector2(0f, 0f);
-            barRect.sizeDelta = new Vector2(width, BarHeight);
-            barRect.anchoredPosition = new Vector2(safeLeft + horizontalMargin, bottomInset);
+            Canvas root = canvas.rootCanvas != null ? canvas.rootCanvas : canvas;
+            float scaleFactor = root.scaleFactor > 0.01f ? root.scaleFactor : 1f;
+            float canvasWidth = Screen.width / scaleFactor;
+            float minX = -canvasWidth * 0.5f + safeLeft + BarHorizontalMargin + width * 0.5f;
+            float maxX = canvasWidth * 0.5f - safeRight - BarHorizontalMargin - width * 0.5f;
+            if (maxX >= minX)
+                x = Mathf.Clamp(0f, minX, maxX);
         }
-        else
-        {
-            barRect.anchorMin = new Vector2(0.5f, 0f);
-            barRect.anchorMax = new Vector2(0.5f, 0f);
-            barRect.pivot = new Vector2(0.5f, 0f);
-            barRect.sizeDelta = new Vector2(width, BarHeight);
-            barRect.anchoredPosition = new Vector2(0f, bottomInset);
-        }
+
+        barRect.anchoredPosition = new Vector2(x, bottomInset);
     }
 
     static void StretchFull(RectTransform rect)

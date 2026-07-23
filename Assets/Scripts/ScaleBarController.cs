@@ -66,8 +66,6 @@ public class ScaleBarController : MonoBehaviour
     Coroutine _hintHideRoutine;
     float _currentSegmentWidth = TargetBarSegmentWidth;
 
-    static bool IsLandscape => Screen.width > Screen.height;
-
     public static ScaleBarController EnsureOnCanvas(Transform canvasTransform)
     {
         if (canvasTransform == null)
@@ -311,18 +309,8 @@ public class ScaleBarController : MonoBehaviour
 
     float ComputeBottomOffset(float safeBottom)
     {
-        float y = safeBottom;
-
-        if (IsLandscape)
-        {
-            y += CpuLoadMonitor.BottomMarginLandscape;
-            if (_cpuEnabled)
-                y += CpuLoadMonitor.PanelHeight + GapAboveCpu;
-            return y;
-        }
-
-        // Portrait: above time bar, then CPU (if on), then scale.
-        y += TimeControlUiBootstrap.BarBottomMargin
+        float y = safeBottom
+            + TimeControlUiBootstrap.BarBottomMargin
             + TimeControlUiBootstrap.BarHeight
             + CpuLoadMonitor.GapAboveTimeBar;
 

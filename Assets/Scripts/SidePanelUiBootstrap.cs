@@ -13,7 +13,7 @@ public static class SidePanelUiBootstrap
     public const float PanelWidth = 270f;
     public const float BarHeight = 56f;
     public const float BarHorizontalMargin = 8f;
-    public const float BarTopMargin = 0f;
+    public const float BarTopMargin = 8f;
     const float LabelMaxAnchorX = 0.82f;
     const float ToggleMinAnchorX = 0.84f;
     const float ToggleMaxAnchorX = 0.96f;
@@ -55,7 +55,7 @@ public static class SidePanelUiBootstrap
         bar.anchoredPosition = Vector2.zero;
         bar.sizeDelta = Vector2.zero;
 
-        float topInset = safeTop + BarTopMargin;
+        float topInset = Mathf.Max(0f, safeTop + BarTopMargin);
         bar.offsetMin = new Vector2(safeLeft + BarHorizontalMargin, -(BarHeight + topInset));
         bar.offsetMax = new Vector2(-(safeRight + BarHorizontalMargin), -topInset);
     }

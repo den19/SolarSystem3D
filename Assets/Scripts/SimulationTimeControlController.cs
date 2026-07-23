@@ -1,3 +1,4 @@
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -19,6 +20,7 @@ public class SimulationTimeControlController : MonoBehaviour
     int _lastScreenHeight;
     bool _layoutCached;
     TMP_Text _pausePlayLabel;
+    Coroutine _safeAreaRefreshRoutine;
 
     static bool IsLandscape => Screen.width > Screen.height;
 
@@ -40,7 +42,7 @@ public class SimulationTimeControlController : MonoBehaviour
 
         RefreshSpeedLabel();
         RefreshPauseButtonVisual();
-        RefreshSafeAreaLayout();
+        RequestSafeAreaRefresh();
     }
 
     void OnDisable()
@@ -48,13 +50,19 @@ public class SimulationTimeControlController : MonoBehaviour
         SimulationTimeController.SpeedMultiplierChanged -= OnSpeedMultiplierChanged;
         SimulationTimeController.IsPausedChanged -= OnIsPausedChanged;
         LocalizationManager.OnLanguageChanged -= RefreshSpeedLabel;
+
+        if (_safeAreaRefreshRoutine != null)
+        {
+            StopCoroutine(_safeAreaRefreshRoutine);
+            _safeAreaRefreshRoutine = null;
+        }
     }
 
     void Start()
     {
         RefreshSpeedLabel();
         RefreshPauseButtonVisual();
-        RefreshSafeAreaLayout();
+        RequestSafeAreaRefresh();
     }
 
     void Update()
@@ -70,7 +78,7 @@ public class SimulationTimeControlController : MonoBehaviour
             return;
         }
 
-        RefreshSafeAreaLayout();
+        RequestSafeAreaRefresh();
     }
 
     public void Configure(RectTransform rect, Button pauseButton, Button downButton, Button upButton, TMP_Text label)
@@ -82,7 +90,7 @@ public class SimulationTimeControlController : MonoBehaviour
         speedLabel = label;
         ResolveReferences();
         WireButtons();
-        RefreshSafeAreaLayout();
+        RequestSafeAreaRefresh();
     }
 
     void ResolveReferences()
@@ -181,6 +189,29 @@ public class SimulationTimeControlController : MonoBehaviour
         return "{0}x";
     }
 
+    void RequestSafeAreaRefresh()
+    {
+        if (!isActiveAndEnabled)
+        {
+            RefreshSafeAreaLayout();
+            return;
+        }
+
+        if (_safeAreaRefreshRoutine != null)
+            StopCoroutine(_safeAreaRefreshRoutine);
+
+        _safeAreaRefreshRoutine = StartCoroutine(RefreshSafeAreaAfterLayout());
+    }
+
+    IEnumerator RefreshSafeAreaAfterLayout()
+    {
+        yield return null;
+        yield return new WaitForEndOfFrame();
+
+        _safeAreaRefreshRoutine = null;
+        RefreshSafeAreaLayout();
+    }
+
     public void RefreshSafeAreaLayout()
     {
         if (barRect == null)
@@ -189,6 +220,10 @@ public class SimulationTimeControlController : MonoBehaviour
         if (_canvas == null)
             _canvas = GetComponentInParent<Canvas>();
 
+        if (!gameObject.activeSelf)
+            gameObject.SetActive(true);
+
+        Canvas.ForceUpdateCanvases();
         SafeAreaInsets.GetCanvasInsets(_canvas, out float safeLeft, out float safeRight, out _, out float safeBottom);
         TimeControlUiBootstrap.ApplyBarRectLayout(barRect, _canvas, IsLandscape, safeLeft, safeRight, safeBottom);
 

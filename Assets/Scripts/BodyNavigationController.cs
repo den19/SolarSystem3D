@@ -701,6 +701,9 @@ public class BodyNavigationController : MonoBehaviour
         if (barRect == null)
             return;
 
+        if (!gameObject.activeSelf)
+            gameObject.SetActive(true);
+
         Canvas.ForceUpdateCanvases();
 
         Canvas canvas = barRect.GetComponentInParent<Canvas>();
