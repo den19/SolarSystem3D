@@ -250,7 +250,7 @@ public class PlanetTextureManager : MonoBehaviour
         var tr = sun.transform.Find("ExtraGraphicsSunBloom");
         if (!tr)
         {
-            float scaleBoost = SphereWorldRadius(sun) * 2.06f /
+            float scaleBoost = SphereWorldRadius(sun) * 2.368f /
                                Mathf.Max(0.0001f, MaxLossyScalar(sun.transform.lossyScale));
 
             var bloom = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -704,7 +704,7 @@ public class PlanetTextureManager : MonoBehaviour
             {
                 lowMat.EnableKeyword("_EMISSION");
                 lowMat.SetColor("_BaseColor", new Color(1f, 0.55f, 0.12f));
-                lowMat.SetColor("_EmissionColor", new Color(3.0f, 1.2f, 0.06f));
+                lowMat.SetColor("_EmissionColor", new Color(5.1f, 2.04f, 0.102f));
             }
 
             return;
@@ -717,7 +717,7 @@ public class PlanetTextureManager : MonoBehaviour
             if (realSun)
             {
                 mat.SetColor("_BaseColor", new Color(1f, 0.55f, 0.12f));
-                mat.SetColor("_EmissionColor", new Color(3.0f, 1.2f, 0.06f));
+                mat.SetColor("_EmissionColor", new Color(5.1f, 2.04f, 0.102f));
             }
             else
             {
@@ -735,7 +735,7 @@ public class PlanetTextureManager : MonoBehaviour
         {
             var bloomMat = _sunBloomRenderer.material;
             if (realSun)
-                bloomMat.SetColor("_EmissionColor", new Color(2.0f, 0.85f, 0.16f));
+                bloomMat.SetColor("_EmissionColor", new Color(3.4f, 1.445f, 0.272f));
             else
                 bloomMat.SetColor("_EmissionColor", new Color(2.4f, 1.55f, 0.9f));
             _sunBloomRenderer.receiveShadows = false;

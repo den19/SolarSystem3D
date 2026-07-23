@@ -24,7 +24,7 @@ public class SunCoronalVfxController : MonoBehaviour
     const float GranulationFullZoomNorm = 4.5f;
     const float GranulationFadeEndNorm = 9f;
     const float GranulationDisableThreshold = 0.35f;
-    const float RealSunFlickerIntensity = 0.6f;
+    const float RealSunFlickerIntensity = 1.02f;
     const float CloseZoomFlickerIntensity = 0.42f;
     const float RealSunSpotStrength = 1f;
     const float CloseZoomSpotStrength = 0.72f;
@@ -33,23 +33,23 @@ public class SunCoronalVfxController : MonoBehaviour
     const string CmeMaterialResourcePath = "SunCmeLoopParticle";
 
 #if UNITY_ANDROID || UNITY_IOS
-    const float CmeStartSizeMin = 0.12f;
-    const float CmeStartSizeMax = 0.28f;
-    const float CmeLengthScale = 1.5f;
-    const float CmeBurstIntervalMin = 9f;
-    const float CmeBurstIntervalMax = 16f;
-    const float CmeInitialDelayMin = 2.5f;
-    const float CmeInitialDelayMax = 5f;
-    const float CmeContinuousRate = 16f;
+    const float CmeStartSizeMin = 0.204f;
+    const float CmeStartSizeMax = 0.476f;
+    const float CmeLengthScale = 2.55f;
+    const float CmeBurstIntervalMin = 5.85f;
+    const float CmeBurstIntervalMax = 10.4f;
+    const float CmeInitialDelayMin = 1.625f;
+    const float CmeInitialDelayMax = 3.25f;
+    const float CmeContinuousRate = 27.2f;
 #else
-    const float CmeStartSizeMin = 0.07f;
-    const float CmeStartSizeMax = 0.16f;
-    const float CmeLengthScale = 1.2f;
-    const float CmeBurstIntervalMin = 14f;
-    const float CmeBurstIntervalMax = 26f;
-    const float CmeInitialDelayMin = 4f;
-    const float CmeInitialDelayMax = 8f;
-    const float CmeContinuousRate = 12f;
+    const float CmeStartSizeMin = 0.119f;
+    const float CmeStartSizeMax = 0.272f;
+    const float CmeLengthScale = 2.04f;
+    const float CmeBurstIntervalMin = 9.1f;
+    const float CmeBurstIntervalMax = 16.9f;
+    const float CmeInitialDelayMin = 2.6f;
+    const float CmeInitialDelayMax = 5.2f;
+    const float CmeContinuousRate = 20.4f;
 #endif
 
     const float CmeBurstIntervalScaleRealSun = 0.3f;
@@ -207,8 +207,8 @@ public class SunCoronalVfxController : MonoBehaviour
         float raw = n1 * 0.46f + n2 * 0.34f + n3 * 0.2f;
         float blend = Mathf.Clamp01((raw - 0.5f) * Mathf.Lerp(3.1f, 2.2f, detailBlend) + 0.5f);
 
-        var deep = new Color(1.7f, 0.34f, 0.0f);
-        var bright = new Color(4.6f, 1.85f, 0.12f);
+        var deep = new Color(2.89f, 0.578f, 0.0f);
+        var bright = new Color(7.82f, 3.145f, 0.204f);
         var emission = Color.Lerp(deep, bright, blend);
         emission = Color.Lerp(
             Color.Lerp(deep, bright, 0.5f),
@@ -590,7 +590,7 @@ public class SunCoronalVfxController : MonoBehaviour
         main.playOnAwake = false;
         main.simulationSpace = ParticleSystemSimulationSpace.Local;
         main.scalingMode = ParticleSystemScalingMode.Hierarchy;
-        main.maxParticles = 280;
+        main.maxParticles = 476;
         main.gravityModifier = 0f;
         main.duration = 12f;
 
@@ -606,8 +606,8 @@ public class SunCoronalVfxController : MonoBehaviour
 
         var limitVelocity = ps.limitVelocityOverLifetime;
         limitVelocity.enabled = true;
-        limitVelocity.dampen = 0.18f;
-        limitVelocity.drag = 0.48f;
+        limitVelocity.dampen = 0.124f;
+        limitVelocity.drag = 0.34f;
 
         var rotationOverLifetime = ps.rotationOverLifetime;
         rotationOverLifetime.enabled = true;
@@ -624,17 +624,17 @@ public class SunCoronalVfxController : MonoBehaviour
     {
         float sizeMin = CmeStartSizeMin * sizeScale;
         float sizeMax = CmeStartSizeMax * sizeScale;
-        float lifetimeMin = 4f;
-        float lifetimeMax = 7f;
-        float speedMin = 0.08f;
-        float speedMax = 0.2f;
+        float lifetimeMin = 5.4f;
+        float lifetimeMax = 9.45f;
+        float speedMin = 0.136f;
+        float speedMax = 0.34f;
         float shapeAngle = 10f;
         float shapeArc = 24f;
         float shapeRadius = 0.028f * sizeScale;
         float velocityScale = 0.08f;
         float lengthScale = CmeLengthScale;
-        float burstMin = 55;
-        float burstMax = 95;
+        float burstMin = 93.5f;
+        float burstMax = 161.5f;
         float rollDegrees = 360f;
         float emitRadius = CmeEmitLocalRadius * sizeScale;
         Color colorA = new(1f, 0.9f, 0.52f, 1f);
@@ -649,17 +649,17 @@ public class SunCoronalVfxController : MonoBehaviour
         switch (kind)
         {
             case CmeLoopKind.Compact:
-                lifetimeMin = 3.2f;
-                lifetimeMax = 5.2f;
-                speedMin = 0.1f;
-                speedMax = 0.22f;
+                lifetimeMin = 4.32f;
+                lifetimeMax = 7.02f;
+                speedMin = 0.17f;
+                speedMax = 0.374f;
                 sizeMin *= 0.92f;
                 sizeMax *= 0.98f;
                 shapeAngle = 7f;
                 shapeArc = 16f;
                 shapeRadius = 0.02f * sizeScale;
-                burstMin = 40;
-                burstMax = 68;
+                burstMin = 68f;
+                burstMax = 115.6f;
                 velocityScale = 0.07f;
                 lengthScale *= 0.95f;
                 arcCurve = CmeArcCurve(0.18f, 0.04f, -0.1f, -0.28f);
@@ -668,17 +668,17 @@ public class SunCoronalVfxController : MonoBehaviour
                 colorB = new Color(1f, 0.5f, 0.1f, 1f);
                 break;
             case CmeLoopKind.Prominence:
-                lifetimeMin = 5.5f;
-                lifetimeMax = 9f;
-                speedMin = 0.05f;
-                speedMax = 0.12f;
+                lifetimeMin = 7.425f;
+                lifetimeMax = 12.15f;
+                speedMin = 0.085f;
+                speedMax = 0.204f;
                 sizeMin *= 1.28f;
                 sizeMax *= 1.5f;
                 shapeAngle = 14f;
                 shapeArc = 38f;
                 shapeRadius = 0.04f * sizeScale;
-                burstMin = 28;
-                burstMax = 48;
+                burstMin = 47.6f;
+                burstMax = 81.6f;
                 velocityScale = 0.06f;
                 lengthScale *= 1.1f;
                 emitRadius = CmeEmitLocalRadius * 1.04f * sizeScale;
@@ -692,17 +692,17 @@ public class SunCoronalVfxController : MonoBehaviour
                 rotationSpeed = 8f;
                 break;
             case CmeLoopKind.Wispy:
-                lifetimeMin = 4.5f;
-                lifetimeMax = 7.5f;
-                speedMin = 0.06f;
-                speedMax = 0.14f;
+                lifetimeMin = 6.075f;
+                lifetimeMax = 10.125f;
+                speedMin = 0.102f;
+                speedMax = 0.238f;
                 sizeMin *= 0.78f;
                 sizeMax *= 0.92f;
                 shapeAngle = 11f;
                 shapeArc = 32f;
                 shapeRadius = 0.034f * sizeScale;
-                burstMin = 85;
-                burstMax = 130;
+                burstMin = 144.5f;
+                burstMax = 221f;
                 velocityScale = 0.09f;
                 lengthScale *= 1f;
                 arcCurve = CmeArcCurve(0.12f, 0.01f, -0.08f, -0.22f);
@@ -715,15 +715,15 @@ public class SunCoronalVfxController : MonoBehaviour
                 rotationSpeed = 18f;
                 break;
             default:
-                lifetimeMin = 4f;
-                lifetimeMax = 6.8f;
-                speedMin = 0.07f;
-                speedMax = 0.17f;
+                lifetimeMin = 5.4f;
+                lifetimeMax = 9.18f;
+                speedMin = 0.119f;
+                speedMax = 0.289f;
                 shapeAngle = 9f;
                 shapeArc = 26f;
                 shapeRadius = 0.03f * sizeScale;
-                burstMin = 58;
-                burstMax = 92;
+                burstMin = 98.6f;
+                burstMax = 156.4f;
                 velocityScale = 0.08f;
                 sizeMin *= 1.12f;
                 sizeMax *= 1.12f;
@@ -777,7 +777,7 @@ public class SunCoronalVfxController : MonoBehaviour
         _pendingBurstMin = burstMin;
         _pendingBurstMax = burstMax;
         _pendingEmitRadius = emitRadius;
-        _pendingLightPulse = kind == CmeLoopKind.Prominence ? 0.1f : kind == CmeLoopKind.Compact ? 0.05f : 0.07f;
+        _pendingLightPulse = kind == CmeLoopKind.Prominence ? 0.17f : kind == CmeLoopKind.Compact ? 0.085f : 0.119f;
         _pendingLightDuration = kind == CmeLoopKind.Prominence ? 0.75f : 0.55f;
     }
 
@@ -968,7 +968,7 @@ public class SunCoronalVfxController : MonoBehaviour
             return;
 
         flickerMat.SetColor("_BaseColor", new Color(1f, 0.62f, 0.16f, 0.62f));
-        flickerMat.SetFloat("_FlickerIntensity", 0.6f);
+        flickerMat.SetFloat("_FlickerIntensity", RealSunFlickerIntensity);
         flickerMat.SetFloat("_RimIntensity", 0.95f);
         flickerMat.SetFloat("_FastSpeed", 8f);
         flickerMat.SetFloat("_SlowSpeed", 0.85f);

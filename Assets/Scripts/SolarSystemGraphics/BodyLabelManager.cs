@@ -10,6 +10,7 @@ public class BodyLabelManager : MonoBehaviour
 {
     const float BaseBodyFontSize = 2.4f;
     const float BaseCometFontSize = 3.2f;
+    const float SunFontScale = 1.7f;
     const float ObservationFontScale = 2f;
 
     struct LabelEntry
@@ -78,13 +79,16 @@ public class BodyLabelManager : MonoBehaviour
                 continue;
 
             string labelKey = bodyName + "Header";
+            float fontSize = bodyName == "Sun"
+                ? BaseBodyFontSize * SunFontScale
+                : BaseBodyFontSize;
             _entries.Add(new LabelEntry
             {
                 target = bodyGo.transform,
                 labelKey = labelKey,
                 verticalOffset = 1.5f,
                 baselineTargetScale = bodyGo.transform.lossyScale.x,
-                baseFontSize = BaseBodyFontSize,
+                baseFontSize = fontSize,
                 label = CreateLabelObject(bodyName + "_OrbitLabel", labelKey)
             });
         }
