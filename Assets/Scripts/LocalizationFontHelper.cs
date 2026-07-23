@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.TextCore.LowLevel;
@@ -12,6 +13,7 @@ public static class LocalizationFontHelper
     static TMP_FontAsset defaultFont;
     static Material defaultOverlayMaterial;
     static TMP_FontAsset chineseFont;
+    static bool symbolFallbackEnsured;
 
     public static TMP_FontAsset GetFontForLanguage(Language language)
     {
@@ -44,6 +46,8 @@ public static class LocalizationFontHelper
     {
         if (defaultFont == null)
             defaultFont = Resources.Load<TMP_FontAsset>(DefaultFontPath);
+
+        EnsureSymbolFallback(defaultFont);
         return defaultFont;
     }
 
@@ -52,6 +56,30 @@ public static class LocalizationFontHelper
         if (defaultOverlayMaterial == null)
             defaultOverlayMaterial = Resources.Load<Material>(DefaultMaterialPath);
         return defaultOverlayMaterial;
+    }
+
+    /// <summary>
+    /// LiberationSans lacks astronomical glyphs (☉ U+2609, ⊙ U+2299).
+    /// NotoSansSC has them — attach it as a TMP fallback so descriptions/titles render correctly.
+    /// </summary>
+    static void EnsureSymbolFallback(TMP_FontAsset font)
+    {
+        if (symbolFallbackEnsured || font == null)
+            return;
+
+        symbolFallbackEnsured = true;
+
+        TMP_FontAsset symbolFont = GetChineseFont();
+        if (symbolFont == null || symbolFont == font)
+            return;
+
+        if (font.fallbackFontAssetTable == null)
+            font.fallbackFontAssetTable = new List<TMP_FontAsset>();
+
+        if (font.fallbackFontAssetTable.Contains(symbolFont))
+            return;
+
+        font.fallbackFontAssetTable.Add(symbolFont);
     }
 
     static TMP_FontAsset GetChineseFont()
