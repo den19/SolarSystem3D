@@ -10,8 +10,10 @@ public class AudioManager : MonoBehaviour
     public static AudioManager Instance { get => instance; }
 
     public AudioClip clickSound;
+    public AudioClip musicClip;
 
     private AudioSource audioSource;
+    private AudioSource musicSource;
     private string nextSceneName;
     private float volumeBeforeMute = 1f;
     private bool soundEnabled = true;
@@ -20,19 +22,94 @@ public class AudioManager : MonoBehaviour
     {
         if (instance != null && instance != this)
         {
-            //Destroy(gameObject);
+            Destroy(gameObject);
+            return;
         }
-        else
-        {
-            instance = this;
-            DontDestroyOnLoad(gameObject);
-            ApplySavedSoundSetting();
-        }
+
+        instance = this;
+        DontDestroyOnLoad(gameObject);
 
         audioSource = GetComponent<AudioSource>();
         if (!audioSource)
         {
             audioSource = gameObject.AddComponent<AudioSource>();
+        }
+
+        SetupMusicSource();
+        ApplySavedSoundSetting();
+        EnsureMusicPlaying();
+    }
+
+    void SetupMusicSource()
+    {
+        AudioSource[] sources = GetComponents<AudioSource>();
+        if (sources.Length > 1)
+        {
+            musicSource = sources[1];
+        }
+        else
+        {
+            musicSource = gameObject.AddComponent<AudioSource>();
+        }
+
+        musicSource.playOnAwake = false;
+        musicSource.loop = true;
+        musicSource.spatialBlend = 0f;
+        if (musicClip != null)
+        {
+            musicSource.clip = musicClip;
+        }
+    }
+
+    void ApplyMusicPlaybackState()
+    {
+        if (musicSource == null)
+        {
+            return;
+        }
+
+        musicSource.volume = volumeBeforeMute;
+
+        if (soundEnabled)
+        {
+            if (musicSource.clip == null || musicSource.isPlaying)
+            {
+                return;
+            }
+
+            // Resume after Pause, or start if never played.
+            musicSource.UnPause();
+            if (!musicSource.isPlaying)
+            {
+                musicSource.Play();
+            }
+        }
+        else if (musicSource.isPlaying)
+        {
+            musicSource.Pause();
+        }
+    }
+
+    void EnsureMusicPlaying()
+    {
+        if (musicSource == null || musicClip == null)
+        {
+            return;
+        }
+
+        if (musicSource.clip != musicClip)
+        {
+            musicSource.clip = musicClip;
+        }
+
+        if (!soundEnabled)
+        {
+            return;
+        }
+
+        if (!musicSource.isPlaying)
+        {
+            musicSource.Play();
         }
     }
 
@@ -56,6 +133,11 @@ public class AudioManager : MonoBehaviour
         if (soundEnabled)
         {
             AudioListener.volume = volume;
+        }
+
+        if (musicSource != null)
+        {
+            musicSource.volume = volume;
         }
     }
 
@@ -84,6 +166,7 @@ public class AudioManager : MonoBehaviour
 
         PlayerPrefs.SetInt(SoundEnabledKey, enabled ? 1 : 0);
         PlayerPrefs.Save();
+        ApplyMusicPlaybackState();
     }
 
     private void ApplySavedSoundSetting()
@@ -99,6 +182,8 @@ public class AudioManager : MonoBehaviour
         {
             AudioListener.volume = 0f;
         }
+
+        ApplyMusicPlaybackState();
     }
 
     public void ResetToDefaults()
@@ -107,6 +192,7 @@ public class AudioManager : MonoBehaviour
         PlayerPrefs.DeleteKey(MasterVolumeKey);
         PlayerPrefs.Save();
         ApplySavedSoundSetting();
+        EnsureMusicPlaying();
     }
 
     public void PlaySound()
