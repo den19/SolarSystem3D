@@ -79,6 +79,8 @@ public class CometSystemController : MonoBehaviour
             ? Resources.Load<GameObject>(definition.prefabResourcePath)
             : null;
 
+        CometContentData.ContentEntry content = CometContentData.Get(definition.objectName);
+
         GameObject cometGo;
         if (prefab != null)
         {
@@ -87,7 +89,6 @@ public class CometSystemController : MonoBehaviour
         }
         else
         {
-            CometContentData.ContentEntry content = CometContentData.Get(definition.objectName);
             cometGo = CometPrefabFactory.Build(definition, content);
             cometGo.transform.SetParent(_cometsRoot, false);
         }
@@ -99,10 +100,16 @@ public class CometSystemController : MonoBehaviour
             info = cometGo.AddComponent<CometInfo>();
         info.Configure(definition.objectName, definition.labelKey);
 
-        if (string.IsNullOrEmpty(info.GetDescription(Language.English)))
+        if (!string.IsNullOrEmpty(content.id))
         {
-            CometContentData.ContentEntry content = CometContentData.Get(definition.objectName);
-            info.SetDescriptions(content.english, content.russian, content.chinese, content.vietnamese, content.uzbek);
+            info.SetDescriptions(
+                content.english,
+                content.russian,
+                content.chinese,
+                content.vietnamese,
+                content.uzbek,
+                content.tatar,
+                content.belarusian);
         }
 
         var visual = cometGo.GetComponent<CometVisualController>();

@@ -27,6 +27,8 @@ public static class CometContentData
         public string chinese;
         public string vietnamese;
         public string uzbek;
+        public string tatar;
+        public string belarusian;
     }
 
     static Dictionary<string, ContentEntry> _byId;
@@ -64,7 +66,9 @@ public static class CometContentData
             ru: "2P/Энке — короткопериодическая комета с одним из самых коротких известных периодов (около 3,3 года). Её ядро — тёмное вытянутое тело длиной примерно 4,8 км, темнее угля, состоящее из пород, пыли и замороженных газов.\n\nУ Солнца испаряющийся лёд образует бледно-зеленоватую кому, способную превышать размер планеты. Появляются два хвоста: изогнутый жёлто-белый пылевой вдоль орбиты и прямой голубоватый ионный, направленный от Солнца.\n\nЗа орбитой Юпитера комета видна лишь как слабое пятнышко без хвоста. У перигелия яркость резко возрастает.",
             zh: "2P/恩克是一颗短周期彗星，公转周期约3.3年，是周期最短的彗星之一。其核约为4.8千米长的暗色拉长天体，比木炭还暗，由岩石、尘埃和冻结气体组成。\n\n接近太阳时，升华的冰形成淡绿色彗发，可比行星还大。会出现两条彗尾：沿轨道弯曲的黄白色尘埃尾，以及背离太阳的蓝白色离子尾。\n\n在木星轨道之外仅为暗淡无尾的光点；过近日点时显著增亮。",
             vi: "2P/Encke là sao chổi chu kỳ ngắn (khoảng 3,3 năm). Hạt nhân dài khoảng 4,8 km, tối hơn than củi, gồm đá, bụi và khí đông lạnh.\n\nGần Mặt Trời, các khí băng hình thành coma xanh nhạt và hai đuôi: bụi vàng cong theo quỹ đạo, ion xanh thẳng hướng ra xa Mặt Trời.\n\nXa hơn quỹ đạo Sao Mộc chỉ là đốm mờ không đuôi; gần điểm cận nhật sáng mạnh.",
-            uz: "2P/Encke — qisqa davrli komet (taxminan 3,3 yil). Yadrosi taxminan 4,8 km uzunlikdagi qorongʻi choʻzilgan jism — koʻmirdek qora, tosh, chang va muzli gazlardan iborat.\n\nQuyosh yaqinida sublimatsiya komasi va ikki dum paydo boʻladi: sariq oq chang dum va toʻgʻri koʻk ion dum.\n\nYupiter ortida faqat xira dogʻ, perigeliyda yorqinlashadi."),
+            uz: "2P/Encke — qisqa davrli komet (taxminan 3,3 yil). Yadrosi taxminan 4,8 km uzunlikdagi qorongʻi choʻzilgan jism — koʻmirdek qora, tosh, chang va muzli gazlardan iborat.\n\nQuyosh yaqinida sublimatsiya komasi va ikki dum paydo boʻladi: sariq oq chang dum va toʻgʻri koʻk ion dum.\n\nYupiter ortida faqat xira dogʻ, perigeliyda yorqinlashadi.",
+            tt: "2P/Энке — кыска периодлы комета, билгеле иң кыска орбита периодларының берсе (якынча 3,3 ел). Аның төше — якынча 4,8 км озынлыктагы караңгы сузылган җисем — күмердән дә карарак, таш, тузан һәм туңган газлардан тора.\n\nКояш янында сублимацияләнүче бозлар планетадан да зуррак булырга мөмкин булган ачык яшелсу кома барлыкка китерә. Ике койрык күренә: орбита буенча кәкре сары-ак тузан койрыгы һәм Кояштан еракка юнәлгән туры зәңгәрсу ион койрыгы.\n\nЮпитер орбитасыннан еракта ул койрыксыз зәгыйфь тап кына. Перигелийга якынайганда яктылык кискен арта.",
+            be: "2P/Энке — кароткаперыядычная камета з адным з самых кароткіх вядомых перыядаў (каля 3,3 года). Яе ядро — цёмнае выцягнутае цела даўжынёй прыкладна 4,8 км, цямней вугля, складаецца з парод, пылу і замарожаных газаў.\n\nКаля Сонца выпарванне лёду ўтварае бледна-зеленаватую кому, здольную перавышаць памер планеты. З’яўляюцца два хвасты: выгнуты жоўта-белы пылавы ўздоўж арбіты і прамы блакітнаваты іонны, накіраваны ад Сонца.\n\nЗа арбітай Юпітэра камета бачная толькі як слабае плямочка без хваста. Каля перыгелія яркасць рэзка ўзрастае."),
         Entry(
             "Comet_Honda",
             new Vector3(0.38f, 0.28f, 0.52f),
@@ -77,7 +81,9 @@ public static class CometContentData
             ru: "45P/Хонда—Мркос—Пайдушакова — комета семейства Юпитера с периодом около 5,3 года. Ядро — небольшое тёмное ледяное тело длиной несколько километров.\n\nПодогрев Солнцем вызывает размытую зеленовато-голубую кому. Пылевой хвост изгибается вдоль траектории; ионный — тянется от Солнца голубой струёй.\n\nВдали от Солнца — слабая звёздная точка. У перигелия активность резко растёт.",
             zh: "45P/本田—马尔科斯—帕杜什科娃是木星族彗星，周期约5.3年。核为几千米长的暗色冰体。\n\n受太阳加热形成青绿色彗发；尘埃尾沿轨道弯曲，离子尾呈淡蓝色背离太阳。\n\n远离太阳时仅为微弱光点；过近日点活动剧增。",
             vi: "45P/Honda–Mrkos–Pajdušáková thuộc họ Sao Mộc, chu kỳ ~5,3 năm. Hạt nhân băng tối vài km.\n\nComa xanh lục, đuôi bụi cong và đuôi ion xanh hướng xa Mặt Trời.\n\nXa Mặt Trời chỉ là chấm mờ; gần cận nhật rất sáng.",
-            uz: "45P/Honda–Mrkos–Pajdušáková — Yupiter oilasidagi komet, davri ~5,3 yil. Bir necha kilometrli qorongʻi muzli yadro.\n\nYashil-koʻk koma va ikki dum: chang va ion.\n\nUzoqda xira nuqta; perigeliyda faollashadi."),
+            uz: "45P/Honda–Mrkos–Pajdušáková — Yupiter oilasidagi komet, davri ~5,3 yil. Bir necha kilometrli qorongʻi muzli yadro.\n\nYashil-koʻk koma va ikki dum: chang va ion.\n\nUzoqda xira nuqta; perigeliyda faollashadi.",
+            tt: "45P/Хонда—Мркос—Пайдушакова — Юпитер гаиләсе кометасы, периоды якынча 5,3 ел. Төше — берничә километр озынлыктагы кечкенә караңгы бозлы җисем.\n\nКояш җылытуы яшелсу-зәңгәр томанлы кома барлыкка китерә. Тузан койрыгы траектория буенча кәкрелә; ион койрыгы Кояштан зәңгәр агым булып сузыла.\n\nКояштан еракта — зәгыйфь йолдыз ноктасы. Перигелий янында активлык кискен арта.",
+            be: "45P/Хонда—Мркос—Пайдушакова — камета сямейства Юпітэра з перыядам каля 5,3 года. Ядро — невялікае цёмнае лядзяное цела даўжынёй некалькі кіламетраў.\n\nНагрэў Сонцам выклікае размытую зеленавата-блакітную кому. Пылавы хвост выгінаецца ўздоўж траекторыі; іонны — цягнецца ад Сонца блакітнай струёй.\n\nДалёка ад Сонца — слабая зорная кропка. Каля перыгелія актыўнасць рэзка расце."),
         Entry(
             "Comet_TGK",
             new Vector3(0.4f, 0.3f, 0.48f),
@@ -90,7 +96,9 @@ public static class CometContentData
             ru: "41P/TGK (Туттль—Джиакобини—Кресак) — компактная комета семейства Юпитера с периодом около 5,4 года. Ядро неправильной формы, тёмное, богатое пылью.\n\nУ Солнца кома расширяется в мягкое свечение. Пыль образует широкий изогнутый хвост; ионизированный газ — узкий голубой луч от Солнца.\n\nЗа внешними планетами видна лишь тусклая точка ядра.",
             zh: "41P/TGK是紧凑的木星族彗星，周期约5.4年。核不规则、富含尘埃。\n\n近太阳时彗发呈柔和光晕；尘埃尾宽而弯曲，离子气体形成背离太阳的蓝色细束。\n\n在外行星之外仅为暗淡光点。",
             vi: "41P/TGK là sao chổi nhỏ gọn, chu kỳ ~5,4 năm, hạt nhân giàu bụi.\n\nComa phát sáng mềm; đuôi bụi rộng và tia ion xanh.\n\nXa các hành tinh ngoài chỉ là chấm mờ.",
-            uz: "41P/TGK — ixcham Yupiter kometasi, ~5,4 yil. Changga boy yadro.\n\nQuyosh yaqinida yumshoq koma va keng chang dum.\n\nTashqi sayyoralar ortida xira nuqta."),
+            uz: "41P/TGK — ixcham Yupiter kometasi, ~5,4 yil. Changga boy yadro.\n\nQuyosh yaqinida yumshoq koma va keng chang dum.\n\nTashqi sayyoralar ortida xira nuqta.",
+            tt: "41P/TGK (Туттль—Джиакобини—Кресак) — Юпитер гаиләсенең компакт кометасы, периоды якынча 5,4 ел. Төше тигезсез формалы, караңгы, тузанга бай.\n\nКояш янында кома йомшак яктылыкка киңәя. Тузан киң кәкре койрык ясый; ионлашкан газ — Кояштан тар зәңгәр нур.\n\nТышкы планеталар артында төшнең тонык ноктасы гына күренә.",
+            be: "41P/TGK (Туттль—Джыакабіні—Крэсак) — кампактная камета сямейства Юпітэра з перыядам каля 5,4 года. Ядро няправільнай формы, цёмнае, багатае пылам.\n\nКаля Сонца кома пашыраецца ў мяккае свячэнне. Пыл утварае шырокі выгнуты хвост; іанізаваны газ — вузкі блакітны прамень ад Сонца.\n\nЗа знешнімі планетамі бачная толькі цьмяная кропка ядра."),
         Entry(
             "Comet_Wild2",
             new Vector3(0.42f, 0.38f, 0.42f),
@@ -103,7 +111,9 @@ public static class CometContentData
             ru: "81P/Wild 2 известна неровным почти сферическим ядром около 4 км — к ней летала миссия Stardust. Поверхность тёмная, кратерная, ледяная.\n\nСолнечный нагрев создаёт яркую кому и два хвоста: жёлтый пылевой и прямой ионный от Солнца.\n\nВдали от Солнца — слабая движущаяся звезда без комы и хвоста.",
             zh: "81P/维尔德2号以约4千米、近乎球形的崎岖核闻名，曾由Stardust探测器取样。表面暗、多坑、含冰。\n\n近太阳形成亮彗发与双尾；远太阳仅为无彗发的暗弱移动星点。",
             vi: "81P/Wild 2 có hạt nhân gần cầu ~4 km, từng được Stardust thăm dò.\n\nComa sáng và hai đuôi gần Mặt Trời; xa chỉ là sao mờ di chuyển.",
-            uz: "81P/Wild 2 — taxminan 4 km deyarli sferik yadro, Stardust missiyasi tashrifi.\n\nQuyosh yaqinida yorqin koma va ikki dum; uzoqda xira harakatlanuvchi yulduz."),
+            uz: "81P/Wild 2 — taxminan 4 km deyarli sferik yadro, Stardust missiyasi tashrifi.\n\nQuyosh yaqinida yorqin koma va ikki dum; uzoqda xira harakatlanuvchi yulduz.",
+            tt: "81P/Wild 2 якынча 4 км киңлектәге тигезсез, диярлек шарсыман төше белән билгеле — аңа NASA Stardust миссиясе килгән. Өслеге караңгы, кратерлы һәм бозлы.\n\nКояш җылытуы якты кома һәм ике койрык ясый: орбита буенча сары тузан һәм Кояштан туры ион койрыгы.\n\nКояштан еракта Wild 2 — комасыз һәм койрыксыз зәгыйфь хәрәкәтләнүче йолдыз.",
+            be: "81P/Wild 2 вядомая няроўным амаль сферычным ядром каля 4 км — да яе лятала місія Stardust. Паверхня цёмная, кратараваная, лядзяная.\n\nСонечны нагрэў стварае яркую кому і два хвасты: жоўты пылавы і прамы іонны ад Сонца.\n\nДалёка ад Сонца — слабая рухомая зорка без комы і хваста."),
         Entry(
             "Comet_Kopff",
             new Vector3(0.36f, 0.3f, 0.5f),
@@ -116,7 +126,9 @@ public static class CometContentData
             ru: "22P/Копфф — пылевая короткопериодическая комета с периодом около 6,4 года. Ядро вытянутое, очень тёмное, почти не отражает свет.\n\nПри сближении с Солнцем зеленоватая кома разрастается, пылевой хвост дугой тянется сзади, ионный — голубовато-фиолетовый — от Солнца.\n\nВ холодной внешней Солнечной системе — едва заметное пятнышко.",
             zh: "22P/科普夫是周期约6.4年的尘埃彗星，核细长极暗。\n\n近太阳时绿色彗发膨胀，尘埃尾成弧，离子尾呈淡紫蓝色背离太阳。\n\n在外太阳系仅为勉强可见的暗点。",
             vi: "22P/Kopff là sao chổi bụi, chu kỳ ~6,4 năm, hạt nhân tối và dài.\n\nComa xanh và hai đuôi gần Mặt Trời; ngoài hệ nội mờ nhạt.",
-            uz: "22P/Kopff — changli komet, ~6,4 yil, choʻzilgan qorongʻi yadro.\n\nYashil koma va ikki dum yaqinida; tashqarida deyarli koʻrinmas."),
+            uz: "22P/Kopff — changli komet, ~6,4 yil, choʻzilgan qorongʻi yadro.\n\nYashil koma va ikki dum yaqinida; tashqarida deyarli koʻrinmas.",
+            tt: "22P/Копфф — тузанлы кыска периодлы комета, периоды якынча 6,4 ел. Төше сузылган, бик караңгы, яктылыкны диярлек чагылдырмый.\n\nКояшка якынайганда яшелсу кома үсә, тузан койрыгы арка булып артта сузыла, ион койрыгы — зәңгәрсу-шәмәхә — Кояштан еракка.\n\nСалкын тышкы Кояш системасында — көчкә күренә торган тап кына.",
+            be: "22P/Копфф — пылавая кароткаперыядычная камета з перыядам каля 6,4 года. Ядро выцягнутае, вельмі цёмнае, амаль не адлюстроўвае святло.\n\nПры збліжэнні з Сонцам зеленаватая кома разрастаецца, пылавы хвост дугой цягнецца ззаду, іонны — блакітнавата-фіялетавы — ад Сонца.\n\nУ халоднай знешняй Сонечнай сістэме — ледзь прыкметнае плямочка."),
         Entry(
             "Comet_GriggSkjellerup",
             new Vector3(0.34f, 0.26f, 0.58f),
@@ -129,7 +141,9 @@ public static class CometContentData
             ru: "26P/Григг—Скьеллеруп — слабая периодическая комета с периодом около 5,1 года и сильно наклонённой орбитой. Маленькое ядро тёмное и вытянутое.\n\nУмеренная солнечная дистанция даёт скромную кому и короткий пылевой хвост. Ионный хвост тонкий, голубой, направлен от Солнца.\n\nВдали от Солнца — одна из самых тусклых комет каталога.",
             zh: "26P/格里格—斯基勒鲁普周期约5.1年，轨道倾角大，核小而暗长。\n\n中等日距可出现弱彗发与短尘尾；离子尾细而蓝。\n\n远太阳时极为暗淡。",
             vi: "26P/Grigg–Skjellerup chu kỳ ~5,1 năm, quỹ đạo nghiêng, hạt nhân nhỏ tối.\n\nComa và đuôi ngắn vừa phải; đuôi ion mỏng xanh.\n\nRất mờ khi xa Mặt Trời.",
-            uz: "26P/Grigg–Skjellerup — ~5,1 yil, qiya orbita, kichik qorongʻi yadro.\n\nOʻrtacha masofada zaif koma; uzoqda juda xira."),
+            uz: "26P/Grigg–Skjellerup — ~5,1 yil, qiya orbita, kichik qorongʻi yadro.\n\nOʻrtacha masofada zaif koma; uzoqda juda xira.",
+            tt: "26P/Григг—Скьеллеруп — зәгыйфь периодлы комета, периоды якынча 5,1 ел һәм каты авышкан орбита. Кечкенә төше караңгы һәм сузылган.\n\nУртача кояш ераклыгы да скром кома һәм кыска тузан койрыгы бирә ала. Ион койрыгы нечкә, зәңгәр, һәрвакыт Кояштан еракка юнәлгән.\n\nКояштан еракта — каталогтагы иң тонык периодлы кометаларның берсе.",
+            be: "26P/Грыг—Ск’елеруп — слабая перыядычная камета з перыядам каля 5,1 года і моцна нахіленай арбітай. Маленькае ядро цёмнае і выцягнутае.\n\nУмераная сонечная дыстанцыя дае сціплую кому і кароткі пылавы хвост. Іонны хвост тонкі, блакітны, накіраваны ад Сонца.\n\nДалёка ад Сонца — адна з самых цьмяных камет каталога."),
         Entry(
             "Comet_DArrest",
             new Vector3(0.37f, 0.29f, 0.51f),
@@ -142,7 +156,9 @@ public static class CometContentData
             ru: "6P/d'Arrest — классическая короткопериодическая комета (около 6,5 лет). Ядро — тёмная ледяная глыба длиной несколько километров.\n\nУльтрафиолет Солнца разгоняет газы в светящейся коме. Пыль изгибается вдоль орбиты; ионизированный CO образует прямой голубой хвост.\n\nЗа Юпитером — слабая звёздная точка без хвостов.",
             zh: "6P/d'Arrest是经典短周期彗星，周期约6.5年。核为几千米长的暗冰体。\n\n紫外辐射驱动彗发；尘埃沿轨道弯曲，电离气体形成蓝色直尾。\n\n木星外为无尾暗弱星点。",
             vi: "6P/d'Arrest chu kỳ ~6,5 năm, hạt nhân băng tối vài km.\n\nTia UV tạo coma; đuôi bụi cong, ion thẳng màu xanh.\n\nNgoài Sao Mộc không có đuôi.",
-            uz: "6P/d'Arrest — klassik qisqa davrli komet, ~6,5 yil. Bir necha km muzli yadro.\n\nUV komani kuchaytiradi; chang dum egri, ion dum toʻgʻri.\n\nYupiter ortida dumsiz xira nuqta."),
+            uz: "6P/d'Arrest — klassik qisqa davrli komet, ~6,5 yil. Bir necha km muzli yadro.\n\nUV komani kuchaytiradi; chang dum egri, ion dum toʻgʻri.\n\nYupiter ortida dumsiz xira nuqta.",
+            tt: "6P/d'Arrest — классик кыска периодлы комета (якынча 6,5 ел), ачылучысы хөрмәтенә аталган. Төше — берничә километр озынлыктагы караңгы бозлы масса.\n\nКояш ультрафиолеты комада яктырган газ агымнарын кузгата. Тузан орбита буенча кәкрелә; ионлашкан CO туры зәңгәрсу койрык ясый.\n\nЮпитер артында d'Arrest — койрыксыз зәгыйфь йолдыз ноктасы.",
+            be: "6P/d'Arrest — класічная кароткаперыядычная камета (каля 6,5 года), названая ў гонар першаадкрывальніка. Ядро — цёмная лядзяная глыба даўжынёй некалькі кіламетраў.\n\nУльтрафіялет Сонца разганяе газы ў свяцячай коме. Пыл выгінаецца ўздоўж арбіты; іанізаваны CO утварае прамы блакітны хвост.\n\nЗа Юпітэрам — слабая зорная кропка без хвастоў."),
         Entry(
             "Comet_Wirtanen",
             new Vector3(0.4f, 0.36f, 0.44f),
@@ -155,7 +171,9 @@ public static class CometContentData
             ru: "46P/Виртанен — маленькая «гиперактивная» комета, иногда проходящая необычно близко к Земле. Ядро около 1,2 км — яркое для своего размера.\n\nУ перигелия кома может быть огромной относительно ядра. Пылевой и ионный хвосты видны даже в скромные телескопы.\n\nВдали от Солнца — компактное тусклое пятно.",
             zh: "46P/维尔特宁是小型高活跃彗星，有时非常接近地球。核约1.2千米，相对明亮。\n\n过近日点彗发可远大于核；双尾在中小望远镜中可见。\n\n远太阳为紧凑暗斑。",
             vi: "46P/Wirtanen là sao chổi nhỏ rất hoạt động, đôi khi rất gần Trái Đất. Hạt nhân ~1,2 km.\n\nComa lớn gần cận nhật; hai đuôi dễ thấy.\n\nXa Mặt Trời là vệt mờ nhỏ.",
-            uz: "46P/Wirtanen — kichik giperfaol komet, baʼzan Yerga juda yaqin. Yadro ~1,2 km.\n\nPerigeliyda katta koma va aniq ikki dum.\n\nUzoqda ixcham xira dogʻ."),
+            uz: "46P/Wirtanen — kichik giperfaol komet, baʼzan Yerga juda yaqin. Yadro ~1,2 km.\n\nPerigeliyda katta koma va aniq ikki dum.\n\nUzoqda ixcham xira dogʻ.",
+            tt: "46P/Виртанен — кечкенә «гиперактив» комета, кайчак Җиргә гадәттән тыш якын үтә. Төше якынча 1,2 км — үз зурлыгы өчен якты.\n\nПеригелий янында кома төшкә карата бик зур булырга мөмкин. Тузан һәм ион койрыклары хәтта скром телескопларда да ачык күренә.\n\nКояштан еракта Виртанен — компакт тонык тап.",
+            be: "46P/Віртанен — маленькая «гіперактыўная» камета, часам праходзіць незвычайна блізка да Зямлі. Ядро каля 1,2 км — яркае для свайго памеру.\n\nКаля перыгелія кома можа быць велізарнай адносна ядра. Пылавы і іонны хвасты бачныя нават у сціплыя тэлескопы.\n\nДалёка ад Сонца — кампактнае цьмянае пляма."),
         Entry(
             "Comet_Borrelly",
             new Vector3(0.33f, 0.24f, 0.6f),
@@ -168,7 +186,9 @@ public static class CometContentData
             ru: "19P/Боррелли снималась с близкого расстояния аппаратом Deep Space 1. Ядро сильно вытянуто (около 8×4×4 км) и крайне тёмно.\n\nУ Солнца струи пыли и газа создают яркую кому и два хвоста. Пылевой изогнут; ионный строго от Солнца.\n\nВо внешней системе — лишь тусклое ядро без хвоста.",
             zh: "19P/博雷利由Deep Space 1近距离拍摄。核极度拉长（约8×4×4千米）且极暗。\n\n近太阳喷流形成亮彗发与双尾；远外太阳系仅见暗淡核。",
             vi: "19P/Borrelly được Deep Space 1 chụp gần. Hạt nhân dài ~8×4×4 km, rất tối.\n\nGần Mặt Trời có coma sáng và hai đuôi; xa chỉ còn hạt nhân mờ.",
-            uz: "19P/Borrelly — Deep Space 1 yaqin surati. 8×4×4 km choʻzilgan qorongʻi yadro.\n\nQuyosh yaqinida yorqin koma; uzoqda dumsiz xira yadro."),
+            uz: "19P/Borrelly — Deep Space 1 yaqin surati. 8×4×4 km choʻzilgan qorongʻi yadro.\n\nQuyosh yaqinida yorqin koma; uzoqda dumsiz xira yadro.",
+            tt: "19P/Боррелли Deep Space 1 аппараты белән якыннан төшерелгән. Төше каты сузылган (якынча 8×4×4 км) һәм бик караңгы.\n\nКояш янында тузан һәм газ агымнары якты кома һәм ике койрык ясый. Тузан койрыгы кәкре; ион койрыгы катгый рәвештә Кояштан еракка.\n\nТышкы системада Боррелли — койрыксыз тонык төш кенә.",
+            be: "19P/Барэлі здымалася з блізкай адлегласці апаратам Deep Space 1. Ядро моцна выцягнутае (каля 8×4×4 км) і надзвычай цёмнае.\n\nКаля Сонца струмені пылу і газу ствараюць яркую кому і два хвасты. Пылавы выгнуты; іонны строга ад Сонца.\n\nУ знешняй сістэме Барэлі паказвае толькі цьмянае ядро без хваста."),
         Entry(
             "Comet_Howell",
             new Vector3(0.39f, 0.32f, 0.47f),
@@ -181,12 +201,14 @@ public static class CometContentData
             ru: "88P/Howell — комета со средним периодом около 5,5 лет. Ядро — тёмное ледяное тело несколько километров с умеренной активностью.\n\nКома бледно-зелёная у Солнца; пыль образует плавный изогнутый хвост, ионы — голубое копьё от Солнца.\n\nЗа Юпитером видна лишь как слабая движущаяся точка.",
             zh: "88P/豪威尔周期约5.5年，核为几千米暗冰体，活动中等。\n\n近太阳淡绿色彗发；尘埃尾弯曲，离子尾呈蓝色长束。\n\n木星外仅为微弱移动点。",
             vi: "88P/Howell chu kỳ ~5,5 năm, hạt nhân băng vài km.\n\nComa xanh nhạt; đuôi bụi cong, ion xanh.\n\nNgoài Sao Mộc chỉ là điểm mờ.",
-            uz: "88P/Howell — ~5,5 yil, bir necha km muzli yadro.\n\nOch yashil koma; egri chang va koʻk ion dum.\n\nYupiter ortida xira harakatlanuvchi nuqta.")
+            uz: "88P/Howell — ~5,5 yil, bir necha km muzli yadro.\n\nOch yashil koma; egri chang va koʻk ion dum.\n\nYupiter ortida xira harakatlanuvchi nuqta.",
+            tt: "88P/Howell — уртача периодлы комета, һәр 5,5 ел әйләнә. Төше — берничә километрлы караңгы бозлы җисем, уртача активлыклы.\n\nКояш янында кома ачык яшел яктыра; тузан йомшак кәкре койрык ясый, ионнар — Кояштан зәңгәр сөңге сыман.\n\nЮпитер артында Howell зәгыйфь хәрәкәтләнүче нокта буларак кына күренә.",
+            be: "88P/Howell — камета з сярэднім перыядам каля 5,5 года. Ядро — цёмнае лядзяное цела некалькі кіламетраў з умеранай актыўнасцю.\n\nКома бледна-зялёная каля Сонца; пыл утварае плаўны выгнуты хвост, іоны — блакітнае дзіду ад Сонца.\n\nЗа Юпітэрам бачная толькі як слабая рухомая кропка.")
     };
 
     static ContentEntry Entry(string id, Vector3 scale, string matVariant,
         float activityStrength, Color comaColor, float comaMaxScale, float dormantThresholdAu,
-        string en, string ru, string zh, string vi, string uz)
+        string en, string ru, string zh, string vi, string uz, string tt, string be)
     {
         return new ContentEntry
         {
@@ -201,7 +223,9 @@ public static class CometContentData
             russian = ru,
             chinese = zh,
             vietnamese = vi,
-            uzbek = uz
+            uzbek = uz,
+            tatar = tt,
+            belarusian = be
         };
     }
 }

@@ -7,6 +7,7 @@ public static class LocalizationFontHelper
 {
     const string DefaultFontPath = "Fonts & Materials/LiberationSans SDF";
     const string DefaultMaterialPath = "Fonts & Materials/LiberationSans SDF - Overlay";
+    const string LiberationSansSourceFontPath = "Fonts/LiberationSans/LiberationSans-Regular";
     const string ChineseFontResourcePath = "Fonts & Materials/NotoSansSC SDF";
     const string ChineseSourceFontPath = "Fonts/NotoSansSC/NotoSansSC-Regular";
 
@@ -22,7 +23,12 @@ public static class LocalizationFontHelper
 
     public static Material GetOverlayMaterialForLanguage(Language language)
     {
-        return language == Language.Chinese ? null : GetDefaultOverlayMaterial();
+        // Dynamic runtime LiberationSans uses its own material; Chinese likewise.
+        if (language == Language.Chinese)
+            return null;
+        if (defaultFont != null && defaultFont.name.Contains("Runtime"))
+            return null;
+        return GetDefaultOverlayMaterial();
     }
 
     public static void ApplyFontsForLanguage(Language language)
@@ -44,11 +50,43 @@ public static class LocalizationFontHelper
 
     static TMP_FontAsset GetDefaultFont()
     {
+        if (defaultFont != null)
+        {
+            EnsureSymbolFallback(defaultFont);
+            return defaultFont;
+        }
+
+        // Static LiberationSans SDF atlas lacks Cyrillic / Tatar extended letters.
+        // Prefer a dynamic runtime asset from the TTF so Russian, Belarusian, and Tatar render.
+        defaultFont = CreateDynamicLiberationSans();
         if (defaultFont == null)
             defaultFont = Resources.Load<TMP_FontAsset>(DefaultFontPath);
 
         EnsureSymbolFallback(defaultFont);
         return defaultFont;
+    }
+
+    static TMP_FontAsset CreateDynamicLiberationSans()
+    {
+        var sourceFont = Resources.Load<Font>(LiberationSansSourceFontPath);
+        if (sourceFont == null)
+        {
+            Debug.LogWarning(
+                "LocalizationFontHelper: LiberationSans TTF not found in Resources; " +
+                "Cyrillic / Tatar glyphs may be missing from the static SDF atlas.");
+            return null;
+        }
+
+        TMP_FontAsset font = TMP_FontAsset.CreateFontAsset(
+            sourceFont,
+            90,
+            9,
+            GlyphRenderMode.SDFAA,
+            1024,
+            1024,
+            AtlasPopulationMode.Dynamic);
+        font.name = "LiberationSans SDF (Runtime)";
+        return font;
     }
 
     static Material GetDefaultOverlayMaterial()

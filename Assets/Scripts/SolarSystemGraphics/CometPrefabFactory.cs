@@ -39,7 +39,9 @@ public static class CometPrefabFactory
             content.russian,
             content.chinese,
             content.vietnamese,
-            content.uzbek);
+            content.uzbek,
+            content.tatar,
+            content.belarusian);
     }
 
     static Transform CreateNucleus(Transform parent, Vector3 scale, string materialVariant)
@@ -220,9 +222,9 @@ public static class CometPrefabFactory
 
         public SerializedCometInfo(CometInfo target) => _target = target;
 
-        public void SetDescriptions(string en, string ru, string zh, string vi, string uz)
+        public void SetDescriptions(string en, string ru, string zh, string vi, string uz, string tt, string be)
         {
-            _target.SetDescriptions(en, ru, zh, vi, uz);
+            _target.SetDescriptions(en, ru, zh, vi, uz, tt, be);
         }
     }
 

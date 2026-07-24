@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class LanguageChanger : MonoBehaviour
 {
-    static readonly string[] LanguageLabels = { "English", "Русский", "中文", "Tiếng Việt", "Oʻzbek" };
+    static readonly string[] LanguageLabels = { "English", "Русский", "中文", "Tiếng Việt", "Oʻzbek", "Татарча", "Беларуская" };
 
     public Dropdown languageDropdown;
     private bool isInitializing = false; // Флаг для блокировки ложных срабатываний UI
@@ -24,7 +24,7 @@ public class LanguageChanger : MonoBehaviour
 
             // Получаем сохраненный язык из PlayerPrefs (синхронно с LocalizationManager)
             int savedLanguage = PlayerPrefs.GetInt("SelectedLanguage", (int)Language.Russian);
-            int maxLanguage = (int)Language.Uzbek;
+            int maxLanguage = (int)Language.Belarusian;
             if (savedLanguage < 0 || savedLanguage > maxLanguage)
                 savedLanguage = (int)Language.Russian;
             languageDropdown.value = savedLanguage;
@@ -71,7 +71,7 @@ public class LanguageChanger : MonoBehaviour
         isInitializing = true;
 
         int savedLanguage = PlayerPrefs.GetInt("SelectedLanguage", (int)Language.Russian);
-        int maxLanguage = (int)Language.Uzbek;
+        int maxLanguage = (int)Language.Belarusian;
         if (savedLanguage < 0 || savedLanguage > maxLanguage)
         {
             savedLanguage = (int)Language.Russian;
