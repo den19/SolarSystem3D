@@ -19,10 +19,10 @@ public static class SidePanelSceneSetup
     const float RowSpacing = SidePanelUiBootstrap.RowSpacing;
     const float RowStartY = SidePanelUiBootstrap.RowStartY;
     const float PanelBelowMenuGap = 8f;
-    const float MenuButtonSize = 44f;
-    const float SimControlButtonWidth = 88f;
-    const float SimControlButtonMinWidth = 72f;
-    const float IconPadding = 4f;
+    const float MenuButtonSize = 88f;
+    const float SimControlButtonWidth = 176f;
+    const float SimControlButtonMinWidth = 144f;
+    const float IconPadding = 8f;
     static readonly Color IconColor = new Color(0.85f, 0.92f, 1f, 1f);
     static readonly (string rowName, string labelName)[] ToggleRows = SidePanelUiBootstrap.ToggleRows;
 
@@ -383,8 +383,8 @@ public static class SidePanelSceneSetup
         var layout = bar.GetComponent<HorizontalLayoutGroup>();
         if (layout != null)
         {
-            layout.padding = new RectOffset(8, 8, 4, 4);
-            layout.spacing = 4f;
+            layout.padding = new RectOffset(16, 16, 8, 8);
+            layout.spacing = 8f;
             layout.childAlignment = TextAnchor.MiddleCenter;
             layout.childControlWidth = true;
             layout.childControlHeight = true;
@@ -542,6 +542,14 @@ public static class SidePanelSceneSetup
         layoutElement.preferredHeight = MenuButtonSize;
         layoutElement.flexibleWidth = 0f;
         layoutElement.flexibleHeight = 0f;
+
+        TMP_Text simLabel = existing.GetComponentInChildren<TMP_Text>(true);
+        if (simLabel != null)
+        {
+            simLabel.enableAutoSizing = true;
+            simLabel.fontSizeMin = 24f;
+            simLabel.fontSizeMax = 30f;
+        }
     }
 
     static void ApplyLayoutChildRect(RectTransform rect)
@@ -723,8 +731,8 @@ public static class SidePanelSceneSetup
             return;
 
         text.enableAutoSizing = true;
-        text.fontSizeMin = 9f;
-        text.fontSizeMax = 17f;
+        text.fontSizeMin = 18f;
+        text.fontSizeMax = 34f;
         text.textWrappingMode = TextWrappingModes.Normal;
         text.overflowMode = TextOverflowModes.Ellipsis;
     }

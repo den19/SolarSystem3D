@@ -46,49 +46,51 @@ public class BodyNavigationController : MonoBehaviour
 
         public static ToolbarLayoutProfile Normal => new ToolbarLayoutProfile
         {
-            IconButtonSize = 44f,
-            SimControlPreferred = 88f,
-            SimControlMin = 72f,
-            NameMinWidth = 48f,
-            NamePreferredWidth = 120f,
-            NameMinHeight = 44f,
-            NamePreferredHeight = 44f,
-            Spacing = 4f,
-            PaddingHorizontal = 8,
-            PaddingVertical = 4
+            IconButtonSize = 88f,
+            SimControlPreferred = 176f,
+            SimControlMin = 144f,
+            NameMinWidth = 96f,
+            NamePreferredWidth = 240f,
+            NameMinHeight = 88f,
+            NamePreferredHeight = 88f,
+            Spacing = 8f,
+            PaddingHorizontal = 16,
+            PaddingVertical = 8
         };
 
         public static ToolbarLayoutProfile Compact => new ToolbarLayoutProfile
         {
-            IconButtonSize = 36f,
-            SimControlPreferred = 72f,
-            SimControlMin = 60f,
-            NameMinWidth = 36f,
-            NamePreferredWidth = 96f,
-            NameMinHeight = 40f,
-            NamePreferredHeight = 40f,
-            Spacing = 2f,
-            PaddingHorizontal = 8,
-            PaddingVertical = 4
+            IconButtonSize = 72f,
+            SimControlPreferred = 144f,
+            SimControlMin = 120f,
+            NameMinWidth = 72f,
+            NamePreferredWidth = 192f,
+            NameMinHeight = 80f,
+            NamePreferredHeight = 80f,
+            Spacing = 4f,
+            PaddingHorizontal = 16,
+            PaddingVertical = 8
         };
 
         public static ToolbarLayoutProfile Tight => new ToolbarLayoutProfile
         {
-            IconButtonSize = 32f,
-            SimControlPreferred = 60f,
-            SimControlMin = 52f,
-            NameMinWidth = 28f,
-            NamePreferredWidth = 72f,
-            NameMinHeight = 36f,
-            NamePreferredHeight = 36f,
-            Spacing = 2f,
-            PaddingHorizontal = 4,
-            PaddingVertical = 4
+            IconButtonSize = 64f,
+            SimControlPreferred = 120f,
+            SimControlMin = 104f,
+            NameMinWidth = 56f,
+            NamePreferredWidth = 144f,
+            NameMinHeight = 72f,
+            NamePreferredHeight = 72f,
+            Spacing = 4f,
+            PaddingHorizontal = 8,
+            PaddingVertical = 8
         };
     }
 
-    const float BodyNameFontSizeMin = 9f;
-    const float BodyNameFontSizeMax = 17f;
+    const float BodyNameFontSizeMin = 18f;
+    const float BodyNameFontSizeMax = 34f;
+    const float SimControlFontSizeMin = 24f;
+    const float SimControlFontSizeMax = 30f;
     const char ZeroWidthSpace = '\u200B';
 
     public IReadOnlyList<BodyNavigationOrder.NavigationEntry> NavigationEntries => _entries;
@@ -382,17 +384,34 @@ public class BodyNavigationController : MonoBehaviour
         ConfigureNameButtonLayout(profile);
         EnsureBarChildButton(FindUiTransform(canvas.transform, "SidePanelMenuButton"), 3, profile.IconButtonSize, profile.IconButtonSize);
         EnsureBarChildButton(FindUiTransform(canvas.transform, "ShareButton"), 4, profile.IconButtonSize, profile.IconButtonSize);
+
+        Transform simControlButton = FindUiTransform(canvas.transform, "SimulationControlButton");
         EnsureBarChildButton(
-            FindUiTransform(canvas.transform, "SimulationControlButton"),
+            simControlButton,
             5,
             profile.SimControlPreferred,
             profile.IconButtonSize,
             profile.SimControlMin);
+        ConfigureSimControlText(simControlButton);
 
         if (prevButton != null)
             ApplyIconButtonSize(prevButton.transform, profile.IconButtonSize);
         if (nextButton != null)
             ApplyIconButtonSize(nextButton.transform, profile.IconButtonSize);
+    }
+
+    static void ConfigureSimControlText(Transform button)
+    {
+        if (button == null)
+            return;
+
+        TMP_Text text = button.GetComponentInChildren<TMP_Text>(true);
+        if (text == null)
+            return;
+
+        text.enableAutoSizing = true;
+        text.fontSizeMin = SimControlFontSizeMin;
+        text.fontSizeMax = SimControlFontSizeMax;
     }
 
     static void ApplyIconButtonSize(Transform button, float size)

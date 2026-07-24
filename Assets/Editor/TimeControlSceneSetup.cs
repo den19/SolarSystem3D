@@ -13,7 +13,7 @@ public static class TimeControlSceneSetup
     const string ChevronLeftPath = "Assets/Icons/chevron-left.png";
     const string ChevronRightPath = "Assets/Icons/chevron-right.png";
     const string AntonFontPath = "Assets/Resources/Fonts & Materials/Anton SDF.asset";
-    const float IconPadding = 4f;
+    const float IconPadding = 8f;
 
     static readonly Color IconColor = TimeControlUiBootstrap.IconColor;
 
@@ -96,17 +96,7 @@ public static class TimeControlSceneSetup
         barImage.raycastTarget = true;
 
         var layout = EnsureComponent<HorizontalLayoutGroup>(barGo);
-        layout.padding = new RectOffset(
-            TimeControlUiBootstrap.BarPaddingHorizontal,
-            TimeControlUiBootstrap.BarPaddingHorizontal,
-            TimeControlUiBootstrap.BarPaddingVertical,
-            TimeControlUiBootstrap.BarPaddingVertical);
-        layout.spacing = TimeControlUiBootstrap.BarSpacing;
-        layout.childAlignment = TextAnchor.MiddleCenter;
-        layout.childControlWidth = true;
-        layout.childControlHeight = true;
-        layout.childForceExpandWidth = false;
-        layout.childForceExpandHeight = false;
+        TimeControlUiBootstrap.ApplyBarLayoutGroup(layout);
 
         Button pauseButton = EnsurePausePlayButton(barGo.transform);
         Button speedDownButton = EnsureSpeedButton(barGo.transform, "SpeedDownButton", LoadChevronLeftSprite(), true);
@@ -122,6 +112,7 @@ public static class TimeControlSceneSetup
         serialized.FindProperty("speedLabel").objectReferenceValue = speedLabel;
         serialized.ApplyModifiedPropertiesWithoutUndo();
 
+        TimeControlUiBootstrap.ApplyControlSizes(barGo.transform);
         controller.RefreshSafeAreaLayout();
         return controller;
     }
@@ -150,7 +141,7 @@ public static class TimeControlSceneSetup
         var labelText = EnsureComponent<TextMeshProUGUI>(label.gameObject);
         labelText.text = "II";
         labelText.font = LoadAntonFont();
-        labelText.fontSize = 16f;
+        labelText.fontSize = TimeControlUiBootstrap.PausePlayFontSize;
         labelText.fontStyle = FontStyles.Bold;
         labelText.alignment = TextAlignmentOptions.Center;
         labelText.color = IconColor;
@@ -229,7 +220,7 @@ public static class TimeControlSceneSetup
         var labelText = EnsureComponent<TextMeshProUGUI>(labelGo);
         labelText.text = "1x";
         labelText.font = LoadAntonFont();
-        labelText.fontSize = 14f;
+        labelText.fontSize = TimeControlUiBootstrap.SpeedLabelFontSize;
         labelText.fontStyle = FontStyles.Bold;
         labelText.alignment = TextAlignmentOptions.Center;
         labelText.color = TimeControlUiBootstrap.SpeedLabelColor;

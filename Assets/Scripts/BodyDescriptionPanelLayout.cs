@@ -10,7 +10,7 @@ public class BodyDescriptionPanelLayout : MonoBehaviour
 {
     public const float TargetWidth = 512f;
     public const float TargetHeight = 690f;
-    public const float BottomOffset = 150.23718f;
+    public const float BottomOffset = 190.23718f;
     public const float LeftOffset = 7f;
     const float TopGap = 16f;
 

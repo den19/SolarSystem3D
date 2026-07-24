@@ -8,17 +8,20 @@ using UnityEngine.UI;
 public static class TimeControlUiBootstrap
 {
     public const string BarObjectName = "SimulationTimeControlBar";
-    public const float BarHeight = 40f;
+    public const float BarHeight = 80f;
     public const float BarHorizontalMargin = 8f;
     public const float BarBottomMargin = 8f;
-    public const float BarWidthPortrait = 220f;
-    public const float BarWidthLandscape = 220f;
-    public const float ButtonSize = 36f;
-    public const float SpeedLabelMinWidth = 52f;
-    public const float BarCornerRadiusPadding = 8f;
-    public const int BarPaddingHorizontal = 6;
-    public const int BarPaddingVertical = 2;
-    public const float BarSpacing = 4f;
+    public const float BarWidthPortrait = 440f;
+    public const float BarWidthLandscape = 440f;
+    public const float ButtonSize = 72f;
+    public const float SpeedLabelMinWidth = 104f;
+    public const float BarCornerRadiusPadding = 16f;
+    public const int BarPaddingHorizontal = 12;
+    public const int BarPaddingVertical = 4;
+    public const float BarSpacing = 8f;
+    public const float PausePlayFontSize = 32f;
+    public const float SpeedButtonFontSize = 44f;
+    public const float SpeedLabelFontSize = 28f;
 
     public static readonly Color BarBackgroundColor = new Color(0.12f, 0.15f, 0.22f, 0.92f);
     public static readonly Color IconColor = new Color(0.85f, 0.92f, 1f, 1f);
@@ -61,13 +64,7 @@ public static class TimeControlUiBootstrap
         barImage.raycastTarget = true;
 
         var layout = barGo.GetComponent<HorizontalLayoutGroup>();
-        layout.padding = new RectOffset(BarPaddingHorizontal, BarPaddingHorizontal, BarPaddingVertical, BarPaddingVertical);
-        layout.spacing = BarSpacing;
-        layout.childAlignment = TextAnchor.MiddleCenter;
-        layout.childControlWidth = true;
-        layout.childControlHeight = true;
-        layout.childForceExpandWidth = false;
-        layout.childForceExpandHeight = false;
+        ApplyBarLayoutGroup(layout);
 
         var controller = barGo.GetComponent<SimulationTimeControlController>();
 
@@ -78,6 +75,100 @@ public static class TimeControlUiBootstrap
 
         controller.Configure(barRect, pauseButton, speedDownButton, speedUpButton, speedLabel);
         return controller;
+    }
+
+    public static void ApplyBarLayoutGroup(HorizontalLayoutGroup layout)
+    {
+        if (layout == null)
+            return;
+
+        layout.padding = new RectOffset(BarPaddingHorizontal, BarPaddingHorizontal, BarPaddingVertical, BarPaddingVertical);
+        layout.spacing = BarSpacing;
+        layout.childAlignment = TextAnchor.MiddleCenter;
+        layout.childControlWidth = true;
+        layout.childControlHeight = true;
+        layout.childForceExpandWidth = false;
+        layout.childForceExpandHeight = false;
+    }
+
+    /// <summary>
+    /// Applies 2× control sizes/fonts to an existing bar without changing bottom anchoring.
+    /// </summary>
+    public static void ApplyControlSizes(Transform barRoot)
+    {
+        if (barRoot == null)
+            return;
+
+        ApplyBarLayoutGroup(barRoot.GetComponent<HorizontalLayoutGroup>());
+
+        ApplyIconButtonSize(barRoot.Find("PausePlayButton"), PausePlayFontSize);
+        ApplyIconButtonSize(barRoot.Find("SpeedDownButton"), SpeedButtonFontSize);
+        ApplyIconButtonSize(barRoot.Find("SpeedUpButton"), SpeedButtonFontSize);
+        ApplySpeedLabelSize(barRoot.Find("TimeControlSpeedFormat"));
+        ApplyIconChildPadding(barRoot.Find("SpeedDownButton"));
+        ApplyIconChildPadding(barRoot.Find("SpeedUpButton"));
+    }
+
+    const float IconPadding = 8f;
+
+    static void ApplyIconChildPadding(Transform button)
+    {
+        if (button == null)
+            return;
+
+        Transform icon = button.Find("Icon");
+        if (icon == null || !icon.TryGetComponent(out RectTransform iconRect))
+            return;
+
+        iconRect.anchorMin = Vector2.zero;
+        iconRect.anchorMax = Vector2.one;
+        iconRect.offsetMin = new Vector2(IconPadding, IconPadding);
+        iconRect.offsetMax = new Vector2(-IconPadding, -IconPadding);
+    }
+
+    static void ApplyIconButtonSize(Transform button, float labelFontSize)
+    {
+        if (button == null)
+            return;
+
+        if (button.TryGetComponent(out RectTransform rect))
+            rect.sizeDelta = new Vector2(ButtonSize, ButtonSize);
+
+        if (button.TryGetComponent(out LayoutElement layoutElement))
+        {
+            layoutElement.minWidth = ButtonSize;
+            layoutElement.minHeight = ButtonSize;
+            layoutElement.preferredWidth = ButtonSize;
+            layoutElement.preferredHeight = ButtonSize;
+            layoutElement.flexibleWidth = 0f;
+            layoutElement.flexibleHeight = 0f;
+        }
+
+        TMP_Text label = button.GetComponentInChildren<TMP_Text>(true);
+        if (label != null)
+            label.fontSize = labelFontSize;
+    }
+
+    static void ApplySpeedLabelSize(Transform labelTransform)
+    {
+        if (labelTransform == null)
+            return;
+
+        if (labelTransform.TryGetComponent(out RectTransform labelRect))
+            labelRect.sizeDelta = new Vector2(SpeedLabelMinWidth, ButtonSize);
+
+        if (labelTransform.TryGetComponent(out LayoutElement layoutElement))
+        {
+            layoutElement.minWidth = SpeedLabelMinWidth;
+            layoutElement.preferredWidth = SpeedLabelMinWidth;
+            layoutElement.minHeight = ButtonSize;
+            layoutElement.preferredHeight = ButtonSize;
+            layoutElement.flexibleWidth = 0f;
+            layoutElement.flexibleHeight = 0f;
+        }
+
+        if (labelTransform.TryGetComponent(out TMP_Text tmp))
+            tmp.fontSize = SpeedLabelFontSize;
     }
 
     static Button CreateIconButton(Transform parent, string name, string labelText, int layer)
@@ -118,7 +209,7 @@ public static class TimeControlUiBootstrap
 
         var tmp = labelGo.GetComponent<TextMeshProUGUI>();
         tmp.text = labelText;
-        tmp.fontSize = name == "PausePlayButton" ? 16f : 22f;
+        tmp.fontSize = name == "PausePlayButton" ? PausePlayFontSize : SpeedButtonFontSize;
         tmp.fontStyle = FontStyles.Bold;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color = IconColor;
@@ -147,7 +238,7 @@ public static class TimeControlUiBootstrap
 
         var tmp = labelGo.GetComponent<TextMeshProUGUI>();
         tmp.text = "1x";
-        tmp.fontSize = 14f;
+        tmp.fontSize = SpeedLabelFontSize;
         tmp.fontStyle = FontStyles.Bold;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color = SpeedLabelColor;

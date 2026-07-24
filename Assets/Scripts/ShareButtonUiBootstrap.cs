@@ -8,8 +8,8 @@ public static class ShareButtonUiBootstrap
 {
     const string ShareButtonName = "ShareButton";
     const string ShareIconResourcePath = "Icons/icons8-share-256";
-    const float ButtonSize = 44f;
-    const float IconPadding = 4f;
+    const float ButtonSize = 88f;
+    const float IconPadding = 8f;
     static readonly Color IconColor = new Color(0.85f, 0.92f, 1f, 1f);
 
     public static void EnsureShareButton(Transform navigationBar)

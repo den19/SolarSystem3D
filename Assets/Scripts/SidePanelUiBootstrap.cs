@@ -11,7 +11,7 @@ public static class SidePanelUiBootstrap
     public const float RowStartY = 8f;
     public const float PanelBottomPadding = 8f;
     public const float PanelWidth = 270f;
-    public const float BarHeight = 56f;
+    public const float BarHeight = 112f;
     public const float BarHorizontalMargin = 8f;
     public const float BarTopMargin = 8f;
     const float RowHorizontalInset = 20f;
