@@ -57,12 +57,23 @@ public class TimeMachineController : MonoBehaviour
         _orbitSystem = GetComponent<BodyOrbitSystemController>();
         _cometSystem = GetComponent<CometSystemController>();
 
-        // Manual toggle only: ensure clock is inactive on scene load even if prefs were left on.
-        // If prefs are on (user left TM enabled last session), begin after systems exist.
-        if (TimeMachineSettings.UseTimeMachine)
-            BeginTimeMachine(resetClock: true);
-        else
+        // Continue restores clock + motion first, then ResumeAfterSessionRestore().
+        // Do not reset the calendar here or Kepler will wipe the saved session.
+        bool deferForContinue = SimulationSessionState.PendingLaunchMode == SimulationLaunchMode.Continue
+            && TimeMachineSettings.UseTimeMachine;
+
+        if (deferForContinue)
+        {
             StopTimeMachine(restoreOrbits: false);
+        }
+        else if (TimeMachineSettings.UseTimeMachine)
+        {
+            BeginTimeMachine(resetClock: true);
+        }
+        else
+        {
+            StopTimeMachine(restoreOrbits: false);
+        }
 
         // Hide date HUD unless Time Machine is actively running.
         RefreshDateHud(forceLayout: true);
@@ -169,6 +180,27 @@ public class TimeMachineController : MonoBehaviour
 
         SimulationClock.SetActive(true);
         // Pin timeScale=1 while TM is active; calendar rate uses SpeedMultiplier only.
+        SimulationTimeController.Apply();
+        _orbitSystem?.PrepareForTimeMachine();
+        _running = true;
+        _lastHudDate = null;
+
+        ApplyMotionAndActivity();
+        EnsureDateHud();
+        RefreshDateHud(forceLayout: true);
+    }
+
+    /// <summary>
+    /// Continue path: clock already restored via SimulationSessionState; start TM without reset.
+    /// </summary>
+    public void ResumeAfterSessionRestore()
+    {
+        if (_orbitSystem == null)
+            _orbitSystem = GetComponent<BodyOrbitSystemController>();
+        if (_cometSystem == null)
+            _cometSystem = GetComponent<CometSystemController>();
+
+        SimulationClock.SetActive(true);
         SimulationTimeController.Apply();
         _orbitSystem?.PrepareForTimeMachine();
         _running = true;

@@ -24,6 +24,13 @@ public static class SimulationSessionState
     private const string KeyDetailCamDistance = "SolarSystem_DetailCamDistance";
     private const string KeyActiveCamDistance = "SolarSystem_ActiveCamDistance";
     private const string KeyMotionSnapshot = "SolarSystem_MotionSnapshot";
+    private const string KeyClockYear = "SolarSystem_ClockYear";
+    private const string KeyClockPhase = "SolarSystem_ClockPhase";
+    private const string KeyClockCrossedYearZero = "SolarSystem_ClockCrossedYearZero";
+    private const string KeyClockCrossedCurrentDate = "SolarSystem_ClockCrossedCurrentDate";
+    private const string KeyClockUseSlowSweep = "SolarSystem_ClockUseSlowSweep";
+    private const string KeyClockCurrentDateThreshold = "SolarSystem_ClockCurrentDateThreshold";
+    private const string KeyHasClockState = "SolarSystem_HasClockState";
 
     public static SimulationLaunchMode PendingLaunchMode { get; set; } = SimulationLaunchMode.New;
 
@@ -40,6 +47,8 @@ public static class SimulationSessionState
     public static float DetailCamY { get; private set; }
     public static float DetailCamDistance { get; private set; } = 4.5f;
     public static float ActiveCameraDistance { get; private set; } = 8f;
+    public static bool HasClockState { get; private set; }
+    public static SolarSystemApp.SimulationClock.State ClockState { get; private set; }
 
     static MotionSnapshot _motionSnapshot;
 
@@ -122,9 +131,24 @@ public static class SimulationSessionState
         }
 
         CaptureMotionFromScene();
+        CaptureClockFromScene();
 
         HasSavedState = true;
         Save();
+    }
+
+    static void CaptureClockFromScene()
+    {
+        if (!SolarSystemApp.TimeMachineSettings.UseTimeMachine
+            || !SolarSystemApp.SimulationClock.IsActive)
+        {
+            HasClockState = false;
+            ClockState = default;
+            return;
+        }
+
+        ClockState = SolarSystemApp.SimulationClock.CaptureState();
+        HasClockState = true;
     }
 
     static void CaptureMotionFromScene()
@@ -204,6 +228,28 @@ public static class SimulationSessionState
             PlayerPrefs.SetString(KeyMotionSnapshot, JsonUtility.ToJson(_motionSnapshot));
         }
 
+        PlayerPrefs.SetInt(KeyHasClockState, HasClockState ? 1 : 0);
+        if (HasClockState)
+        {
+            PlayerPrefs.SetString(KeyClockYear, ClockState.YearContinuous.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+            PlayerPrefs.SetInt(KeyClockPhase, (int)ClockState.Phase);
+            PlayerPrefs.SetInt(KeyClockCrossedYearZero, ClockState.CrossedYearZero ? 1 : 0);
+            PlayerPrefs.SetInt(KeyClockCrossedCurrentDate, ClockState.CrossedCurrentDate ? 1 : 0);
+            PlayerPrefs.SetInt(KeyClockUseSlowSweep, ClockState.UseSlowSweepRate ? 1 : 0);
+            PlayerPrefs.SetString(
+                KeyClockCurrentDateThreshold,
+                ClockState.CurrentDateThreshold.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+        }
+        else
+        {
+            PlayerPrefs.DeleteKey(KeyClockYear);
+            PlayerPrefs.DeleteKey(KeyClockPhase);
+            PlayerPrefs.DeleteKey(KeyClockCrossedYearZero);
+            PlayerPrefs.DeleteKey(KeyClockCrossedCurrentDate);
+            PlayerPrefs.DeleteKey(KeyClockUseSlowSweep);
+            PlayerPrefs.DeleteKey(KeyClockCurrentDateThreshold);
+        }
+
         PlayerPrefs.Save();
     }
 
@@ -223,6 +269,13 @@ public static class SimulationSessionState
         PlayerPrefs.DeleteKey(KeyDetailCamDistance);
         PlayerPrefs.DeleteKey(KeyActiveCamDistance);
         PlayerPrefs.DeleteKey(KeyMotionSnapshot);
+        PlayerPrefs.DeleteKey(KeyHasClockState);
+        PlayerPrefs.DeleteKey(KeyClockYear);
+        PlayerPrefs.DeleteKey(KeyClockPhase);
+        PlayerPrefs.DeleteKey(KeyClockCrossedYearZero);
+        PlayerPrefs.DeleteKey(KeyClockCrossedCurrentDate);
+        PlayerPrefs.DeleteKey(KeyClockUseSlowSweep);
+        PlayerPrefs.DeleteKey(KeyClockCurrentDateThreshold);
         PlayerPrefs.Save();
 
         HasSavedState = false;
@@ -240,6 +293,8 @@ public static class SimulationSessionState
         DetailCamDistance = 4.5f;
         ActiveCameraDistance = 8f;
         _motionSnapshot = null;
+        HasClockState = false;
+        ClockState = default;
         PendingLaunchMode = SimulationLaunchMode.New;
     }
 
@@ -282,6 +337,47 @@ public static class SimulationSessionState
         {
             _motionSnapshot = null;
         }
+
+        HasClockState = PlayerPrefs.GetInt(KeyHasClockState, 0) == 1;
+        if (HasClockState)
+        {
+            double year = SolarSystemApp.SimulationClock.SweepStartYear;
+            double threshold = 0.0;
+            double.TryParse(
+                PlayerPrefs.GetString(KeyClockYear, SolarSystemApp.SimulationClock.SweepStartYear.ToString("R")),
+                System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out year);
+            double.TryParse(
+                PlayerPrefs.GetString(KeyClockCurrentDateThreshold, "0"),
+                System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out threshold);
+
+            ClockState = new SolarSystemApp.SimulationClock.State
+            {
+                YearContinuous = year,
+                Phase = (SolarSystemApp.SimulationClock.ClockPhase)PlayerPrefs.GetInt(KeyClockPhase, 0),
+                CrossedYearZero = PlayerPrefs.GetInt(KeyClockCrossedYearZero, 0) == 1,
+                CrossedCurrentDate = PlayerPrefs.GetInt(KeyClockCrossedCurrentDate, 0) == 1,
+                UseSlowSweepRate = PlayerPrefs.GetInt(KeyClockUseSlowSweep, 0) == 1,
+                CurrentDateThreshold = threshold
+            };
+        }
+        else
+        {
+            ClockState = default;
+        }
+    }
+
+    public static void RestoreClockState()
+    {
+        Load();
+
+        if (!HasSavedState || !HasClockState)
+            return;
+
+        SolarSystemApp.SimulationClock.RestoreState(ClockState);
     }
 
     public static void RestoreMotionState()
@@ -375,7 +471,7 @@ public static class SimulationSessionState
         }
 
         bool useDetailCamera = IsDetailCamera && SelectedPlanetName != "Sun";
-        lookAt.FocusPlanet(SelectedPlanetName, useDetailCamera, showDescription: true);
+        lookAt.FocusPlanet(SelectedPlanetName, useDetailCamera, showDescription: false);
 
         Transform observedTarget = lookAt.currentTarget != null
             ? lookAt.currentTarget.transform

@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using SolarSystemApp;
 
 public class SimulationSessionRestorer : MonoBehaviour
 {
@@ -52,8 +53,22 @@ public class SimulationSessionRestorer : MonoBehaviour
             yield break;
         }
 
+        SimulationSessionState.RestoreClockState();
         SimulationSessionState.RestoreMotionState();
         SimulationSessionState.RestoreToScene();
+
+        if (TimeMachineSettings.UseTimeMachine)
+        {
+            var timeMachine = FindFirstObjectByType<TimeMachineController>();
+            if (timeMachine != null)
+            {
+                if (SimulationSessionState.HasClockState)
+                    timeMachine.ResumeAfterSessionRestore();
+                else
+                    timeMachine.BeginTimeMachine(resetClock: true);
+            }
+        }
+
         SimulationSessionState.PendingLaunchMode = SimulationLaunchMode.New;
     }
 }

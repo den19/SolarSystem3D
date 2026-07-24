@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class AudioManager : MonoBehaviour
@@ -256,35 +257,47 @@ public class AudioManager : MonoBehaviour
 
     public void PlaySoundAndTransition(string sceneName)
     {
-        if (clickSound != null && soundEnabled)
+        if (string.IsNullOrEmpty(sceneName))
+            return;
+
+        nextSceneName = sceneName;
+
+        if (clickSound != null && soundEnabled && audioSource != null)
         {
             audioSource.clip = clickSound;
             audioSource.loop = false;
             audioSource.volume = volumeBeforeMute;
             audioSource.mute = false;
             audioSource.Play();
-            nextSceneName = sceneName;
+            StartCoroutine(LoadNextSceneAfterClickSound());
+            return;
         }
-        else
+
+        LoadNextScene();
+    }
+
+    IEnumerator LoadNextSceneAfterClickSound()
+    {
+        const float maxWaitSeconds = 2f;
+        float elapsed = 0f;
+
+        // Wait until SFX ends, but never block scene load indefinitely.
+        while (audioSource != null && audioSource.isPlaying && elapsed < maxWaitSeconds)
         {
-            SceneManager.LoadScene(sceneName);
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
         }
+
+        LoadNextScene();
     }
 
     private void LoadNextScene()
     {
-        if (!string.IsNullOrEmpty(nextSceneName))
-        {
-            SceneManager.LoadScene(nextSceneName);
-            nextSceneName = "";
-        }
-    }
+        if (string.IsNullOrEmpty(nextSceneName))
+            return;
 
-    void Update()
-    {
-        if (!audioSource.isPlaying && !string.IsNullOrEmpty(nextSceneName))
-        {
-            LoadNextScene();
-        }
+        string scene = nextSceneName;
+        nextSceneName = "";
+        SceneManager.LoadScene(scene);
     }
 }

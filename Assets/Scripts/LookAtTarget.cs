@@ -97,6 +97,9 @@ public class LookAtTarget : MonoBehaviour {
 
         if (mainCamera != null)
             _mainOrbitCamera = mainCamera.GetComponent<MobileOrbitCamera>();
+
+        WireDescriptionCloseButtons();
+        EnsureDescriptionPanelLayouts();
     }
 	
     public void HideAllDescriptions()
@@ -104,34 +107,124 @@ public class LookAtTarget : MonoBehaviour {
         MakeAllDescriptionsInvisible();
     }
 
+    /// <summary>
+    /// Hides encyclopedia panels without changing camera focus (detail/main stays as FocusPlanet set it).
+    /// </summary>
+    public void CloseActiveDescription()
+    {
+        MakeAllDescriptionsInvisible();
+    }
+
     void MakeAllDescriptionsInvisible()
     {
-        theEarthGameObject.SetActive(false);
-        theMoonGameObject.SetActive(false);
-        theMarsGameObject.SetActive(false);
-        theMercuryGameObject.SetActive(false);
-        theVenusGameObject.SetActive(false);
-        theJupiterGameObject.SetActive(false);
-        theSaturnGameObject.SetActive(false);
-        if (theTitanGameObject) theTitanGameObject.SetActive(false);
-        if (theGanymedeGameObject) theGanymedeGameObject.SetActive(false);
-        if (theIoGameObject) theIoGameObject.SetActive(false);
-        if (theEuropaGameObject) theEuropaGameObject.SetActive(false);
-        if (theCallistoGameObject) theCallistoGameObject.SetActive(false);
-        if (thePhobosGameObject) thePhobosGameObject.SetActive(false);
-        if (theDeimosGameObject) theDeimosGameObject.SetActive(false);
-        theUranusGameObject.SetActive(false);
-        theNeptuneGameObject.SetActive(false);
-        if (theTritonGameObject) theTritonGameObject.SetActive(false);
-        theSunGameObject.SetActive(false);
+        SetDescriptionActive(theEarthGameObject, false);
+        SetDescriptionActive(theMoonGameObject, false);
+        SetDescriptionActive(theMarsGameObject, false);
+        SetDescriptionActive(theMercuryGameObject, false);
+        SetDescriptionActive(theVenusGameObject, false);
+        SetDescriptionActive(theJupiterGameObject, false);
+        SetDescriptionActive(theSaturnGameObject, false);
+        SetDescriptionActive(theTitanGameObject, false);
+        SetDescriptionActive(theGanymedeGameObject, false);
+        SetDescriptionActive(theIoGameObject, false);
+        SetDescriptionActive(theEuropaGameObject, false);
+        SetDescriptionActive(theCallistoGameObject, false);
+        SetDescriptionActive(thePhobosGameObject, false);
+        SetDescriptionActive(theDeimosGameObject, false);
+        SetDescriptionActive(theUranusGameObject, false);
+        SetDescriptionActive(theNeptuneGameObject, false);
+        SetDescriptionActive(theTritonGameObject, false);
+        SetDescriptionActive(theSunGameObject, false);
 
         if (CometDescriptionPanel.Instance != null)
             CometDescriptionPanel.Instance.Hide();
     }
 
+    static void SetDescriptionActive(GameObject description, bool active)
+    {
+        if (description != null)
+            description.SetActive(active);
+    }
+
     void MakeDescriptionVisible(GameObject planet)
     {
+        if (planet == null)
+            return;
+
         planet.SetActive(true);
+        var layout = planet.GetComponent<BodyDescriptionPanelLayout>();
+        if (layout != null)
+            layout.ApplyLayout();
+    }
+
+    void WireDescriptionCloseButtons()
+    {
+        WireCloseButton(theEarthGameObject);
+        WireCloseButton(theMoonGameObject);
+        WireCloseButton(theMarsGameObject);
+        WireCloseButton(theMercuryGameObject);
+        WireCloseButton(theVenusGameObject);
+        WireCloseButton(theJupiterGameObject);
+        WireCloseButton(theSaturnGameObject);
+        WireCloseButton(theTitanGameObject);
+        WireCloseButton(theGanymedeGameObject);
+        WireCloseButton(theIoGameObject);
+        WireCloseButton(theEuropaGameObject);
+        WireCloseButton(theCallistoGameObject);
+        WireCloseButton(thePhobosGameObject);
+        WireCloseButton(theDeimosGameObject);
+        WireCloseButton(theUranusGameObject);
+        WireCloseButton(theNeptuneGameObject);
+        WireCloseButton(theTritonGameObject);
+        WireCloseButton(theSunGameObject);
+    }
+
+    void EnsureDescriptionPanelLayouts()
+    {
+        EnsureDescriptionPanelLayout(theEarthGameObject);
+        EnsureDescriptionPanelLayout(theMoonGameObject);
+        EnsureDescriptionPanelLayout(theMarsGameObject);
+        EnsureDescriptionPanelLayout(theMercuryGameObject);
+        EnsureDescriptionPanelLayout(theVenusGameObject);
+        EnsureDescriptionPanelLayout(theJupiterGameObject);
+        EnsureDescriptionPanelLayout(theSaturnGameObject);
+        EnsureDescriptionPanelLayout(theTitanGameObject);
+        EnsureDescriptionPanelLayout(theGanymedeGameObject);
+        EnsureDescriptionPanelLayout(theIoGameObject);
+        EnsureDescriptionPanelLayout(theEuropaGameObject);
+        EnsureDescriptionPanelLayout(theCallistoGameObject);
+        EnsureDescriptionPanelLayout(thePhobosGameObject);
+        EnsureDescriptionPanelLayout(theDeimosGameObject);
+        EnsureDescriptionPanelLayout(theUranusGameObject);
+        EnsureDescriptionPanelLayout(theNeptuneGameObject);
+        EnsureDescriptionPanelLayout(theTritonGameObject);
+        EnsureDescriptionPanelLayout(theSunGameObject);
+    }
+
+    static void EnsureDescriptionPanelLayout(GameObject descriptionRoot)
+    {
+        if (descriptionRoot == null)
+            return;
+
+        if (descriptionRoot.GetComponent<BodyDescriptionPanelLayout>() == null)
+            descriptionRoot.AddComponent<BodyDescriptionPanelLayout>();
+    }
+
+    void WireCloseButton(GameObject descriptionRoot)
+    {
+        if (descriptionRoot == null)
+            return;
+
+        Transform closeTransform = descriptionRoot.transform.Find("Close Button");
+        if (closeTransform == null)
+            return;
+
+        Button closeButton = closeTransform.GetComponent<Button>();
+        if (closeButton == null)
+            return;
+
+        closeButton.onClick.RemoveAllListeners();
+        closeButton.onClick.AddListener(CloseActiveDescription);
     }
 
 

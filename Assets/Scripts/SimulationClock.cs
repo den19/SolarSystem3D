@@ -132,6 +132,58 @@ namespace SolarSystemApp
             _currentDateThreshold = DateTimeOffsetToContinuousYear(now);
         }
 
+        public struct State
+        {
+            public double YearContinuous;
+            public ClockPhase Phase;
+            public bool CrossedYearZero;
+            public bool CrossedCurrentDate;
+            public bool UseSlowSweepRate;
+            public double CurrentDateThreshold;
+        }
+
+        public static State CaptureState()
+        {
+            // Ensure threshold is valid even if milestones were never reset this session.
+            if (_currentDateThreshold <= 0.0 && !_crossedCurrentDate)
+            {
+                DateTimeOffset now = DateTimeOffset.UtcNow.ToOffset(UtcPlus3);
+                _currentDateThreshold = DateTimeOffsetToContinuousYear(now);
+            }
+
+            return new State
+            {
+                YearContinuous = _yearContinuous,
+                Phase = _phase,
+                CrossedYearZero = _crossedYearZero,
+                CrossedCurrentDate = _crossedCurrentDate,
+                UseSlowSweepRate = _useSlowSweepRate,
+                CurrentDateThreshold = _currentDateThreshold
+            };
+        }
+
+        public static void RestoreState(State state)
+        {
+            _yearContinuous = state.YearContinuous;
+            _phase = state.Phase;
+            _crossedYearZero = state.CrossedYearZero;
+            _crossedCurrentDate = state.CrossedCurrentDate;
+            _useSlowSweepRate = state.UseSlowSweepRate;
+
+            if (state.CurrentDateThreshold > 0.0)
+            {
+                _currentDateThreshold = state.CurrentDateThreshold;
+            }
+            else
+            {
+                DateTimeOffset now = DateTimeOffset.UtcNow.ToOffset(UtcPlus3);
+                _currentDateThreshold = DateTimeOffsetToContinuousYear(now);
+            }
+
+            _lastFormattedDate = null;
+            NotifyDateChangedIfNeeded(force: true);
+        }
+
         static double GetYearsPerSecond()
         {
             if (_phase == ClockPhase.Live || _useSlowSweepRate)
