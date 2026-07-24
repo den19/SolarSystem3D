@@ -49,6 +49,8 @@ public class PauseAndResume : MonoBehaviour
         // Time Machine is manual-only; never auto-start on New.
         TimeMachineSettings.SetUseTimeMachine(false);
         Time.timeScale = 1f;
+        // Load here so menu works even if AudioManager OnClick target is stale.
+        SceneManager.LoadSceneAsync(gameSceneName);
     }
 
     public void ResumeGame()
@@ -65,5 +67,7 @@ public class PauseAndResume : MonoBehaviour
             SimulationSessionState.SpeedMultiplier,
             SimulationSessionState.IsSimulationPaused,
             apply: false);
+        Time.timeScale = 1f;
+        SceneManager.LoadSceneAsync(gameSceneName);
     }
 }

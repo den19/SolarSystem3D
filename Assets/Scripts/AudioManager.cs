@@ -26,10 +26,11 @@ public class AudioManager : MonoBehaviour
 
     void Awake()
     {
+        // Keep the scene instance UI buttons reference. Destroy the older
+        // persistent copy so MainMenu/Level1 OnClick targets stay valid.
         if (instance != null && instance != this)
         {
-            Destroy(gameObject);
-            return;
+            Destroy(instance.gameObject);
         }
 
         instance = this;
@@ -46,6 +47,12 @@ public class AudioManager : MonoBehaviour
         ApplySavedSoundSetting();
         ApplySavedMusicSetting();
         EnsureMusicPlaying();
+    }
+
+    void OnDestroy()
+    {
+        if (instance == this)
+            instance = null;
     }
 
     void SetupMusicSource()
@@ -249,6 +256,12 @@ public class AudioManager : MonoBehaviour
 
     public void PlaySound()
     {
+        if (instance != null && instance != this)
+        {
+            instance.PlaySound();
+            return;
+        }
+
         if (clickSound != null && soundEnabled)
         {
             audioSource.PlayOneShot(clickSound, volumeBeforeMute);
@@ -259,6 +272,13 @@ public class AudioManager : MonoBehaviour
     {
         if (string.IsNullOrEmpty(sceneName))
             return;
+
+        // If a stale scene copy somehow receives the click, forward to the live singleton.
+        if (instance != null && instance != this)
+        {
+            instance.PlaySoundAndTransition(sceneName);
+            return;
+        }
 
         nextSceneName = sceneName;
 
