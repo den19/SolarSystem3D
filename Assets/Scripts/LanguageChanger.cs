@@ -23,10 +23,10 @@ public class LanguageChanger : MonoBehaviour
             languageDropdown.AddOptions(new List<string>(LanguageLabels));
 
             // Получаем сохраненный язык из PlayerPrefs (синхронно с LocalizationManager)
-            int savedLanguage = PlayerPrefs.GetInt("SelectedLanguage", (int)Language.English);
+            int savedLanguage = PlayerPrefs.GetInt("SelectedLanguage", (int)Language.Russian);
             int maxLanguage = (int)Language.Uzbek;
             if (savedLanguage < 0 || savedLanguage > maxLanguage)
-                savedLanguage = (int)Language.English;
+                savedLanguage = (int)Language.Russian;
             languageDropdown.value = savedLanguage;
             GameState.language = (Language)savedLanguage;
 
@@ -70,11 +70,11 @@ public class LanguageChanger : MonoBehaviour
 
         isInitializing = true;
 
-        int savedLanguage = PlayerPrefs.GetInt("SelectedLanguage", (int)Language.English);
+        int savedLanguage = PlayerPrefs.GetInt("SelectedLanguage", (int)Language.Russian);
         int maxLanguage = (int)Language.Uzbek;
         if (savedLanguage < 0 || savedLanguage > maxLanguage)
         {
-            savedLanguage = (int)Language.English;
+            savedLanguage = (int)Language.Russian;
         }
 
         languageDropdown.SetValueWithoutNotify(savedLanguage);

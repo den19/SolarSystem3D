@@ -55,7 +55,12 @@ public static class SidePanelUiBootstrap
         return rowStartY + rowCount * rowHeight + (rowCount - 1) * rowSpacing + bottomPadding;
     }
 
-    public static void ApplyBarRectLayout(RectTransform bar, float safeLeft, float safeRight, float safeTop)
+    /// <summary>
+    /// Top-stretch bar. Horizontal safe insets keep controls clear of side cutouts;
+    /// vertical offset stays <see cref="BarTopMargin"/> in both orientations so the
+    /// bar does not jump when notch/status insets move between portrait and landscape.
+    /// </summary>
+    public static void ApplyBarRectLayout(RectTransform bar, float safeLeft, float safeRight)
     {
         if (bar == null)
             return;
@@ -66,7 +71,7 @@ public static class SidePanelUiBootstrap
         bar.anchoredPosition = Vector2.zero;
         bar.sizeDelta = Vector2.zero;
 
-        float topInset = Mathf.Max(0f, safeTop + BarTopMargin);
+        float topInset = BarTopMargin;
         bar.offsetMin = new Vector2(safeLeft + BarHorizontalMargin, -(BarHeight + topInset));
         bar.offsetMax = new Vector2(-(safeRight + BarHorizontalMargin), -topInset);
     }

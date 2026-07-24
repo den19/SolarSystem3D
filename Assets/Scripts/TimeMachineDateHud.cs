@@ -170,10 +170,10 @@ public class TimeMachineDateHud : MonoBehaviour
         if (_canvas == null)
             _canvas = GetComponentInParent<Canvas>();
 
-        SafeAreaInsets.GetCanvasInsets(_canvas, out _, out float safeRight, out _, out float safeBottom);
+        SafeAreaInsets.GetCanvasInsets(_canvas, out _, out float safeRight, out _, out _);
 
         float x = -(safeRight + CpuLoadMonitor.HorizontalMargin);
-        float y = ComputeBottomOffset(safeBottom);
+        float y = ComputeBottomOffset();
 
         _root.anchorMin = new Vector2(1f, 0f);
         _root.anchorMax = new Vector2(1f, 0f);
@@ -188,11 +188,10 @@ public class TimeMachineDateHud : MonoBehaviour
         _lastScreenHeight = Screen.height;
     }
 
-    float ComputeBottomOffset(float safeBottom)
+    float ComputeBottomOffset()
     {
-        // Match ScaleBarController stack, then sit one gap above the scale bar.
-        float y = safeBottom
-            + TimeControlUiBootstrap.BarBottomMargin
+        // Match ScaleBarController / time bar: fixed bottom stack (no safeBottom jump).
+        float y = TimeControlUiBootstrap.BarBottomMargin
             + TimeControlUiBootstrap.BarHeight
             + CpuLoadMonitor.GapAboveTimeBar;
 

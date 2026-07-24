@@ -378,7 +378,7 @@ public static class SidePanelSceneSetup
         }
 
         var barRect = bar.GetComponent<RectTransform>();
-        SidePanelUiBootstrap.ApplyBarRectLayout(barRect, 0f, 0f, 0f);
+        SidePanelUiBootstrap.ApplyBarRectLayout(barRect, 0f, 0f);
 
         var layout = bar.GetComponent<HorizontalLayoutGroup>();
         if (layout != null)

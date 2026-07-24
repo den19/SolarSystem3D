@@ -151,12 +151,11 @@ public class CpuLoadMonitor : MonoBehaviour
         if (canvas == null)
             canvas = GetComponentInParent<Canvas>();
 
-        SafeAreaInsets.GetCanvasInsets(canvas, out _, out float safeRight, out _, out float safeBottom);
+        SafeAreaInsets.GetCanvasInsets(canvas, out _, out float safeRight, out _, out _);
 
         float x = -(safeRight + HorizontalMargin);
-        // Sit above SimulationTimeControlBar (bottom-center in both orientations).
-        float y = safeBottom
-            + TimeControlUiBootstrap.BarBottomMargin
+        // Sit above SimulationTimeControlBar (fixed bottom margin, both orientations).
+        float y = TimeControlUiBootstrap.BarBottomMargin
             + TimeControlUiBootstrap.BarHeight
             + GapAboveTimeBar;
 

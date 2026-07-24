@@ -224,8 +224,8 @@ public class SimulationTimeControlController : MonoBehaviour
             gameObject.SetActive(true);
 
         Canvas.ForceUpdateCanvases();
-        SafeAreaInsets.GetCanvasInsets(_canvas, out float safeLeft, out float safeRight, out _, out float safeBottom);
-        TimeControlUiBootstrap.ApplyBarRectLayout(barRect, _canvas, IsLandscape, safeLeft, safeRight, safeBottom);
+        SafeAreaInsets.GetCanvasInsets(_canvas, out float safeLeft, out float safeRight, out _, out _);
+        TimeControlUiBootstrap.ApplyBarRectLayout(barRect, _canvas, IsLandscape, safeLeft, safeRight);
 
         _lastSafeArea = Screen.safeArea;
         _lastScreenWidth = Screen.width;

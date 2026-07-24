@@ -156,16 +156,19 @@ public static class TimeControlUiBootstrap
         return tmp;
     }
 
-    public static void ApplyBarRectLayout(RectTransform barRect, Canvas canvas, bool landscape, float safeLeft, float safeRight, float safeBottom)
+    /// <summary>
+    /// Bottom-center bar. Horizontal safe insets keep the bar clear of side cutouts;
+    /// vertical offset stays <see cref="BarBottomMargin"/> in both orientations so the
+    /// bar does not jump when home-indicator insets change between portrait and landscape.
+    /// </summary>
+    public static void ApplyBarRectLayout(RectTransform barRect, Canvas canvas, bool landscape, float safeLeft, float safeRight)
     {
         if (barRect == null)
             return;
 
         float width = landscape ? BarWidthLandscape : BarWidthPortrait;
-        float bottomInset = Mathf.Max(0f, safeBottom + BarBottomMargin);
+        float bottomInset = BarBottomMargin;
 
-        // Bottom-center in both orientations so the bar never sits under a side
-        // cutout or gets pushed off-screen when safe-left is large in landscape.
         barRect.anchorMin = new Vector2(0.5f, 0f);
         barRect.anchorMax = new Vector2(0.5f, 0f);
         barRect.pivot = new Vector2(0.5f, 0f);

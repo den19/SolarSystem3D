@@ -14,7 +14,7 @@ public class LocalizationManager : MonoBehaviour
     public static event LanguageChangedDelegate OnLanguageChanged;
 
     private Dictionary<string, string> translations = new();
-    public static Language CurrentLanguage { get; set; } = Language.English;
+    public static Language CurrentLanguage { get; set; } = Language.Russian;
 
     // Метод для гарантированной инициализации синглтона
     public static void Initialize()
@@ -38,11 +38,11 @@ public class LocalizationManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        // Загружаем сохраненный язык из PlayerPrefs (по умолчанию English = 0)
-        int savedLanguage = PlayerPrefs.GetInt("SelectedLanguage", (int)Language.English);
+        // Загружаем сохраненный язык из PlayerPrefs (по умолчанию Russian)
+        int savedLanguage = PlayerPrefs.GetInt("SelectedLanguage", (int)Language.Russian);
         int maxLanguage = (int)Language.Uzbek;
         if (savedLanguage < 0 || savedLanguage > maxLanguage)
-            savedLanguage = (int)Language.English;
+            savedLanguage = (int)Language.Russian;
 
         CurrentLanguage = (Language)savedLanguage;
         GameState.language = CurrentLanguage; // Синхронизируем GameState

@@ -223,7 +223,7 @@ public class BodyNavigationController : MonoBehaviour
         if (barRect == null)
             return;
 
-        SidePanelUiBootstrap.ApplyBarRectLayout(barRect, 0f, 0f, 0f);
+        SidePanelUiBootstrap.ApplyBarRectLayout(barRect, 0f, 0f);
     }
 
     void EnsureToolbarButtonsInBar()
@@ -707,9 +707,9 @@ public class BodyNavigationController : MonoBehaviour
         Canvas.ForceUpdateCanvases();
 
         Canvas canvas = barRect.GetComponentInParent<Canvas>();
-        SafeAreaInsets.GetCanvasInsets(canvas, out float left, out float right, out float top, out _);
+        SafeAreaInsets.GetCanvasInsets(canvas, out float left, out float right, out _, out _);
 
-        SidePanelUiBootstrap.ApplyBarRectLayout(barRect, left, right, top);
+        SidePanelUiBootstrap.ApplyBarRectLayout(barRect, left, right);
         LayoutRebuilder.ForceRebuildLayoutImmediate(barRect);
         ApplyAdaptiveToolbarLayout();
         CacheScreenLayoutState();

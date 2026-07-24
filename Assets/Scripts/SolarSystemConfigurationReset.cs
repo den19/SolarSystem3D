@@ -30,9 +30,9 @@ public static class SolarSystemConfigurationReset
 
         if (LocalizationManager.Instance != null)
         {
-            LocalizationManager.Instance.ChangeLanguage(Language.English);
+            LocalizationManager.Instance.ChangeLanguage(Language.Russian);
         }
 
-        GameState.language = Language.English;
+        GameState.language = Language.Russian;
     }
 }

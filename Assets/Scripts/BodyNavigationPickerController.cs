@@ -184,10 +184,11 @@ public class BodyNavigationPickerController : MonoBehaviour
             return;
 
         Canvas.ForceUpdateCanvases();
-        SafeAreaInsets.GetCanvasInsets(_canvas, out float left, out float right, out float top, out _);
+        SafeAreaInsets.GetCanvasInsets(_canvas, out float left, out float right, out _, out _);
 
         float horizontalMargin = SidePanelUiBootstrap.BarHorizontalMargin;
-        float topInset = top + SidePanelUiBootstrap.BarTopMargin;
+        // Match BodyNavigationBar: fixed top margin (no safeTop) so picker stays under the bar.
+        float topInset = SidePanelUiBootstrap.BarTopMargin;
         float barHeight = SidePanelUiBootstrap.BarHeight;
         float panelTop = topInset + barHeight + PanelGapBelowBar;
 

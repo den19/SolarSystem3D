@@ -285,10 +285,10 @@ public class ScaleBarController : MonoBehaviour
         if (_canvas == null)
             _canvas = GetComponentInParent<Canvas>();
 
-        SafeAreaInsets.GetCanvasInsets(_canvas, out _, out float safeRight, out _, out float safeBottom);
+        SafeAreaInsets.GetCanvasInsets(_canvas, out _, out float safeRight, out _, out _);
 
         float x = -(safeRight + CpuLoadMonitor.HorizontalMargin);
-        float y = ComputeBottomOffset(safeBottom);
+        float y = ComputeBottomOffset();
 
         _root.anchorMin = new Vector2(1f, 0f);
         _root.anchorMax = new Vector2(1f, 0f);
@@ -307,10 +307,10 @@ public class ScaleBarController : MonoBehaviour
         _lastScreenHeight = Screen.height;
     }
 
-    float ComputeBottomOffset(float safeBottom)
+    float ComputeBottomOffset()
     {
-        float y = safeBottom
-            + TimeControlUiBootstrap.BarBottomMargin
+        // Match time bar: fixed bottom stack so Y stays stable on rotate.
+        float y = TimeControlUiBootstrap.BarBottomMargin
             + TimeControlUiBootstrap.BarHeight
             + CpuLoadMonitor.GapAboveTimeBar;
 
