@@ -19,6 +19,7 @@ public class SettingsWindowLandscapeLayout : MonoBehaviour
         "Title",
         "Language",
         "Volume",
+        "Music",
         "ExtraGraphics",
         "GraphicsTier",
         "CpuMonitor",
@@ -32,6 +33,7 @@ public class SettingsWindowLandscapeLayout : MonoBehaviour
     {
         "Language",
         "Volume",
+        "Music",
         "ExtraGraphics",
         "GraphicsTier",
         "CpuMonitor",
@@ -138,6 +140,7 @@ public class SettingsWindowLandscapeLayout : MonoBehaviour
         }
 
         CacheToggle("Volume Toggle");
+        CacheToggle("Music Toggle");
         CacheToggle("Extra Graphics Toggle");
         CacheToggle("CPU Monitor Toggle");
     }
@@ -162,6 +165,7 @@ public class SettingsWindowLandscapeLayout : MonoBehaviour
     void AlignTogglesToRightEdge()
     {
         AlignToggle(FindDeepChild(transform, "Volume Toggle"));
+        AlignToggle(FindDeepChild(transform, "Music Toggle"));
         AlignToggle(FindDeepChild(transform, "Extra Graphics Toggle"));
         AlignToggle(FindDeepChild(transform, "CPU Monitor Toggle"));
     }

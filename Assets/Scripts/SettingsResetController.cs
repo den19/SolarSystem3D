@@ -3,6 +3,7 @@ using UnityEngine;
 public class SettingsResetController : MonoBehaviour
 {
     [SerializeField] private VolumeControlController volumeControl;
+    [SerializeField] private MusicControlController musicControl;
     [SerializeField] private LanguageChanger languageChanger;
 
     public void OnResetClicked()
@@ -14,12 +15,18 @@ public class SettingsResetController : MonoBehaviour
             volumeControl = GetComponentInChildren<VolumeControlController>(true);
         }
 
+        if (musicControl == null)
+        {
+            musicControl = GetComponentInChildren<MusicControlController>(true);
+        }
+
         if (languageChanger == null)
         {
             languageChanger = GetComponentInChildren<LanguageChanger>(true);
         }
 
         volumeControl?.RefreshFromSaved();
+        musicControl?.RefreshFromSaved();
         languageChanger?.RefreshFromSaved();
 
         var extraGraphics = GetComponentInChildren<ExtraGraphicsControlController>(true);

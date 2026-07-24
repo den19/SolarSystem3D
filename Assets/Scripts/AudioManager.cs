@@ -5,6 +5,9 @@ public class AudioManager : MonoBehaviour
 {
     private const string SoundEnabledKey = "SoundEnabled";
     private const string MasterVolumeKey = "MasterVolume";
+    private const string MusicEnabledKey = "MusicEnabled";
+    private const string MusicVolumeKey = "MusicVolume";
+    private const float DefaultMusicVolume = 0.1f;
 
     private static AudioManager instance = null;
     public static AudioManager Instance { get => instance; }
@@ -17,6 +20,8 @@ public class AudioManager : MonoBehaviour
     private string nextSceneName;
     private float volumeBeforeMute = 1f;
     private bool soundEnabled = true;
+    private float musicVolumeBeforeMute = DefaultMusicVolume;
+    private bool musicEnabled = true;
 
     void Awake()
     {
@@ -36,7 +41,9 @@ public class AudioManager : MonoBehaviour
         }
 
         SetupMusicSource();
+        AudioListener.volume = 1f;
         ApplySavedSoundSetting();
+        ApplySavedMusicSetting();
         EnsureMusicPlaying();
     }
 
@@ -61,6 +68,17 @@ public class AudioManager : MonoBehaviour
         }
     }
 
+    void ApplySfxVolume()
+    {
+        if (audioSource == null)
+        {
+            return;
+        }
+
+        audioSource.volume = soundEnabled ? volumeBeforeMute : 0f;
+        audioSource.mute = !soundEnabled;
+    }
+
     void ApplyMusicPlaybackState()
     {
         if (musicSource == null)
@@ -68,16 +86,15 @@ public class AudioManager : MonoBehaviour
             return;
         }
 
-        musicSource.volume = volumeBeforeMute;
+        musicSource.volume = musicVolumeBeforeMute;
 
-        if (soundEnabled)
+        if (musicEnabled)
         {
             if (musicSource.clip == null || musicSource.isPlaying)
             {
                 return;
             }
 
-            // Resume after Pause, or start if never played.
             musicSource.UnPause();
             if (!musicSource.isPlaying)
             {
@@ -102,7 +119,7 @@ public class AudioManager : MonoBehaviour
             musicSource.clip = musicClip;
         }
 
-        if (!soundEnabled)
+        if (!musicEnabled)
         {
             return;
         }
@@ -129,16 +146,7 @@ public class AudioManager : MonoBehaviour
         volumeBeforeMute = volume;
         PlayerPrefs.SetFloat(MasterVolumeKey, volume);
         PlayerPrefs.Save();
-
-        if (soundEnabled)
-        {
-            AudioListener.volume = volume;
-        }
-
-        if (musicSource != null)
-        {
-            musicSource.volume = volume;
-        }
+        ApplySfxVolume();
     }
 
     public void SetSoundEnabled(bool enabled)
@@ -147,9 +155,7 @@ public class AudioManager : MonoBehaviour
         {
             if (!soundEnabled)
             {
-                float volume = GetMasterVolume();
-                volumeBeforeMute = volume;
-                AudioListener.volume = volume;
+                volumeBeforeMute = GetMasterVolume();
             }
             soundEnabled = true;
         }
@@ -157,32 +163,74 @@ public class AudioManager : MonoBehaviour
         {
             if (soundEnabled)
             {
-                float current = AudioListener.volume > 0f ? AudioListener.volume : volumeBeforeMute;
-                SetMasterVolume(current);
+                volumeBeforeMute = GetMasterVolume();
             }
-            AudioListener.volume = 0f;
             soundEnabled = false;
         }
 
         PlayerPrefs.SetInt(SoundEnabledKey, enabled ? 1 : 0);
         PlayerPrefs.Save();
-        ApplyMusicPlaybackState();
+        ApplySfxVolume();
     }
 
     private void ApplySavedSoundSetting()
     {
         volumeBeforeMute = GetMasterVolume();
         soundEnabled = PlayerPrefs.GetInt(SoundEnabledKey, 1) == 1;
+        ApplySfxVolume();
+    }
 
-        if (soundEnabled)
+    public bool IsMusicEnabled()
+    {
+        return musicEnabled;
+    }
+
+    public float GetMusicVolume()
+    {
+        return Mathf.Clamp01(PlayerPrefs.GetFloat(MusicVolumeKey, DefaultMusicVolume));
+    }
+
+    public void SetMusicVolume(float volume)
+    {
+        volume = Mathf.Clamp01(volume);
+        musicVolumeBeforeMute = volume;
+        PlayerPrefs.SetFloat(MusicVolumeKey, volume);
+        PlayerPrefs.Save();
+
+        if (musicSource != null)
         {
-            AudioListener.volume = volumeBeforeMute;
+            musicSource.volume = volume;
+        }
+    }
+
+    public void SetMusicEnabled(bool enabled)
+    {
+        if (enabled)
+        {
+            if (!musicEnabled)
+            {
+                musicVolumeBeforeMute = GetMusicVolume();
+            }
+            musicEnabled = true;
         }
         else
         {
-            AudioListener.volume = 0f;
+            if (musicEnabled)
+            {
+                musicVolumeBeforeMute = GetMusicVolume();
+            }
+            musicEnabled = false;
         }
 
+        PlayerPrefs.SetInt(MusicEnabledKey, enabled ? 1 : 0);
+        PlayerPrefs.Save();
+        ApplyMusicPlaybackState();
+    }
+
+    private void ApplySavedMusicSetting()
+    {
+        musicVolumeBeforeMute = GetMusicVolume();
+        musicEnabled = PlayerPrefs.GetInt(MusicEnabledKey, 1) == 1;
         ApplyMusicPlaybackState();
     }
 
@@ -190,25 +238,30 @@ public class AudioManager : MonoBehaviour
     {
         PlayerPrefs.DeleteKey(SoundEnabledKey);
         PlayerPrefs.DeleteKey(MasterVolumeKey);
+        PlayerPrefs.DeleteKey(MusicEnabledKey);
+        PlayerPrefs.DeleteKey(MusicVolumeKey);
         PlayerPrefs.Save();
         ApplySavedSoundSetting();
+        ApplySavedMusicSetting();
         EnsureMusicPlaying();
     }
 
     public void PlaySound()
     {
-        if (clickSound != null)
+        if (clickSound != null && soundEnabled)
         {
-            audioSource.PlayOneShot(clickSound);
+            audioSource.PlayOneShot(clickSound, volumeBeforeMute);
         }
     }
 
     public void PlaySoundAndTransition(string sceneName)
     {
-        if (clickSound != null)
+        if (clickSound != null && soundEnabled)
         {
             audioSource.clip = clickSound;
             audioSource.loop = false;
+            audioSource.volume = volumeBeforeMute;
+            audioSource.mute = false;
             audioSource.Play();
             nextSceneName = sceneName;
         }
