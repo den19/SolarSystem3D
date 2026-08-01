@@ -5,7 +5,7 @@
 Проект: Solar System 3D (Unity URP)  
 Сцены сборки: Assets/_Scenes/MainMenu.unity, Assets/_Scenes/Level1.unity  
 Скрипты: Assets/Scripts/ (~84 файла)  
-Версия документа: 2026-07-16  
+Версия документа: 2026-08-01  
 
 Документ описывает архитектуру симуляции, режимы работы, особенности, известные недостатки и направления развития. Предназначен для разработчиков, поддерживающих и расширяющих приложение.
 
@@ -258,6 +258,13 @@ Minimap  |  ShowMinimap  |  вкл
 Реальное Солнце  |  UseRealSun  |  вкл
 Машина времени  |  UseTimeMachine  |  выкл (только ручной тумблер)
 
+Панель: SimulationSidePanelController + SidePanelUiBootstrap. Базовый размер (authoring / scale 1): 270×~428. Runtime-масштаб через ComputePanelScale():
+
+- Portrait: PortraitScale = 2 (~540×856); подписи и тумблеры растут пропорционально (ApplyCompactLayout).
+- Landscape: LandscapeScale = 1.5.
+- При нехватке высоты — clamp вниз до MinPanelScale (0.75), чтобы панель не уезжала за экран.
+- Сцена хранит baseline scale 1; Play Mode / APK применяют масштаб по Screen.width > Screen.height.
+
 
 3.3. MainMenu
 ~~~~~~~~~~~~~
@@ -290,16 +297,19 @@ GraphicsTier (Graphics quality) — объект сцены MainMenu под Extr
 3. Масштаб TrueScale — компромисс: истинные отношения орбит, но размеры не 1:1 (иначе внутренние планеты исчезают).  
 4. TimeScale глобален — ускорение влияет на всё, что использует deltaTime (включая showcase).  
 5. Scene-first UI — панель, time bar, навбар живут на сцене; Editor menu Solar System/Setup … + runtime bootstrap как fallback.  
-6. Safe area — SafeAreaInsets для навбара, side panel, time bar, CpuLoadMonitor, ScaleBar.  
-7. CpuLoadMonitor в portrait поднимается над time bar (bottom-right), в landscape остаётся у нижнего правого края.  
-8. ScaleBar — линейка расстояния на MainScreenCanvas (runtime через ScaleBarController.EnsureOnCanvas): portrait/landscape bottom-right над CPU (если CPU выкл — на его месте), не пересекается с minimap (левый низ) и time bar (центр/лево). Подпись в AU (SolarSystemScaleController.AuToUnity + SolarSystemCatalog.AuKm); при близком зуме — км. Tap открывает локализованную подсказку (ключи ScaleBarAu*). В clean view скрывается вместе с HUD.  
-9. Share — скриншот + Android share; сообщения локализованы.  
-10. Mobile graphics tier — High поднимает renderScale/MSAA только на устройстве; в Editor (PC quality) картинка изначально сильнее.  
+6. Side panel orientation scale — portrait ×2, landscape ×1.5 от baseline (SimulationSidePanelController / SidePanelUiBootstrap); см. §3.2.  
+7. Safe area — SafeAreaInsets для навбара, side panel, time bar, CpuLoadMonitor, ScaleBar.  
+8. CpuLoadMonitor в portrait поднимается над time bar (bottom-right), в landscape остаётся у нижнего правого края.  
+9. ScaleBar — линейка расстояния на MainScreenCanvas (runtime через ScaleBarController.EnsureOnCanvas): portrait/landscape bottom-right над CPU (если CPU выкл — на его месте), не пересекается с minimap (левый низ) и time bar (центр/лево). Подпись в AU (SolarSystemScaleController.AuToUnity + SolarSystemCatalog.AuKm); при близком зуме — км. Tap открывает локализованную подсказку (ключи ScaleBarAu*). В clean view скрывается вместе с HUD.  
+10. Share — скриншот + Android share; сообщения локализованы.  
+11. Mobile graphics tier — High поднимает renderScale/MSAA только на устройстве; в Editor (PC quality) картинка изначально сильнее.  
 
 Ключевые пути:
 
 - Assets/Scripts/SimulationTimeController.cs  
 - Assets/Scripts/SimulationSessionState.cs  
+- Assets/Scripts/SimulationSidePanelController.cs  
+- Assets/Scripts/SidePanelUiBootstrap.cs  
 - Assets/Scripts/SolarSystemGraphics/SolarSystemCatalog.cs  
 - Assets/Scripts/SolarSystemGraphics/GraphicsTierSettings.cs  
 - Assets/Scripts/MobileUrpQualityApplicator.cs  
