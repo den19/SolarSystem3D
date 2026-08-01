@@ -11,6 +11,7 @@ using UnityEngine.UI;
 /// </summary>
 public class SimulationSidePanelController : MonoBehaviour
 {
+    const float PortraitScale = 2f;
     const float LandscapeScale = 1.5f;
     const float MinPanelScale = 0.75f;
     const float BottomFitPadding = 8f;
@@ -187,7 +188,7 @@ public class SimulationSidePanelController : MonoBehaviour
 
     float ComputePanelScale()
     {
-        float maxScale = IsLandscape ? LandscapeScale : 1f;
+        float maxScale = IsLandscape ? LandscapeScale : PortraitScale;
         float scale = maxScale;
         float baseHeight = SidePanelUiBootstrap.ComputePanelHeight(SidePanelUiBootstrap.ToggleRows.Length, 1f);
         float availableHeight = GetAvailablePanelHeight();
