@@ -272,7 +272,7 @@ Minimap  |  ShowMinimap  |  вкл
 ~~~~~~~~~~~~~
 
 - Продолжить / Новая симуляция  
-- Язык: English, Russian, Chinese, Vietnamese, Uzbek  
+- Язык: English, Russian, Chinese, Vietnamese, Uzbek, Tatar, Belarusian  
 - Громкость, Extra Graphics, Graphics quality (Auto / Balanced / High), CPU Monitor  
 - About, Reset настроек  
 
@@ -282,9 +282,10 @@ GraphicsTier (Graphics quality) — объект сцены MainMenu под Extr
 3.4. Языки и локализация
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-- LocalizationManager загружает Assets/Resources/Languages/*.json.  
+- LocalizationManager загружает Assets/Resources/Languages/*.json (7 файлов: english, russian, chinese, vietnamese, uzbek, tatar, belarusian).  
 - LocalizedText: ключ перевода = имя GameObject в сцене.  
-- Шрифты: LocalizationFontHelper (в т.ч. CJK).  
+- Шрифты: LocalizationFontHelper (в т.ч. CJK и расширенная кириллица для Tatar/Belarusian).  
+- Текст About: объект AboutPanel на MainMenu; при правке копирайта/благодарностей обновлять ключ AboutPanel во всех JSON (дефолтный m_Text в сцене перекрывается локализацией).  
 
 Переименование UI-объекта без обновления JSON ломает перевод.
 
@@ -406,7 +407,7 @@ Mars  |  —  |  Phobos/Deimos уже есть
 5. Режим «учитель»: скрыть UI, оставить time bar + крупный заголовок тела.  
 6. Схема затмений / фазы Луны (упрощённо).  
 7. Связь единиц: AU ↔ км на линейке масштаба (ScaleBarController) и в описаниях; период ↔ земные сутки — в описаниях.  
-8. Локализация описаний планет полностью во всех 5 языках (проверить полноту ключей).  
+8. Локализация описаний планет полностью во всех 7 языках (проверить полноту ключей).  
 
 
 6.4. UI / UX
