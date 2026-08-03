@@ -16,7 +16,7 @@ public class SpacetimeGridController : MonoBehaviour
 
     static readonly string[] BodyNames =
     {
-        "Sun", "Mercury", "Venus", "Earth", "Mars", "Phobos", "Deimos", "Jupiter", "Saturn", "Uranus", "Neptune", "Moon", "Io", "Europa", "Titan", "Ganymede", "Callisto", "Triton"
+        "Sun", "Mercury", "Venus", "Earth", "Mars", "Phobos", "Deimos", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto", "Moon", "Io", "Europa", "Titan", "Ganymede", "Callisto", "Triton"
     };
 
     static readonly HashSet<string> MoonNames = new HashSet<string>

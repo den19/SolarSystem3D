@@ -99,6 +99,14 @@ public static class SolarSystemCatalog
         },
         new BodyDefinition
         {
+            objectName = "Pluto",
+            orbitalRadiusAu = 39.48f,
+            equatorialRadiusKm = 1188.3f,
+            orbitalEccentricity = 0.2488f,
+            orbitalInclinationDeg = 17.16f
+        },
+        new BodyDefinition
+        {
             objectName = "Moon",
             orbitalRadiusAu = 0f,
             equatorialRadiusKm = 1737.4f,

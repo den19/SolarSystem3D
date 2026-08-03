@@ -353,6 +353,7 @@ public class MobileOrbitCamera : MonoBehaviour
         var uranusDesc = globalLookAtScript.theUranusGameObject;
         var neptuneDesc = globalLookAtScript.theNeptuneGameObject;
         var tritonDesc = globalLookAtScript.theTritonGameObject;
+        var plutoDesc = globalLookAtScript.thePlutoGameObject;
 
         if (sunDesc) sunDesc.SetActive(planetName == "Sun");
         if (earthDesc) earthDesc.SetActive(planetName == "Earth");
@@ -372,6 +373,7 @@ public class MobileOrbitCamera : MonoBehaviour
         if (uranusDesc) uranusDesc.SetActive(planetName == "Uranus");
         if (neptuneDesc) neptuneDesc.SetActive(planetName == "Neptune");
         if (tritonDesc) tritonDesc.SetActive(planetName == "Triton");
+        if (plutoDesc) plutoDesc.SetActive(planetName == "Pluto");
     }
 
     private void TriggerCameraSwitch(string planetName, bool toDetail)
@@ -412,6 +414,7 @@ public class MobileOrbitCamera : MonoBehaviour
         if (planetName == "Uranus" && globalLookAtScript.uranusCamera) globalLookAtScript.uranusCamera.SetActive(active);
         if (planetName == "Neptune" && globalLookAtScript.neptuneCamera) globalLookAtScript.neptuneCamera.SetActive(active);
         if (planetName == "Triton" && globalLookAtScript.tritonCamera) globalLookAtScript.tritonCamera.SetActive(active);
+        if (planetName == "Pluto" && globalLookAtScript.plutoCamera) globalLookAtScript.plutoCamera.SetActive(active);
     }
 
     public void GetOrbitState(out float outX, out float outY, out float outDistance)

@@ -410,9 +410,9 @@ public class SolarSystemScaleController : MonoBehaviour
             float outerPlanetDistance = SolarSystemCatalog.MaxHeliocentricAu() * _auToUnity;
             grid.SetHalfExtent(Mathf.Max(120f, outerPlanetDistance * 1.08f));
         }
-        else if (SolarSystemLayout.TryGetEducational("Neptune", out SolarSystemLayout.EducationalEntry neptune))
+        else if (SolarSystemLayout.TryGetEducational("Pluto", out SolarSystemLayout.EducationalEntry pluto))
         {
-            grid.SetHalfExtent(Mathf.Max(120f, neptune.OrbitDistance * 1.12f));
+            grid.SetHalfExtent(Mathf.Max(120f, pluto.OrbitDistance * 1.12f));
         }
         else
         {

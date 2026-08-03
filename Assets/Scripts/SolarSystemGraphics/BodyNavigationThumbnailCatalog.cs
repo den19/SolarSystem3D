@@ -27,7 +27,8 @@ public static class BodyNavigationThumbnailCatalog
         { "Titan", "PlanetGraphicsHD/TitanTexture_HD" },
         { "Uranus", "PlanetGraphicsHD/UranusTexture_HD" },
         { "Neptune", "PlanetGraphicsHD/NeptuneTexture_HD" },
-        { "Triton", "PlanetGraphicsHD/TritonTexture_HD" }
+        { "Triton", "PlanetGraphicsHD/TritonTexture_HD" },
+        { "Pluto", "PlanetGraphicsHD/PlutoTexture_HD" }
     };
 
     static readonly Dictionary<string, Texture> TextureCache = new Dictionary<string, Texture>();

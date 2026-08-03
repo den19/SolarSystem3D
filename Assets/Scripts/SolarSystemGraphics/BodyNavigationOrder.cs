@@ -3,8 +3,8 @@ using SolarSystemApp;
 using UnityEngine;
 
 /// <summary>
-/// Canonical navigation order: Sun through Neptune with moons grouped after parents,
-/// comets appended after Neptune sorted by semi-major axis.
+/// Canonical navigation order: Sun through Pluto with moons grouped after parents,
+/// comets appended after Pluto sorted by semi-major axis.
 /// </summary>
 public static class BodyNavigationOrder
 {
@@ -25,10 +25,10 @@ public static class BodyNavigationOrder
     static readonly string[] BaseBodyNames =
     {
         "Sun", "Mercury", "Venus", "Earth", "Moon", "Mars", "Phobos", "Deimos",
-        "Jupiter", "Io", "Europa", "Ganymede", "Callisto", "Saturn", "Titan", "Uranus", "Neptune", "Triton"
+        "Jupiter", "Io", "Europa", "Ganymede", "Callisto", "Saturn", "Titan", "Uranus", "Neptune", "Triton", "Pluto"
     };
 
-    const string CometInsertAfter = "Triton";
+    const string CometInsertAfter = "Pluto";
 
     public static List<NavigationEntry> BuildNavigationList()
     {

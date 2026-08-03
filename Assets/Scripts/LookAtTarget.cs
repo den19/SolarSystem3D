@@ -54,6 +54,8 @@ public class LookAtTarget : MonoBehaviour {
 
     public GameObject theTritonGameObject;
 
+    public GameObject thePlutoGameObject;
+
     public Camera mainCamera;      // Главная камера (первоначальная)
     public GameObject earthCamera;    // Детальная камера Земли (которая появляется при фокусировке на объект)
     public GameObject marsCamera;    // Детальная камера Марса
@@ -73,6 +75,7 @@ public class LookAtTarget : MonoBehaviour {
     public GameObject phobosCamera;    // Детальная камера Фобоса
     public GameObject deimosCamera;    // Детальная камера Деймоса
     public GameObject tritonCamera;    // Детальная камера Тритона
+    public GameObject plutoCamera;    // Детальная камера Плутона
 
     MobileOrbitCamera _mainOrbitCamera;
     GameObject lastObservationTarget;
@@ -134,6 +137,7 @@ public class LookAtTarget : MonoBehaviour {
         SetDescriptionActive(theUranusGameObject, false);
         SetDescriptionActive(theNeptuneGameObject, false);
         SetDescriptionActive(theTritonGameObject, false);
+        SetDescriptionActive(thePlutoGameObject, false);
         SetDescriptionActive(theSunGameObject, false);
 
         if (CometDescriptionPanel.Instance != null)
@@ -176,6 +180,7 @@ public class LookAtTarget : MonoBehaviour {
         WireCloseButton(theUranusGameObject);
         WireCloseButton(theNeptuneGameObject);
         WireCloseButton(theTritonGameObject);
+        WireCloseButton(thePlutoGameObject);
         WireCloseButton(theSunGameObject);
     }
 
@@ -198,6 +203,7 @@ public class LookAtTarget : MonoBehaviour {
         EnsureDescriptionPanelLayout(theUranusGameObject);
         EnsureDescriptionPanelLayout(theNeptuneGameObject);
         EnsureDescriptionPanelLayout(theTritonGameObject);
+        EnsureDescriptionPanelLayout(thePlutoGameObject);
         EnsureDescriptionPanelLayout(theSunGameObject);
     }
 
@@ -437,6 +443,7 @@ public class LookAtTarget : MonoBehaviour {
         if (uranusCamera) uranusCamera.SetActive(false);
         if (neptuneCamera) neptuneCamera.SetActive(false);
         if (tritonCamera) tritonCamera.SetActive(false);
+        if (plutoCamera) plutoCamera.SetActive(false);
     }
 
     private void ShowDescriptionForPlanet(string planetName)
@@ -459,6 +466,7 @@ public class LookAtTarget : MonoBehaviour {
         else if (planetName == "Uranus" && theUranusGameObject) MakeDescriptionVisible(theUranusGameObject);
         else if (planetName == "Neptune" && theNeptuneGameObject) MakeDescriptionVisible(theNeptuneGameObject);
         else if (planetName == "Triton" && theTritonGameObject) MakeDescriptionVisible(theTritonGameObject);
+        else if (planetName == "Pluto" && thePlutoGameObject) MakeDescriptionVisible(thePlutoGameObject);
     }
 
     private void TurnOnDetailCameraForPlanet(string planetName)
@@ -480,6 +488,7 @@ public class LookAtTarget : MonoBehaviour {
         else if (planetName == "Uranus") TurnOnUranusCamera();
         else if (planetName == "Neptune") TurnOnNeptuneCamera();
         else if (planetName == "Triton") TurnOnTritonCamera();
+        else if (planetName == "Pluto") TurnOnPlutoCamera();
     }
 
     public GameObject GetActiveDetailCamera()
@@ -501,6 +510,7 @@ public class LookAtTarget : MonoBehaviour {
         if (uranusCamera != null && uranusCamera.activeSelf) return uranusCamera;
         if (neptuneCamera != null && neptuneCamera.activeSelf) return neptuneCamera;
         if (tritonCamera != null && tritonCamera.activeSelf) return tritonCamera;
+        if (plutoCamera != null && plutoCamera.activeSelf) return plutoCamera;
         return null;
     }
 
@@ -676,6 +686,16 @@ public class LookAtTarget : MonoBehaviour {
     public void TurnOffTritonCamera()
     {
         if (tritonCamera) tritonCamera.SetActive(false);
+    }
+
+    public void TurnOnPlutoCamera()
+    {
+        if (plutoCamera) plutoCamera.SetActive(true);
+    }
+
+    public void TurnOffPlutoCamera()
+    {
+        if (plutoCamera) plutoCamera.SetActive(false);
     }
 
     public void RecordObservationTarget(GameObject body)

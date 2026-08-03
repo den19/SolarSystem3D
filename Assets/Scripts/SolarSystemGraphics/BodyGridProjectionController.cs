@@ -19,7 +19,7 @@ public class BodyGridProjectionController : MonoBehaviour
 
     static readonly string[] BodyNames =
     {
-        "Mercury", "Venus", "Earth", "Mars", "Phobos", "Deimos", "Jupiter", "Saturn", "Uranus", "Neptune",
+        "Mercury", "Venus", "Earth", "Mars", "Phobos", "Deimos", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto",
         "Moon", "Io", "Europa", "Titan", "Ganymede", "Callisto", "Triton"
     };
 

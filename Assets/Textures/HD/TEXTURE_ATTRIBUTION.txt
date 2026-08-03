@@ -19,3 +19,6 @@ Simple Cylindrical Global Map 1km (NASA Galileo / Voyager data), via CDS Aladin 
 
 Triton surface map (TritonTexture_8k.jpg): Lunar and Planetary Institute / USGS Astrogeology,
 Triton Voyager 2 Global Color Mosaic 600m (NASA Voyager 2 data, PIA18668). U.S. government work / public domain.
+
+Pluto surface map (PlutoTexture_8k.jpg): USGS Astrogeology Science Center / NASA New Horizons,
+Pluto New Horizons LORRI-MVIC Global Mosaic 300m (July 2017). U.S. government work / public domain.

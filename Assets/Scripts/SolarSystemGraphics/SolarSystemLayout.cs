@@ -102,6 +102,15 @@ public static class SolarSystemLayout
                 }
             },
             {
+                "Pluto",
+                new EducationalEntry
+                {
+                    Scale = new Vector3(0.25f, 0.25f, 0.25f),
+                    OrbitDistance = 112f,
+                    PickColliderRadius = 1.5f
+                }
+            },
+            {
                 "Moon",
                 new EducationalEntry
                 {
