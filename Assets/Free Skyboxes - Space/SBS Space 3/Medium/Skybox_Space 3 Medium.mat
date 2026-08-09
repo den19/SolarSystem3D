@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Skybox_Space 3 Medium
-  m_Shader: {fileID: 104, guid: 0000000000000000f000000000000000, type: 0}
+  m_Shader: {fileID: 4800000, guid: 8c3e1a7b2d4f4098a6e5c1b0d9f7a234, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -45,6 +45,8 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Floats:
     - _Exposure: 1
+    - _GalacticInclination: 60.2
+    - _GalacticNodeLongitude: 90
     - _Rotation: 0
     m_Colors:
     - _Tint: {r: 0.5, g: 0.5, b: 0.5, a: 0.5}

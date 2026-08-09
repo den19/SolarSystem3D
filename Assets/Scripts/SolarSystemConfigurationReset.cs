@@ -13,6 +13,7 @@ public static class SolarSystemConfigurationReset
         ProjectionSettings.ResetToDefaults();
         GraphicsSettings.ResetToDefaults();
         CpuMonitorSettings.ResetToDefaults();
+        MilkyWaySettings.ResetToDefaults();
         SunAppearanceSettings.ResetToDefaults();
         TimeMachineSettings.ResetToDefaults();
         GraphicsTierSettings.ResetToDefaults();
