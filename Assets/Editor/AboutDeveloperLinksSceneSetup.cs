@@ -18,8 +18,10 @@ public static class AboutDeveloperLinksSceneSetup
     const string RuStoreButtonName = "RuStoreButton";
     const string WriteButtonName = "WriteToDeveloperButton";
     const string WriteLabelName = "WriteToDeveloper";
+    const string RuStoreIconName = "RuStoreIcon";
+    const string RuStoreLabelName = "RuStoreLabel";
     const string RuStoreFallbackName = "RuStoreFallback";
-    const string BadgePath = "Assets/Icons/rustore-badge.png";
+    const string LogoPath = "Assets/Icons/rustore-logo.png";
     const string RoundedPanelSpritePath = "Assets/Unity UI Samples/Textures and Sprites/Rounded UI/UIPanel.png";
 
     const float MaxWidth = 860f;
@@ -27,6 +29,11 @@ public static class AboutDeveloperLinksSceneSetup
     const float GapBetweenButtons = 20f;
     const float RuStoreWidth = 560f;
     const float RuStoreHeight = 120f;
+    const float RuStoreIconSize = 80f;
+    const float RuStoreIconLeft = 28f;
+    const float RuStoreIconLabelGap = 16f;
+    const float RuStoreLabelRightInset = 24f;
+    const float RuStoreLabelInsetY = 8f;
     const float WriteWidth = 860f;
     const float WriteHeight = 120f;
     const float WriteLabelInsetX = 20f;
@@ -35,6 +42,8 @@ public static class AboutDeveloperLinksSceneSetup
     static readonly Color EmailAccent = new Color(0f, 0.55f, 1f, 1f);
     static readonly Color EmailHitArea = new Color(0f, 0.55f, 1f, 0.16f);
     static readonly Color RuStorePurple = new Color(0.48f, 0.118f, 0.631f, 1f);
+    static readonly Color RuStoreButtonBack = Color.white;
+    static readonly Color RuStoreLabelColor = new Color(0.129f, 0.129f, 0.129f, 1f);
 
     [MenuItem(MenuPath)]
     public static void SetupFromMenu()
@@ -172,29 +181,30 @@ public static class AboutDeveloperLinksSceneSetup
         }
 
         var image = EnsureComponent<Image>(buttonGo);
-        Sprite badge = LoadRuStoreBadge();
+        Sprite logo = LoadRuStoreLogo();
         Sprite rounded = LoadRoundedPanelSprite();
 
+        image.sprite = rounded;
+        image.type = rounded != null ? Image.Type.Sliced : Image.Type.Simple;
+        image.preserveAspect = false;
+        image.raycastTarget = true;
+
         Transform fallback = buttonGo.transform.Find(RuStoreFallbackName);
-        if (badge != null)
+        if (logo != null)
         {
-            image.sprite = badge;
-            image.type = Image.Type.Simple;
-            image.preserveAspect = true;
-            image.color = Color.white;
+            image.color = RuStoreButtonBack;
+            EnsureRuStoreIcon(buttonGo.transform, logo);
+            EnsureRuStoreLabel(buttonGo.transform, uiFont);
             if (fallback != null)
                 fallback.gameObject.SetActive(false);
         }
         else
         {
-            image.sprite = rounded;
-            image.type = rounded != null ? Image.Type.Sliced : Image.Type.Simple;
-            image.preserveAspect = false;
             image.color = RuStorePurple;
+            SetChildActive(buttonGo.transform, RuStoreIconName, false);
+            SetChildActive(buttonGo.transform, RuStoreLabelName, false);
             EnsureRuStoreFallbackLabel(buttonGo.transform, uiFont);
         }
-
-        image.raycastTarget = true;
 
         var button = EnsureComponent<Button>(buttonGo);
         button.targetGraphic = image;
@@ -204,6 +214,76 @@ public static class AboutDeveloperLinksSceneSetup
 
         LayoutRuStoreButton(buttonGo.GetComponent<RectTransform>(), backRect);
         return button;
+    }
+
+    static void EnsureRuStoreIcon(Transform button, Sprite logo)
+    {
+        Transform icon = button.Find(RuStoreIconName);
+        if (icon == null)
+        {
+            var go = new GameObject(RuStoreIconName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            go.layer = button.gameObject.layer;
+            go.transform.SetParent(button, false);
+            icon = go.transform;
+        }
+
+        icon.gameObject.SetActive(true);
+        icon.SetSiblingIndex(0);
+
+        var rect = icon.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0f, 0.5f);
+        rect.anchorMax = new Vector2(0f, 0.5f);
+        rect.pivot = new Vector2(0f, 0.5f);
+        rect.sizeDelta = new Vector2(RuStoreIconSize, RuStoreIconSize);
+        rect.anchoredPosition = new Vector2(RuStoreIconLeft, 0f);
+        rect.localScale = Vector3.one;
+        rect.localRotation = Quaternion.identity;
+
+        var image = EnsureComponent<Image>(icon.gameObject);
+        image.sprite = logo;
+        image.type = Image.Type.Simple;
+        image.preserveAspect = true;
+        image.color = Color.white;
+        image.raycastTarget = false;
+    }
+
+    static void EnsureRuStoreLabel(Transform button, Font uiFont)
+    {
+        Transform label = button.Find(RuStoreLabelName);
+        if (label == null)
+        {
+            var go = new GameObject(RuStoreLabelName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
+            go.layer = button.gameObject.layer;
+            go.transform.SetParent(button, false);
+            label = go.transform;
+        }
+
+        label.gameObject.SetActive(true);
+        label.SetSiblingIndex(1);
+
+        var rect = label.GetComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        float left = RuStoreIconLeft + RuStoreIconSize + RuStoreIconLabelGap;
+        rect.offsetMin = new Vector2(left, RuStoreLabelInsetY);
+        rect.offsetMax = new Vector2(-RuStoreLabelRightInset, -RuStoreLabelInsetY);
+        rect.localScale = Vector3.one;
+        rect.localRotation = Quaternion.identity;
+
+        var text = EnsureComponent<Text>(label.gameObject);
+        text.font = uiFont;
+        text.text = "RuStore";
+        text.alignment = TextAnchor.MiddleLeft;
+        text.color = RuStoreLabelColor;
+        text.fontSize = 42;
+        text.fontStyle = FontStyle.Bold;
+        text.resizeTextForBestFit = true;
+        text.resizeTextMinSize = 28;
+        text.resizeTextMaxSize = 48;
+        text.horizontalOverflow = HorizontalWrapMode.Overflow;
+        text.verticalOverflow = VerticalWrapMode.Truncate;
+        text.raycastTarget = false;
     }
 
     static void EnsureRuStoreFallbackLabel(Transform button, Font uiFont)
@@ -392,15 +472,15 @@ public static class AboutDeveloperLinksSceneSetup
         return colors;
     }
 
-    static Sprite LoadRuStoreBadge()
+    static Sprite LoadRuStoreLogo()
     {
-        EnsureBadgeImportedAsSprite();
-        return AssetDatabase.LoadAssetAtPath<Sprite>(BadgePath);
+        EnsureLogoImportedAsSprite();
+        return AssetDatabase.LoadAssetAtPath<Sprite>(LogoPath);
     }
 
-    static void EnsureBadgeImportedAsSprite()
+    static void EnsureLogoImportedAsSprite()
     {
-        var importer = AssetImporter.GetAtPath(BadgePath) as TextureImporter;
+        var importer = AssetImporter.GetAtPath(LogoPath) as TextureImporter;
         if (importer == null)
             return;
 
@@ -429,8 +509,21 @@ public static class AboutDeveloperLinksSceneSetup
             dirty = true;
         }
 
+        if (importer.wrapMode != TextureWrapMode.Clamp)
+        {
+            importer.wrapMode = TextureWrapMode.Clamp;
+            dirty = true;
+        }
+
         if (dirty)
             importer.SaveAndReimport();
+    }
+
+    static void SetChildActive(Transform parent, string childName, bool active)
+    {
+        Transform child = parent.Find(childName);
+        if (child != null)
+            child.gameObject.SetActive(active);
     }
 
     static Sprite LoadRoundedPanelSprite() => AssetDatabase.LoadAssetAtPath<Sprite>(RoundedPanelSpritePath);
