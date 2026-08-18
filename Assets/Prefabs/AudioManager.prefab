@@ -45,4 +45,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   clickSound: {fileID: 8300000, guid: 2ec14d07946c7fe429f08fc058e5b2f8, type: 3}
-  musicClip: {fileID: 8300000, guid: cc1531bfdc125e54dbd0b9e77807a8e5, type: 3}
+  musicPlaylist:
+  - {fileID: 8300000, guid: cc1531bfdc125e54dbd0b9e77807a8e5, type: 3}
+  - {fileID: 8300000, guid: d3523c5e0f2a235429ebb63b0543e691, type: 3}
+  - {fileID: 8300000, guid: 7a63b6c46c3971746bc9dcc469a6517a, type: 3}

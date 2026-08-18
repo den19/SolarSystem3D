@@ -8,13 +8,16 @@ public class AudioManager : MonoBehaviour
     private const string MasterVolumeKey = "MasterVolume";
     private const string MusicEnabledKey = "MusicEnabled";
     private const string MusicVolumeKey = "MusicVolume";
+    private const string MusicTrackIndexKey = "MusicTrackIndex";
+    private const string MusicTrackTimeKey = "MusicTrackTime";
     private const float DefaultMusicVolume = 0.1f;
+    private const float FadeDurationSeconds = 5f;
 
     private static AudioManager instance = null;
     public static AudioManager Instance { get => instance; }
 
     public AudioClip clickSound;
-    public AudioClip musicClip;
+    public AudioClip[] musicPlaylist;
 
     private AudioSource audioSource;
     private AudioSource musicSource;
@@ -23,13 +26,28 @@ public class AudioManager : MonoBehaviour
     private bool soundEnabled = true;
     private float musicVolumeBeforeMute = DefaultMusicVolume;
     private bool musicEnabled = true;
+    private int currentTrackIndex;
+    private float fadeMultiplier = 1f;
+    private Coroutine fadeRoutine;
+    private bool isFading;
+    private bool suppressSaveOnDestroy;
+    private bool musicPausedByToggle;
+    private bool playbackSuspended;
+    private bool hadActivePlayback;
 
     void Awake()
     {
+        int restoreIndex = PlayerPrefs.GetInt(MusicTrackIndexKey, 0);
+        float restoreTime = PlayerPrefs.GetFloat(MusicTrackTimeKey, 0f);
+
         // Keep the scene instance UI buttons reference. Destroy the older
         // persistent copy so MainMenu/Level1 OnClick targets stay valid.
         if (instance != null && instance != this)
         {
+            restoreIndex = instance.currentTrackIndex;
+            restoreTime = instance.GetPlaybackTime();
+            fadeMultiplier = instance.fadeMultiplier;
+            instance.PrepareForReplacement();
             Destroy(instance.gameObject);
         }
 
@@ -45,12 +63,61 @@ public class AudioManager : MonoBehaviour
         SetupMusicSource();
         AudioListener.volume = 1f;
         ApplySavedSoundSetting();
-        ApplySavedMusicSetting();
-        EnsureMusicPlaying();
+        musicVolumeBeforeMute = GetMusicVolume();
+        musicEnabled = PlayerPrefs.GetInt(MusicEnabledKey, 1) == 1;
+        RestorePlayback(restoreIndex, restoreTime);
+        SavePlaylistPosition();
+    }
+
+    void Update()
+    {
+        UpdateMusicFadeWatch();
+    }
+
+    void OnApplicationPause(bool pauseStatus)
+    {
+        if (pauseStatus)
+        {
+            SavePlaylistPosition();
+            StopFadeRoutine();
+            playbackSuspended = true;
+        }
+        else
+        {
+            playbackSuspended = false;
+            RestoreFromPlayerPrefs();
+        }
+    }
+
+    void OnApplicationFocus(bool hasFocus)
+    {
+        if (!hasFocus)
+        {
+            SavePlaylistPosition();
+            StopFadeRoutine();
+            playbackSuspended = true;
+        }
+        else
+        {
+            playbackSuspended = false;
+            RestoreFromPlayerPrefs();
+        }
+    }
+
+    void OnApplicationQuit()
+    {
+        SavePlaylistPosition();
     }
 
     void OnDestroy()
     {
+        if (!suppressSaveOnDestroy)
+        {
+            SavePlaylistPosition();
+        }
+
+        StopFadeRoutine();
+
         if (instance == this)
             instance = null;
     }
@@ -68,12 +135,8 @@ public class AudioManager : MonoBehaviour
         }
 
         musicSource.playOnAwake = false;
-        musicSource.loop = true;
+        musicSource.loop = false;
         musicSource.spatialBlend = 0f;
-        if (musicClip != null)
-        {
-            musicSource.clip = musicClip;
-        }
     }
 
     void ApplySfxVolume()
@@ -87,6 +150,16 @@ public class AudioManager : MonoBehaviour
         audioSource.mute = !soundEnabled;
     }
 
+    void ApplyMusicVolume()
+    {
+        if (musicSource == null)
+        {
+            return;
+        }
+
+        musicSource.volume = musicVolumeBeforeMute * fadeMultiplier;
+    }
+
     void ApplyMusicPlaybackState()
     {
         if (musicSource == null)
@@ -94,47 +167,35 @@ public class AudioManager : MonoBehaviour
             return;
         }
 
-        musicSource.volume = musicVolumeBeforeMute;
+        ApplyMusicVolume();
 
         if (musicEnabled)
         {
-            if (musicSource.clip == null || musicSource.isPlaying)
+            if (musicSource.clip == null)
             {
+                RestoreFromPlayerPrefs();
                 return;
             }
 
+            musicPausedByToggle = false;
             musicSource.UnPause();
             if (!musicSource.isPlaying)
             {
-                musicSource.Play();
+                float time = GetPlaybackTime();
+                PlayClipAtTime(musicSource.clip, time);
             }
-        }
-        else if (musicSource.isPlaying)
-        {
-            musicSource.Pause();
-        }
-    }
 
-    void EnsureMusicPlaying()
-    {
-        if (musicSource == null || musicClip == null)
-        {
-            return;
+            UpdateMusicFadeWatch();
         }
-
-        if (musicSource.clip != musicClip)
+        else
         {
-            musicSource.clip = musicClip;
-        }
-
-        if (!musicEnabled)
-        {
-            return;
-        }
-
-        if (!musicSource.isPlaying)
-        {
-            musicSource.Play();
+            SavePlaylistPosition();
+            StopFadeRoutine();
+            musicPausedByToggle = true;
+            if (musicSource.isPlaying)
+            {
+                musicSource.Pause();
+            }
         }
     }
 
@@ -204,11 +265,7 @@ public class AudioManager : MonoBehaviour
         musicVolumeBeforeMute = volume;
         PlayerPrefs.SetFloat(MusicVolumeKey, volume);
         PlayerPrefs.Save();
-
-        if (musicSource != null)
-        {
-            musicSource.volume = volume;
-        }
+        ApplyMusicVolume();
     }
 
     public void SetMusicEnabled(bool enabled)
@@ -235,13 +292,6 @@ public class AudioManager : MonoBehaviour
         ApplyMusicPlaybackState();
     }
 
-    private void ApplySavedMusicSetting()
-    {
-        musicVolumeBeforeMute = GetMusicVolume();
-        musicEnabled = PlayerPrefs.GetInt(MusicEnabledKey, 1) == 1;
-        ApplyMusicPlaybackState();
-    }
-
     public void ResetToDefaults()
     {
         PlayerPrefs.DeleteKey(SoundEnabledKey);
@@ -250,8 +300,9 @@ public class AudioManager : MonoBehaviour
         PlayerPrefs.DeleteKey(MusicVolumeKey);
         PlayerPrefs.Save();
         ApplySavedSoundSetting();
-        ApplySavedMusicSetting();
-        EnsureMusicPlaying();
+        musicVolumeBeforeMute = GetMusicVolume();
+        musicEnabled = PlayerPrefs.GetInt(MusicEnabledKey, 1) == 1;
+        ApplyMusicPlaybackState();
     }
 
     public void PlaySound()
@@ -319,5 +370,279 @@ public class AudioManager : MonoBehaviour
         string scene = nextSceneName;
         nextSceneName = "";
         SceneManager.LoadScene(scene);
+    }
+
+    void PrepareForReplacement()
+    {
+        suppressSaveOnDestroy = true;
+        StopFadeRoutine();
+        if (musicSource != null)
+        {
+            musicSource.Stop();
+        }
+    }
+
+    void RestoreFromPlayerPrefs()
+    {
+        int index = PlayerPrefs.GetInt(MusicTrackIndexKey, 0);
+        float time = PlayerPrefs.GetFloat(MusicTrackTimeKey, 0f);
+        RestorePlayback(index, time);
+    }
+
+    void RestorePlayback(int index, float time)
+    {
+        int count = PlaylistCount();
+        if (musicSource == null || count == 0)
+        {
+            return;
+        }
+
+        currentTrackIndex = ((index % count) + count) % count;
+        AudioClip clip = GetPlaylistClip(currentTrackIndex);
+        if (clip == null)
+        {
+            return;
+        }
+
+        bool alreadyOnTrack = musicSource.clip == clip;
+        bool playbackMatches = musicEnabled ? musicSource.isPlaying : !musicSource.isPlaying;
+
+        if (alreadyOnTrack && playbackMatches)
+        {
+            ApplyMusicVolume();
+            if (musicEnabled)
+            {
+                UpdateMusicFadeWatch();
+            }
+            return;
+        }
+
+        PlayClipAtTime(clip, time);
+        ApplyMusicVolume();
+
+        if (!musicEnabled)
+        {
+            StopFadeRoutine();
+            musicPausedByToggle = true;
+            musicSource.Pause();
+            return;
+        }
+
+        musicPausedByToggle = false;
+
+        UpdateMusicFadeWatch();
+    }
+
+    void PlayClipAtTime(AudioClip clip, float time)
+    {
+        if (musicSource == null || clip == null)
+        {
+            return;
+        }
+
+        musicSource.loop = false;
+        musicSource.clip = clip;
+        musicSource.Play();
+
+        float seek = time;
+        if (clip.length > 0f)
+        {
+            seek = Mathf.Clamp(time, 0f, Mathf.Max(0f, clip.length - 0.05f));
+        }
+        else
+        {
+            seek = Mathf.Max(0f, time);
+        }
+
+        if (seek > 0f)
+        {
+            musicSource.time = seek;
+        }
+
+        hadActivePlayback = musicEnabled;
+    }
+
+    void PlayNextTrack()
+    {
+        int count = PlaylistCount();
+        if (count == 0)
+        {
+            return;
+        }
+
+        int startIndex = currentTrackIndex;
+        for (int i = 0; i < count; i++)
+        {
+            currentTrackIndex = (currentTrackIndex + 1) % count;
+            AudioClip clip = GetPlaylistClip(currentTrackIndex);
+            if (clip != null)
+            {
+                PlayClipAtTime(clip, 0f);
+                return;
+            }
+        }
+
+        currentTrackIndex = startIndex;
+    }
+
+    int PlaylistCount()
+    {
+        return musicPlaylist != null ? musicPlaylist.Length : 0;
+    }
+
+    AudioClip GetPlaylistClip(int index)
+    {
+        int count = PlaylistCount();
+        if (count == 0)
+        {
+            return null;
+        }
+
+        index = ((index % count) + count) % count;
+        return musicPlaylist[index];
+    }
+
+    float GetPlaybackTime()
+    {
+        if (musicSource == null || musicSource.clip == null)
+        {
+            return 0f;
+        }
+
+        return musicSource.time;
+    }
+
+    float GetRemainingTime()
+    {
+        if (musicSource == null || musicSource.clip == null)
+        {
+            return 0f;
+        }
+
+        float length = musicSource.clip.length;
+        if (length <= 0f)
+        {
+            return float.MaxValue;
+        }
+
+        return length - musicSource.time;
+    }
+
+    void SavePlaylistPosition()
+    {
+        if (musicSource == null)
+        {
+            return;
+        }
+
+        PlayerPrefs.SetInt(MusicTrackIndexKey, currentTrackIndex);
+        PlayerPrefs.SetFloat(MusicTrackTimeKey, GetPlaybackTime());
+        PlayerPrefs.Save();
+    }
+
+    void UpdateMusicFadeWatch()
+    {
+        if (playbackSuspended || isFading || !musicEnabled || musicSource == null || musicSource.clip == null)
+        {
+            return;
+        }
+
+        if (!musicSource.isPlaying)
+        {
+            if (hadActivePlayback && !musicPausedByToggle)
+            {
+                hadActivePlayback = false;
+                StartFadeRoutine(FadeOutThenNext(0f));
+            }
+            return;
+        }
+
+        hadActivePlayback = true;
+
+        float remaining = GetRemainingTime();
+        if (remaining <= FadeDurationSeconds)
+        {
+            StartFadeRoutine(FadeOutThenNext(Mathf.Max(0f, remaining)));
+            return;
+        }
+
+        if (fadeMultiplier < 0.999f)
+        {
+            float remainingFadeIn = FadeDurationSeconds * (1f - fadeMultiplier);
+            StartFadeRoutine(FadeTo(1f, remainingFadeIn));
+        }
+    }
+
+    void StartFadeRoutine(IEnumerator routine)
+    {
+        StopFadeRoutine();
+        fadeRoutine = StartCoroutine(routine);
+    }
+
+    void StopFadeRoutine()
+    {
+        if (fadeRoutine != null)
+        {
+            StopCoroutine(fadeRoutine);
+            fadeRoutine = null;
+        }
+
+        isFading = false;
+    }
+
+    IEnumerator FadeOutThenNext(float duration)
+    {
+        isFading = true;
+        yield return FadeVolume(0f, duration);
+
+        if (!musicEnabled)
+        {
+            isFading = false;
+            fadeRoutine = null;
+            yield break;
+        }
+
+        PlayNextTrack();
+        fadeMultiplier = 0f;
+        ApplyMusicVolume();
+        yield return FadeVolume(1f, FadeDurationSeconds);
+        isFading = false;
+        fadeRoutine = null;
+    }
+
+    IEnumerator FadeTo(float targetMultiplier, float duration)
+    {
+        isFading = true;
+        yield return FadeVolume(targetMultiplier, duration);
+        isFading = false;
+        fadeRoutine = null;
+    }
+
+    IEnumerator FadeVolume(float targetMultiplier, float duration)
+    {
+        float start = fadeMultiplier;
+        if (duration <= 0f)
+        {
+            fadeMultiplier = targetMultiplier;
+            ApplyMusicVolume();
+            yield break;
+        }
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            if (!musicEnabled)
+            {
+                yield break;
+            }
+
+            elapsed += Time.unscaledDeltaTime;
+            fadeMultiplier = Mathf.Lerp(start, targetMultiplier, Mathf.Clamp01(elapsed / duration));
+            ApplyMusicVolume();
+            yield return null;
+        }
+
+        fadeMultiplier = targetMultiplier;
+        ApplyMusicVolume();
     }
 }
