@@ -93,10 +93,13 @@ public static class ProbePrefabFactory
         hga.localRotation = Quaternion.Euler(90f, 0f, 0f);
         craftAntenna = hga;
         AddPrimitive(parent, PrimitiveType.Cylinder, dark, new Vector3(0.55f, 0f, 0.15f), new Vector3(0.12f, 0.28f, 0.12f));
+        AddPrimitive(parent, PrimitiveType.Cube, gold, new Vector3(-0.38f, 0.05f, 0.12f), new Vector3(0.08f, 0.22f, 0.08f));
         if (highDetail)
         {
             Transform boom = AddPrimitive(parent, PrimitiveType.Cylinder, gold, new Vector3(1.1f, 0f, 0f), new Vector3(0.04f, 1.1f, 0.04f));
             boom.localRotation = Quaternion.Euler(0f, 0f, 90f);
+            AddPrimitive(parent, PrimitiveType.Cube, dark, new Vector3(0f, 0.22f, 0.18f), new Vector3(0.18f, 0.06f, 0.12f));
+            AddPrimitive(parent, PrimitiveType.Cylinder, gold, new Vector3(-1.05f, 0f, 0f), new Vector3(0.03f, 0.85f, 0.03f)).localRotation = Quaternion.Euler(0f, 0f, 90f);
         }
     }
 
@@ -109,8 +112,12 @@ public static class ProbePrefabFactory
         hga.localRotation = Quaternion.Euler(90f, 0f, 0f);
         craftAntenna = hga;
         AddPrimitive(parent, PrimitiveType.Cylinder, dark, new Vector3(0.48f, 0f, 0.05f), new Vector3(0.1f, 0.22f, 0.1f));
+        AddPrimitive(parent, PrimitiveType.Cube, bus, new Vector3(0.22f, 0.12f, 0.08f), new Vector3(0.14f, 0.1f, 0.14f));
         if (highDetail)
+        {
             AddPrimitive(parent, PrimitiveType.Cube, bus, new Vector3(0f, 0.22f, 0.05f), new Vector3(0.25f, 0.08f, 0.25f));
+            AddPrimitive(parent, PrimitiveType.Cube, dark, new Vector3(-0.32f, -0.02f, 0.12f), new Vector3(0.1f, 0.08f, 0.1f));
+        }
     }
 
     static void BuildJuno(Transform parent, Material bus, Material gold, Material dark, bool highDetail)
@@ -123,7 +130,11 @@ public static class ProbePrefabFactory
             float yaw = i * 120f;
             var wing = AddPrimitive(parent, PrimitiveType.Cube, dark, Quaternion.Euler(0f, yaw, 0f) * new Vector3(0.95f, 0f, 0f), new Vector3(1.4f, 0.03f, 0.42f));
             wing.localRotation = Quaternion.Euler(0f, yaw, 0f);
+            if (highDetail)
+                AddPrimitive(parent, PrimitiveType.Cube, gold, Quaternion.Euler(0f, yaw, 0f) * new Vector3(0.72f, 0.04f, 0f), new Vector3(0.55f, 0.02f, 0.28f)).localRotation = Quaternion.Euler(0f, yaw, 0f);
         }
+        if (highDetail)
+            AddPrimitive(parent, PrimitiveType.Cylinder, bus, new Vector3(0f, -0.18f, 0f), new Vector3(0.32f, 0.08f, 0.32f));
     }
 
     static void BuildCustom(Transform parent, Material bus, Material gold, Material dish, Material dark, bool highDetail)
@@ -150,7 +161,10 @@ public static class ProbePrefabFactory
         }
 
         if (highDetail)
+        {
             AddPrimitive(parent, PrimitiveType.Cube, gold, new Vector3(0.32f, 0.18f, 0f), new Vector3(0.12f, 0.12f, 0.12f));
+            AddPrimitive(parent, PrimitiveType.Cylinder, dark, new Vector3(-0.28f, 0f, 0.12f), new Vector3(0.06f, 0.14f, 0.06f));
+        }
     }
 
     static void BuildLuna1(Transform parent, Material bus, Material gold, Material dark, bool highDetail)
@@ -164,6 +178,11 @@ public static class ProbePrefabFactory
                 Quaternion.Euler(0f, yaw, 0f) * new Vector3(0.42f, -0.05f, 0f),
                 new Vector3(0.03f, 0.35f, 0.03f));
             leg.localRotation = Quaternion.Euler(70f, yaw, 0f);
+        }
+        if (highDetail)
+        {
+            AddPrimitive(parent, PrimitiveType.Sphere, gold, new Vector3(0f, 0.52f, 0f), Vector3.one * 0.12f);
+            AddPrimitive(parent, PrimitiveType.Cube, dark, new Vector3(0f, -0.28f, 0f), new Vector3(0.22f, 0.08f, 0.22f));
         }
     }
 
@@ -180,6 +199,11 @@ public static class ProbePrefabFactory
                 Quaternion.Euler(0f, yaw, 0f) * new Vector3(0.32f, -0.18f, 0f),
                 new Vector3(0.05f, 0.22f, 0.05f));
         }
+        if (highDetail)
+        {
+            AddPrimitive(parent, PrimitiveType.Cylinder, gold, new Vector3(0f, -0.22f, 0f), new Vector3(0.28f, 0.12f, 0.28f));
+            AddPrimitive(parent, PrimitiveType.Cube, dark, new Vector3(0.18f, 0.12f, 0.12f), new Vector3(0.1f, 0.08f, 0.1f));
+        }
     }
 
     static void BuildLuna16(Transform parent, Material bus, Material gold, Material dark, bool highDetail)
@@ -187,6 +211,11 @@ public static class ProbePrefabFactory
         AddPrimitive(parent, PrimitiveType.Cylinder, bus, Vector3.zero, new Vector3(0.62f, 0.38f, 0.62f));
         craftAntenna = AddPrimitive(parent, PrimitiveType.Cylinder, gold, new Vector3(0.38f, 0.12f, 0f), new Vector3(0.08f, 0.45f, 0.08f));
         AddPrimitive(parent, PrimitiveType.Cube, dark, new Vector3(0f, 0.22f, 0.28f), new Vector3(0.22f, 0.12f, 0.18f));
+        if (highDetail)
+        {
+            AddPrimitive(parent, PrimitiveType.Cylinder, gold, new Vector3(-0.28f, -0.08f, 0.18f), new Vector3(0.14f, 0.18f, 0.14f));
+            AddPrimitive(parent, PrimitiveType.Cube, bus, new Vector3(0.28f, 0.08f, -0.12f), new Vector3(0.12f, 0.1f, 0.12f));
+        }
     }
 
     static void BuildMars3(Transform parent, Material bus, Material gold, Material dish, Material dark, bool highDetail)
@@ -203,6 +232,11 @@ public static class ProbePrefabFactory
 
         craftAntenna = AddPrimitive(parent, PrimitiveType.Cylinder, dish, new Vector3(0f, 0.28f, 0f), new Vector3(0.12f, 0.35f, 0.12f));
         AddPrimitive(parent, PrimitiveType.Cylinder, dark, new Vector3(0f, 0.14f, 0f), new Vector3(0.1f, 0.14f, 0.1f));
+        if (highDetail)
+        {
+            AddPrimitive(parent, PrimitiveType.Sphere, dark, new Vector3(0f, -0.18f, 0f), new Vector3(0.32f, 0.22f, 0.32f));
+            AddPrimitive(parent, PrimitiveType.Cube, bus, new Vector3(0.22f, 0.06f, 0.22f), new Vector3(0.12f, 0.06f, 0.12f));
+        }
     }
 
     static void BuildChange4(Transform parent, Material bus, Material gold, Material dark, bool highDetail)
@@ -211,8 +245,9 @@ public static class ProbePrefabFactory
         AddPrimitive(parent, PrimitiveType.Cube, gold, new Vector3(-0.62f, 0.06f, 0f), new Vector3(0.35f, 0.02f, 0.48f));
         AddPrimitive(parent, PrimitiveType.Cube, gold, new Vector3(0.62f, 0.06f, 0f), new Vector3(0.35f, 0.02f, 0.48f));
         craftAntenna = AddPrimitive(parent, PrimitiveType.Cylinder, dark, new Vector3(0f, 0.22f, -0.18f), new Vector3(0.08f, 0.2f, 0.08f));
+        AddPrimitive(parent, PrimitiveType.Cube, dark, new Vector3(0.28f, 0.1f, 0.18f), new Vector3(0.18f, 0.12f, 0.16f));
         if (highDetail)
-            AddPrimitive(parent, PrimitiveType.Cube, dark, new Vector3(0.28f, 0.1f, 0.18f), new Vector3(0.18f, 0.12f, 0.16f));
+            AddPrimitive(parent, PrimitiveType.Cube, gold, new Vector3(-0.18f, -0.04f, 0.28f), new Vector3(0.14f, 0.08f, 0.12f));
     }
 
     static void BuildTianwen1(Transform parent, Material bus, Material gold, Material dish, Material dark, bool highDetail)
@@ -222,8 +257,12 @@ public static class ProbePrefabFactory
         hga.localRotation = Quaternion.Euler(90f, 0f, 0f);
         craftAntenna = hga;
         AddPrimitive(parent, PrimitiveType.Cylinder, dark, new Vector3(0.42f, 0f, 0.12f), new Vector3(0.1f, 0.24f, 0.1f));
+        AddPrimitive(parent, PrimitiveType.Cube, gold, new Vector3(-0.38f, 0.18f, 0.1f), new Vector3(0.28f, 0.06f, 0.22f));
         if (highDetail)
-            AddPrimitive(parent, PrimitiveType.Cube, gold, new Vector3(-0.38f, 0.18f, 0.1f), new Vector3(0.28f, 0.06f, 0.22f));
+        {
+            AddPrimitive(parent, PrimitiveType.Sphere, dark, new Vector3(0f, -0.28f, 0.22f), new Vector3(0.28f, 0.2f, 0.28f));
+            AddPrimitive(parent, PrimitiveType.Cube, gold, new Vector3(0.32f, 0.08f, 0.22f), new Vector3(0.12f, 0.08f, 0.12f));
+        }
     }
 
     static void BuildChange5(Transform parent, Material bus, Material gold, Material dark, bool highDetail)
@@ -232,6 +271,11 @@ public static class ProbePrefabFactory
         AddPrimitive(parent, PrimitiveType.Cube, gold, new Vector3(-0.55f, 0.15f, 0f), new Vector3(0.42f, 0.02f, 0.32f));
         AddPrimitive(parent, PrimitiveType.Cube, gold, new Vector3(0.55f, 0.15f, 0f), new Vector3(0.42f, 0.02f, 0.32f));
         craftAntenna = AddPrimitive(parent, PrimitiveType.Cylinder, dark, new Vector3(0f, 0.42f, 0.15f), new Vector3(0.07f, 0.28f, 0.07f));
+        if (highDetail)
+        {
+            AddPrimitive(parent, PrimitiveType.Cube, dark, new Vector3(0f, -0.22f, 0.18f), new Vector3(0.18f, 0.12f, 0.16f));
+            AddPrimitive(parent, PrimitiveType.Cylinder, gold, new Vector3(0.22f, 0.28f, 0f), new Vector3(0.08f, 0.14f, 0.08f));
+        }
     }
 
     static void BuildHayabusa2(Transform parent, Material bus, Material gold, Material dark, bool highDetail)
@@ -239,8 +283,12 @@ public static class ProbePrefabFactory
         AddPrimitive(parent, PrimitiveType.Cube, bus, Vector3.zero, new Vector3(0.58f, 0.38f, 0.58f));
         craftAntenna = AddPrimitive(parent, PrimitiveType.Cylinder, gold, new Vector3(0f, 0.05f, 0.52f), new Vector3(0.14f, 0.32f, 0.14f));
         AddPrimitive(parent, PrimitiveType.Cylinder, dark, new Vector3(0f, -0.08f, 0.38f), new Vector3(0.1f, 0.18f, 0.1f));
+        AddPrimitive(parent, PrimitiveType.Cube, gold, new Vector3(0.38f, 0.12f, 0f), new Vector3(0.22f, 0.08f, 0.12f));
         if (highDetail)
-            AddPrimitive(parent, PrimitiveType.Cube, gold, new Vector3(0.38f, 0.12f, 0f), new Vector3(0.22f, 0.08f, 0.12f));
+        {
+            AddPrimitive(parent, PrimitiveType.Cylinder, dark, new Vector3(-0.28f, -0.12f, 0.32f), new Vector3(0.08f, 0.12f, 0.08f));
+            AddPrimitive(parent, PrimitiveType.Cube, bus, new Vector3(-0.32f, 0.08f, -0.12f), new Vector3(0.12f, 0.1f, 0.1f));
+        }
     }
 
     static void BuildAkatsuki(Transform parent, Material bus, Material gold, Material dish, bool highDetail)
@@ -249,6 +297,9 @@ public static class ProbePrefabFactory
         craftAntenna = AddPrimitive(parent, PrimitiveType.Cylinder, dish, new Vector3(0.55f, 0.18f, 0f), new Vector3(0.04f, 0.95f, 0.04f));
         craftAntenna.localRotation = Quaternion.Euler(0f, 0f, 75f);
         AddPrimitive(parent, PrimitiveType.Cube, gold, new Vector3(-0.42f, 0.08f, 0f), new Vector3(0.28f, 0.02f, 0.38f));
+        AddPrimitive(parent, PrimitiveType.Cube, gold, new Vector3(0.42f, 0.08f, 0f), new Vector3(0.28f, 0.02f, 0.38f));
+        if (highDetail)
+            AddPrimitive(parent, PrimitiveType.Cylinder, bus, new Vector3(0f, -0.22f, 0f), new Vector3(0.28f, 0.1f, 0.28f));
     }
 
     static void BuildChandrayaan3(Transform parent, Material bus, Material gold, Material dark, bool highDetail)
@@ -264,8 +315,12 @@ public static class ProbePrefabFactory
         }
 
         craftAntenna = AddPrimitive(parent, PrimitiveType.Cylinder, dark, new Vector3(0f, 0.28f, 0f), new Vector3(0.08f, 0.22f, 0.08f));
+        AddPrimitive(parent, PrimitiveType.Cube, dark, new Vector3(0.32f, 0.14f, 0.22f), new Vector3(0.16f, 0.1f, 0.14f));
         if (highDetail)
-            AddPrimitive(parent, PrimitiveType.Cube, dark, new Vector3(0.32f, 0.14f, 0.22f), new Vector3(0.16f, 0.1f, 0.14f));
+        {
+            AddPrimitive(parent, PrimitiveType.Cylinder, gold, new Vector3(-0.22f, -0.12f, 0.18f), new Vector3(0.12f, 0.08f, 0.12f));
+            AddPrimitive(parent, PrimitiveType.Cube, bus, new Vector3(0f, -0.18f, -0.12f), new Vector3(0.2f, 0.08f, 0.16f));
+        }
     }
 
     static Transform AddPrimitive(Transform parent, PrimitiveType type, Material material, Vector3 localPos, Vector3 localScale)

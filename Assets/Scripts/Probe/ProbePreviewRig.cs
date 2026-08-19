@@ -4,28 +4,34 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Isolated orthographic preview of the selected probe model for the HUD.
+/// Probe info card on HUD: portrait sprite, title, and localized description.
 /// </summary>
 public class ProbePreviewRig : MonoBehaviour
 {
-    public const int PreviewLayer = 31;
+    const float PanelWidthPortrait = 300f;
+    const float PanelHeightPortrait = 400f;
+    const float PanelWidthLandscape = 260f;
+    const float PanelHeightLandscape = 340f;
+    const float CompactWidthPortrait = 240f;
+    const float CompactHeightPortrait = 268f;
+    const float CompactWidthLandscape = 220f;
+    const float CompactHeightLandscape = 248f;
+    const float PortraitImageHeight = 192f;
+    const float CompactPortraitHeight = 160f;
+    const float TitleHeight = 32f;
+    const float DescHeight = 96f;
+    const float Padding = 8f;
 
-    const float YawSpeedDeg = 15f;
-    const float PreviewWorldY = -500f;
-    const float PreviewPanelPortrait = 280f;
-    const float PreviewPanelLandscape = 240f;
-    const float LabelHeight = 36f;
-
-    Camera _camera;
-    RenderTexture _renderTexture;
-    ProbeCraft _previewCraft;
     RectTransform _panel;
-    RawImage _image;
-    TextMeshProUGUI _label;
-    ProbeModelKind _builtModel = (ProbeModelKind)(-1);
+    Image _frameImage;
+    Image _portraitImage;
+    TextMeshProUGUI _title;
+    TextMeshProUGUI _description;
+    ProbeModelKind _shownModel = (ProbeModelKind)(-1);
     bool _customAntenna;
     bool _customEngine;
     bool _customShield;
+    bool _compactMode;
 
     public static ProbePreviewRig EnsureOnHud(Transform hudRoot)
     {
@@ -38,6 +44,7 @@ public class ProbePreviewRig : MonoBehaviour
             var rig = existing.GetComponent<ProbePreviewRig>();
             if (rig == null)
                 rig = existing.gameObject.AddComponent<ProbePreviewRig>();
+            rig.EnsureUiBuilt();
             return rig;
         }
 
@@ -46,50 +53,51 @@ public class ProbePreviewRig : MonoBehaviour
         go.transform.SetParent(hudRoot, false);
         var preview = go.GetComponent<ProbePreviewRig>();
         preview.BuildUi();
-        preview.EnsureCamera();
         return preview;
     }
 
     void OnEnable()
     {
-        ProbeSettings.LoadoutChanged += RebuildPreview;
+        EnsureUiBuilt();
+        ProbeSettings.LoadoutChanged += RefreshContent;
         ProbeSettings.UseProbeChanged += RefreshVisibility;
         if (ProbeSystemController.Instance != null)
             ProbeSystemController.Instance.StateChanged += OnStateChanged;
-        LocalizationManager.OnLanguageChanged += RefreshLabel;
-        EnsureCamera();
-        RebuildPreview();
+        LocalizationManager.OnLanguageChanged += RefreshContent;
+        RefreshContent();
         RefreshVisibility(ProbeSettings.UseProbe);
     }
 
     void OnDisable()
     {
-        ProbeSettings.LoadoutChanged -= RebuildPreview;
+        ProbeSettings.LoadoutChanged -= RefreshContent;
         ProbeSettings.UseProbeChanged -= RefreshVisibility;
         if (ProbeSystemController.Instance != null)
             ProbeSystemController.Instance.StateChanged -= OnStateChanged;
-        LocalizationManager.OnLanguageChanged -= RefreshLabel;
+        LocalizationManager.OnLanguageChanged -= RefreshContent;
     }
 
-    void OnDestroy()
+    void OnStateChanged()
     {
-        if (_renderTexture != null)
-        {
-            _renderTexture.Release();
-            Destroy(_renderTexture);
-        }
+        RefreshVisibility(ProbeSettings.UseProbe);
+        RefreshContent();
     }
-
-    void OnStateChanged() => RefreshVisibility(ProbeSettings.UseProbe);
 
     void Update()
     {
         LayoutPanel();
-        if (_previewCraft != null)
-            _previewCraft.transform.Rotate(Vector3.up, YawSpeedDeg * Time.unscaledDeltaTime, Space.World);
+    }
 
-        if (_camera != null && _camera.enabled)
-            _camera.Render();
+    void EnsureUiBuilt()
+    {
+        if (_portraitImage != null)
+            return;
+
+        Transform root = _panel != null ? _panel : transform;
+        for (int i = root.childCount - 1; i >= 0; i--)
+            Destroy(root.GetChild(i).gameObject);
+
+        BuildUi();
     }
 
     void BuildUi()
@@ -104,42 +112,54 @@ public class ProbePreviewRig : MonoBehaviour
         frameGo.transform.SetParent(_panel, false);
         var frameRt = frameGo.GetComponent<RectTransform>();
         Stretch(frameRt);
-        frameGo.GetComponent<Image>().color = new Color(0.12f, 0.16f, 0.24f, 0.94f);
+        _frameImage = frameGo.GetComponent<Image>();
+        _frameImage.color = new Color(0.12f, 0.16f, 0.24f, 0.94f);
         var outline = frameGo.AddComponent<Outline>();
         outline.effectColor = new Color(0.35f, 0.85f, 1f, 0.85f);
         outline.effectDistance = new Vector2(2f, -2f);
 
-        var viewportGo = new GameObject("Viewport", typeof(RectTransform), typeof(CanvasRenderer), typeof(RawImage));
-        viewportGo.layer = gameObject.layer;
-        viewportGo.transform.SetParent(frameGo.transform, false);
-        var viewportRt = viewportGo.GetComponent<RectTransform>();
-        viewportRt.anchorMin = Vector2.zero;
-        viewportRt.anchorMax = Vector2.one;
-        viewportRt.offsetMin = new Vector2(4f, LabelHeight + 4f);
-        viewportRt.offsetMax = new Vector2(-4f, -4f);
-        _image = viewportGo.GetComponent<RawImage>();
-        _image.raycastTarget = false;
+        var portraitGo = new GameObject("Portrait", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        portraitGo.layer = gameObject.layer;
+        portraitGo.transform.SetParent(frameGo.transform, false);
+        var portraitRt = portraitGo.GetComponent<RectTransform>();
+        portraitRt.anchorMin = new Vector2(0f, 1f);
+        portraitRt.anchorMax = new Vector2(1f, 1f);
+        portraitRt.pivot = new Vector2(0.5f, 1f);
+        portraitRt.offsetMin = new Vector2(Padding, -(Padding + PortraitImageHeight));
+        portraitRt.offsetMax = new Vector2(-Padding, -Padding);
+        _portraitImage = portraitGo.GetComponent<Image>();
+        _portraitImage.raycastTarget = false;
+        _portraitImage.preserveAspect = true;
+        _portraitImage.color = Color.white;
 
-        _label = CreateLabel(frameGo.transform);
+        _title = CreateText(frameGo.transform, "Title", 23f, TextAlignmentOptions.Midline, false);
+        var titleRt = _title.rectTransform;
+        titleRt.anchorMin = new Vector2(0f, 1f);
+        titleRt.anchorMax = new Vector2(1f, 1f);
+        titleRt.pivot = new Vector2(0.5f, 1f);
+        titleRt.offsetMin = new Vector2(Padding, -(Padding + PortraitImageHeight + TitleHeight));
+        titleRt.offsetMax = new Vector2(-Padding, -(Padding + PortraitImageHeight));
+
+        _description = CreateText(frameGo.transform, "Description", 19f, TextAlignmentOptions.TopLeft, true);
+        var descRt = _description.rectTransform;
+        descRt.anchorMin = new Vector2(0f, 0f);
+        descRt.anchorMax = new Vector2(1f, 1f);
+        descRt.offsetMin = new Vector2(Padding, Padding);
+        descRt.offsetMax = new Vector2(-Padding, -(Padding + PortraitImageHeight + TitleHeight));
+
         _panel.gameObject.SetActive(false);
     }
 
-    static TextMeshProUGUI CreateLabel(Transform parent)
+    static TextMeshProUGUI CreateText(Transform parent, string name, float fontSize, TextAlignmentOptions align, bool wrap)
     {
-        var go = new GameObject("ProbePreviewLabel", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+        var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
         go.layer = parent.gameObject.layer;
         go.transform.SetParent(parent, false);
-        var rt = go.GetComponent<RectTransform>();
-        rt.anchorMin = new Vector2(0f, 0f);
-        rt.anchorMax = new Vector2(1f, 0f);
-        rt.pivot = new Vector2(0.5f, 0f);
-        rt.offsetMin = new Vector2(6f, 4f);
-        rt.offsetMax = new Vector2(-6f, LabelHeight);
         var tmp = go.GetComponent<TextMeshProUGUI>();
-        tmp.fontSize = 22f;
-        tmp.alignment = TextAlignmentOptions.Midline;
+        tmp.fontSize = fontSize;
+        tmp.alignment = align;
         tmp.color = new Color(0.88f, 0.94f, 1f, 1f);
-        tmp.enableWordWrapping = false;
+        tmp.enableWordWrapping = wrap;
         tmp.raycastTarget = false;
         var font = LocalizationFontHelper.GetFontForLanguage(LocalizationManager.CurrentLanguage);
         if (font != null)
@@ -147,79 +167,120 @@ public class ProbePreviewRig : MonoBehaviour
         return tmp;
     }
 
-    void EnsureCamera()
+    void RefreshContent()
     {
-        if (_camera != null)
-            return;
-
-        var camGo = new GameObject("ProbePreviewCamera");
-        camGo.hideFlags = HideFlags.HideAndDontSave;
-        _camera = camGo.AddComponent<Camera>();
-        _camera.clearFlags = CameraClearFlags.SolidColor;
-        _camera.backgroundColor = new Color(0.03f, 0.05f, 0.1f, 1f);
-        _camera.orthographic = true;
-        _camera.orthographicSize = 1.35f;
-        _camera.nearClipPlane = 0.1f;
-        _camera.farClipPlane = 20f;
-        _camera.cullingMask = 1 << PreviewLayer;
-        _camera.enabled = false;
-
-        int size = GraphicsTierSettings.IsHighEffective ? 320 : 256;
-        _renderTexture = new RenderTexture(size, size, 16, RenderTextureFormat.ARGB32);
-        _renderTexture.name = "ProbePreviewRT";
-        _camera.targetTexture = _renderTexture;
-        if (_image != null)
-            _image.texture = _renderTexture;
-    }
-
-    void RebuildPreview()
-    {
-        ProbeModelKind model = ProbeSettings.Model;
+        ProbeModelKind model = ResolveDisplayModel();
         bool antenna = ProbeSettings.CustomAntenna;
         bool engine = ProbeSettings.CustomEngine;
         bool shield = ProbeSettings.CustomShield;
+        bool compact = IsCompactMode();
 
-        if (_previewCraft != null
-            && _builtModel == model
+        if (_shownModel == model
             && _customAntenna == antenna
             && _customEngine == engine
-            && _customShield == shield)
+            && _customShield == shield
+            && _compactMode == compact
+            && _portraitImage != null
+            && _portraitImage.sprite != null)
         {
-            RefreshLabel();
+            RefreshTexts(model, compact);
             return;
         }
 
-        if (_previewCraft != null)
-            Destroy(_previewCraft.gameObject);
-
-        _builtModel = model;
+        _shownModel = model;
         _customAntenna = antenna;
         _customEngine = engine;
         _customShield = shield;
+        _compactMode = compact;
 
-        _previewCraft = ProbePrefabFactory.Create(model, highDetail: false);
-        _previewCraft.transform.position = new Vector3(0f, PreviewWorldY, 0f);
-        _previewCraft.transform.rotation = Quaternion.Euler(0f, 25f, 0f);
-        SetLayerRecursively(_previewCraft.gameObject, PreviewLayer);
-        RefreshLabel();
+        if (_portraitImage != null)
+            _portraitImage.sprite = ProbePortraitLibrary.Get(model);
+
+        ApplyCompactLayout(compact);
+        ApplyFonts();
+        RefreshTexts(model, compact);
     }
 
-    void RefreshLabel()
+    void ApplyFonts()
     {
-        if (_label == null)
+        var font = LocalizationFontHelper.GetFontForLanguage(LocalizationManager.CurrentLanguage);
+        if (font == null)
+            return;
+        if (_title != null)
+            _title.font = font;
+        if (_description != null)
+            _description.font = font;
+    }
+
+    ProbeModelKind ResolveDisplayModel()
+    {
+        var system = ProbeSystemController.Instance;
+        if (system != null && system.IsFlying && system.Craft != null)
+            return system.Craft.Model;
+        return ProbeSettings.Model;
+    }
+
+    bool IsCompactMode()
+    {
+        var system = ProbeSystemController.Instance;
+        return system != null && system.IsFlying && system.FlightPreviewGraceRemaining > 0f;
+    }
+
+    void ApplyCompactLayout(bool compact)
+    {
+        if (_portraitImage == null || _title == null || _description == null)
             return;
 
-        string modelName = ProbeHudController.ResolveModelLabel(ProbeSettings.Model);
-        if (ProbeSettings.Model != ProbeModelKind.Custom)
-        {
-            _label.text = modelName;
+        float portraitH = compact ? CompactPortraitHeight : PortraitImageHeight;
+        var portraitRt = _portraitImage.rectTransform;
+        portraitRt.offsetMin = new Vector2(Padding, -(Padding + portraitH));
+        portraitRt.offsetMax = new Vector2(-Padding, -Padding);
+
+        var titleRt = _title.rectTransform;
+        titleRt.offsetMin = new Vector2(Padding, -(Padding + portraitH + TitleHeight));
+        titleRt.offsetMax = new Vector2(-Padding, -(Padding + portraitH));
+
+        _description.gameObject.SetActive(!compact);
+    }
+
+    void RefreshTexts(ProbeModelKind model, bool compact)
+    {
+        if (_title == null)
             return;
+
+        string modelName = ProbeHudController.ResolveModelLabel(model);
+        if (model == ProbeModelKind.Custom)
+        {
+            string a = ProbeSettings.CustomAntenna ? "A" : "—";
+            string e = ProbeSettings.CustomEngine ? "E" : "—";
+            string s = ProbeSettings.CustomShield ? "S" : "—";
+            _title.text = modelName + "  " + a + " · " + e + " · " + s;
+        }
+        else
+        {
+            _title.text = modelName;
         }
 
-        string a = ProbeSettings.CustomAntenna ? "A" : "—";
-        string e = ProbeSettings.CustomEngine ? "E" : "—";
-        string s = ProbeSettings.CustomShield ? "S" : "—";
-        _label.text = modelName + "  " + a + " · " + e + " · " + s;
+        if (_description == null || compact)
+            return;
+
+        string descKey = ProbeModelCatalog.GetDescriptionKey(model);
+        _description.text = T(descKey, string.Empty);
+
+        if (model == ProbeModelKind.Custom)
+        {
+            string parts = BuildCustomPartsLine();
+            if (!string.IsNullOrEmpty(parts))
+                _description.text = _description.text + "\n" + parts;
+        }
+    }
+
+    static string BuildCustomPartsLine()
+    {
+        string a = ProbeSettings.CustomAntenna ? T("ProbePartAntenna", "Antenna") : "—";
+        string e = ProbeSettings.CustomEngine ? T("ProbePartEngine", "Engine") : "—";
+        string s = ProbeSettings.CustomShield ? T("ProbePartShield", "Shield") : "—";
+        return a + " · " + e + " · " + s;
     }
 
     void RefreshVisibility(bool useProbe)
@@ -227,8 +288,6 @@ public class ProbePreviewRig : MonoBehaviour
         bool show = ShouldShowPreview(useProbe);
         if (_panel != null)
             _panel.gameObject.SetActive(show);
-        if (_camera != null)
-            _camera.enabled = show;
     }
 
     bool ShouldShowPreview(bool useProbe)
@@ -252,13 +311,29 @@ public class ProbePreviewRig : MonoBehaviour
             return;
 
         bool landscape = Screen.width > Screen.height;
+        bool compact = IsCompactMode();
+        float width;
+        float height;
+        if (compact)
+        {
+            width = landscape ? CompactWidthLandscape : CompactWidthPortrait;
+            height = landscape ? CompactHeightLandscape : CompactHeightPortrait;
+        }
+        else
+        {
+            width = landscape ? PanelWidthLandscape : PanelWidthPortrait;
+            height = landscape ? PanelHeightLandscape : PanelHeightPortrait;
+        }
+
+        _panel.sizeDelta = new Vector2(width, height);
+
         Canvas canvas = GetComponentInParent<Canvas>();
         SafeAreaInsets.GetCanvasInsets(canvas, out float left, out _, out float top, out _);
-
-        float size = landscape ? PreviewPanelLandscape : PreviewPanelPortrait;
-        _panel.sizeDelta = new Vector2(size, size + LabelHeight);
         float navBottom = top + SidePanelUiBootstrap.BarHeight + 8f;
         _panel.anchoredPosition = new Vector2(left + 8f, -(navBottom + 8f));
+
+        if (_compactMode != compact)
+            RefreshContent();
     }
 
     static void Stretch(RectTransform rect)
@@ -269,10 +344,11 @@ public class ProbePreviewRig : MonoBehaviour
         rect.offsetMax = Vector2.zero;
     }
 
-    static void SetLayerRecursively(GameObject go, int layer)
+    static string T(string key, string fallback)
     {
-        go.layer = layer;
-        foreach (Transform child in go.transform)
-            SetLayerRecursively(child.gameObject, layer);
+        if (LocalizationManager.Instance == null)
+            return fallback;
+        string t = LocalizationManager.Instance.GetTranslation(key);
+        return string.IsNullOrEmpty(t) ? fallback : t;
     }
 }

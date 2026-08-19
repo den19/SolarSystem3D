@@ -260,7 +260,7 @@ public class ProbeSystemController : MonoBehaviour
             _lookAt.TurnOffAllDetailCameras();
         }
 
-        bool highDetail = SolarSystemApp.GraphicsSettings.UseExtraGraphics && GraphicsTierSettings.IsHighEffective;
+        bool highDetail = true;
         Craft = ProbePrefabFactory.Create(ProbeSettings.Model, highDetail);
         Craft.OriginName = originName;
         Craft.transform.position = position;

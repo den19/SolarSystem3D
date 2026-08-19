@@ -3,8 +3,9 @@
 ==========================================
 
 Проект: Solar System 3D (Unity URP)  
+Версия приложения: 8.2.17 (Android bundleVersionCode 35)  
 Сцены сборки: Assets/_Scenes/MainMenu.unity, Assets/_Scenes/Level1.unity  
-Скрипты: Assets/Scripts/ (~84 файла)  
+Скрипты: Assets/Scripts/ (~119 файлов)  
 Версия документа: 2026-08-19  
 
 Документ описывает архитектуру симуляции, режимы работы, особенности, известные недостатки и направления развития. Предназначен для разработчиков, поддерживающих и расширяющих приложение.
@@ -285,16 +286,23 @@ Editor vs APK: в Editor coach часто уже скрыт (SolarSystem_ProbeCo
 
 Визуал: затемнение ~55 %, карточка по центру (до 760 px), шрифты title 30, body 28, кнопки 26.
 
-Превью модели (левый верх HUD)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Карточка модели (левый верх HUD)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Реализована в ProbePreviewRig (ProbePreview на ProbeHud).
 
 Параметр  |  Значение
 Когда видно  |  «Зонд» вкл и (прицеливание или первые 3 с после Launch)
-Размер панели  |  280×280 portrait / 240×240 landscape + подпись 36 px
-RenderTexture  |  256×256 (Balanced) / 320×320 (High)
-Камера  |  Orthographic, изолированный слой; модель ~15°/с
-Подпись  |  Имя модели; Custom — A · E · S
-После grace 3 с в полёте  |  Превью скрывается
+Размер (прицел)  |  300×400 portrait / 260×340 landscape
+Размер (grace 3 с)  |  240×268 portrait / 220×248 landscape — компактная (портрет + имя)
+Портрет  |  PNG 256×256 из Resources/ProbePortraits/ (~192 px, preserveAspect)
+Заголовок  |  ProbeModel*; Custom — A · E · S
+Описание  |  ProbeDesc* (2–3 строки); Custom + части A/E/S
+Полёт (3D)  |  ProbePrefabFactory, highDetail: true на Launch
+
+Рамка: тёмный фон + cyan outline (как у выбранной кнопки модели). RenderTexture и вращение 3D-превью убраны — экономия CPU/GPU на телефоне.
+
+Портреты: 14 PNG в Assets/Resources/ProbePortraits/ (по одной на запись ProbeModelCatalog, включая Custom). Загрузка: ProbePortraitLibrary (Resources.Load<Sprite> + кэш). Пересборка после правки мешей: Solar System → Bake Probe Portraits (ProbePortraitBaker). После grace 3 с карточка скрывается.
 
 Панель управления и телеметрия
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -321,28 +329,31 @@ Launch bar  |  Низ по центру, над time bar
 
 Тело телеметрии (~10 Hz): ProbeTelemetrySunSpeed, RelSpeed, Radius, Lon, Z, ProbeNearestLabel (3 тела).
 
-Выбор модели: горизонтальный ScrollRect с кнопками ◀ / ▶; видно 2–3 модели (portrait ~148 px, landscape ~120 px). Порядок — ProbeModelCatalog: NASA → SU/RU → CN → JP → IN → Custom последним. Активная кнопка — светлее + cyan outline 2 px.
-Toast при Launch: ProbeLaunchSuccessMessage, 5 с.
+Выбор модели: горизонтальный ScrollRect с кнопками ◀ / ▶ по краям (ProbeModelRow); видно 2–3 модели (portrait ~148 px, landscape ~120 px на кнопку). Порядок — ProbeModelCatalog: NASA → SU/RU → CN → JP → IN → Custom последним. Активная кнопка — светлее + cyan outline 2 px. При выборе модели — авто-прокрутка к кнопке.
+
+Toast при Launch: ProbeLaunchSuccessMessage, 5 с («Зонд запущен. Камера: Кузов…»).
+
+Состав launch bar: модели → (Custom: части) → Impulse / Heading → Launch / Abort / Burn / Postcard → World / Chase / Cockpit / Views.
 
 Видимость зонда на APK
 ~~~~~~~~~~~~~~~~~~~~~~
 
 Механизм  |  Назначение
 SnapChase при Launch  |  ProbeCameraController.SnapChase(craft) — мгновенная позиция Chase в том же кадре, до первого LateUpdate
-SetCameraMode(Chase, force)  |  ProbeSettings.SetCameraMode(Chase, force:true) — игнорирует сохранённый pref World
+SetCameraMode(Chase, force)  |  ProbeSettings.SetCameraMode(Chase, force:true) — игнорирует сохранённый pref World (0)
 Auto-Chase в полёте  |  ProbeCameraController.Tick — сглаживание (~4.5 AU сзади по скорости)
 Масштаб craft  |  Clamp(r_якоря×1.2, 2.0, 6) — пол 2.0 AU
 Слой mesh  |  SetLayerRecursively(root, 0) — Default layer; иначе mesh может не рендериться на APK
-Shader fallback  |  Корпус: mobile/tier≠High → URP Unlit → Mobile/Unlit → Sprites/Default → URP Lit → Standard; blip: URP Unlit → Mobile/Unlit → Sprites/Default
+Shader fallback  |  Корпус: mobile/tier≠High → URP Unlit → Mobile/Unlit → Sprites/Default → URP Lit → Standard; blip: URP Unlit → Mobile/Unlit → Sprites/Default; при отсутствии — Debug.LogWarning (один раз)
 MinimapBlip  |  Cyan unlit-сфера, local scale ×1.5
-ProbeWorldMarker  |  Billboard-кольцо ~4 AU в режиме World
+ProbeWorldMarker  |  Billboard-кольцо ~4 AU в режиме World, когда зонд далеко от центра кадра
 
 Ghost-траектория (циан) — при aiming и в полёте.
 
 Модели зонда
 ~~~~~~~~~~~~
 
-15 моделей (14 именованных + Custom). Pref SolarSystem_ProbeModel: 0–13. Значение 3 = Custom (совместимость prefs); новые зонды 4–13.
+14 моделей (13 пресетов + Custom). Enum/pref SolarSystem_ProbeModel: 0–13. Значение 3 = Custom (совместимость prefs); региональные пресеты — 4–13.
 
 Pref  |  Модель  |  Ключ  |  Регион
 0  |  Voyager  |  ProbeModelVoyager  |  NASA — открытка
@@ -360,7 +371,7 @@ Pref  |  Модель  |  Ключ  |  Регион
 12  |  Akatsuki  |  ProbeModelAkatsuki  |  JP
 13  |  Chandrayaan-3  |  ProbeModelChandrayaan3  |  IN
 
-Burn ~35 % Impulse. Части Custom: ProbePartAntenna / Engine / Shield. Меши — ProbePrefabFactory (процедурные силуэты).
+Burn ~35 % Impulse. Части Custom: ProbePartAntenna / Engine / Shield. Меши — ProbePrefabFactory (процедурные силуэты, highDetail на Launch).
 
 Запуск (Launch)
 ~~~~~~~~~~~~~~~
@@ -370,6 +381,7 @@ Burn ~35 % Impulse. Части Custom: ProbePartAntenna / Engine / Shield. Ме�
 Тела  |  19 тел + 10 комет (кометы без гравитации)
 Позиция  |  Над поверхностью от Солнца
 Направление  |  Prograde + Heading (−180…+180°)
+Скорость  |  Скорость тела + Impulse × множитель модели
 После Launch  |  Chase (force), SnapChase, PIP, coach завершён (MarkLaunchCompleted), превью ещё 3 с, scale craft ≥ 2.0
 
 Ошибка: ProbeLaunchFailedMessage.
@@ -396,21 +408,27 @@ World  |  ProbeWorldLabel  |  Orbit-камера; marker-кольцо
 Chase  |  ProbeChaseLabel  |  Сзади по скорости (~4.5+1.4 AU); default после Launch; в полёте — Lerp (exp −8)
 Cockpit  |  ProbeCockpitLabel  |  Изнутри; pick тел подавлен
 
-SnapChase: жёсткий snap при Launch (без Lerp) — craft − velocity×4.5 + up×1.4, look-at на craft.
-Порядок кадра: ProbeSystemController [DefaultExecutionOrder(100)]; ProbeCameraController [DefaultExecutionOrder(250)]. Launch создаёт craft; SnapChase ставит камеру сразу; LateUpdate Tick — сглаживание.
+SnapChase: жёсткий snap при Launch (без Lerp) — craft − velocity×4.5 + up×1.4, look-at на craft; MobileOrbitCamera.SetExternalOrbitControl(true).
+Порядок кадра: ProbeSystemController [DefaultExecutionOrder(100)]; ProbeCameraController [DefaultExecutionOrder(250)]. Launch создаёт craft; SnapChase ставит камеру сразу; LateUpdate Tick — сглаживание. Без SnapChase на APK камера могла остаться в World до следующего кадра.
 
 Pref: SolarSystem_ProbeCameraMode (0/1/2). Launch — force Chase. Abort — восстановление фокуса.
 
 PIP-обзор (Views)
 ~~~~~~~~~~~~~~~~~
 
-Три окна только в полёте. Launch включает PIP; тумблер ProbeViewsLabel — opt-out.
-Pref ShowProbeViews=0; Launch переопределяет. Размеры: 280×150 / 320×180.
+Три окна только в полёте (forward сверху по центру; rear-left / rear-right по углам).
+
+Правило  |  Значение
+При Launch  |  PIP включается автоматически
+Тумблер «Обзор» (ProbeViewsLabel)  |  Opt-out — пользователь может скрыть
+Pref default  |  SolarSystem_ShowProbeViews = 0; Launch переопределяет на полёт
+Размеры  |  portrait 280×150, landscape 320×180
+До готовности RT  |  Тёмный placeholder в рамке
 
 Share / открытка
 ~~~~~~~~~~~~~~~~
 
-ProbePostcardLabel → SimulationShareController. Нужна антенна (ProbeNeedAntennaMessage).
+ProbePostcardLabel → SimulationShareController. Нужна антенна (ProbeNeedAntennaMessage). Текст share дополняется строкой телеметрии (v☉, ближайшее тело).
 
 Проекция на сетку
 ~~~~~~~~~~~~~~~~~
@@ -437,7 +455,7 @@ SolarSystem_ProbeCoachLaunchCompleted  |  0  |  1 = coach пройден
 
 Coach: ProbeCoachStep1Title…4Title, Step1Body…4Body, ProbeCoachNext, Skip, HelpDone.
 Телеметрия: ProbeTelemetryTitle, Aiming, Flying, SunSpeed, RelSpeed, Radius, Lon, Z, NearestLabel.
-Модели: ProbeModelVoyager … ProbeModelChandrayaan3, ProbeModelCustom; ProbePartAntenna / Engine / Shield.
+Модели: ProbeModelVoyager … ProbeModelChandrayaan3, ProbeModelCustom; ProbePartAntenna / Engine / Shield. Описания: ProbeDescVoyager … ProbeDescCustom.
 Кнопки: ProbeLaunchLabel, AbortLabel, BurnLabel, PostcardLabel, World/Chase/Cockpit/Views, Impulse, Heading.
 Сообщения: LaunchSuccess/Failed, NeedAntenna, Impact, Overheat, PhysicsCapped, Aborted*.
 
@@ -458,7 +476,7 @@ Coach: ProbeCoachStep1Title…4Title, Step1Body…4Body, ProbeCoachNext, Skip, H
 Где в коде
 ~~~~~~~~~~
 
-Assets/Scripts/Probe/ (ProbeSystemController, ProbeCameraController, ProbeHudController, ProbeModelCatalog, ProbeCoachOverlay, ProbePrefabFactory, ProbePreviewRig, ProbeWorldMarker, ProbeSettings, …).
+Assets/Scripts/Probe/ (ProbeSystemController, ProbeCameraController, ProbeHudController, ProbeModelCatalog, ProbePortraitLibrary, ProbeCoachOverlay, ProbePrefabFactory, ProbePreviewRig, ProbeWorldMarker, ProbeSettings, …).
 Bootstrap: SimulationViewBootstrap → EnsureOnHost. Legacy Spawner/Projectile не используются.
 
 
@@ -546,7 +564,7 @@ GraphicsTier (Graphics quality) — объект сцены MainMenu под Extr
 9. ScaleBar — линейка расстояния на MainScreenCanvas (runtime через ScaleBarController.EnsureOnCanvas): portrait/landscape bottom-right над CPU (если CPU выкл — на его месте), не пересекается с minimap (левый низ) и time bar (центр/лево). Подпись в AU (SolarSystemScaleController.AuToUnity + SolarSystemCatalog.AuKm); при близком зуме — км. Tap открывает локализованную подсказку (ключи ScaleBarAu*). В clean view скрывается вместе с HUD.  
 10. Share — скриншот + Android share; сообщения локализованы.  
 11. Mobile graphics tier — High поднимает renderScale/MSAA только на устройстве; в Editor (PC quality) картинка изначально сильнее.  
-12. Зонд (gravity slingshot) — restricted N-body test particle; спецификация §2.8.  
+12. Зонд (gravity slingshot) — restricted N-body test particle, отдельный HUD и PIP; не ломает LookAtTarget / сессию; спецификация §2.8.  
 
 Ключевые пути:
 
@@ -561,7 +579,7 @@ GraphicsTier (Graphics quality) — объект сцены MainMenu под Extr
 - Assets/Scripts/ScaleBarController.cs  
 - Assets/Scripts/SimulationViewBootstrap.cs  
 - Assets/Scripts/Probe/ (ProbeSystemController, ProbeHudController, …)  
-- Assets/Editor/SidePanelSceneSetup.cs, TimeControlSceneSetup.cs  
+- Assets/Editor/SidePanelSceneSetup.cs, TimeControlSceneSetup.cs, ProbePortraitBaker.cs  
 
 ---
 
@@ -575,7 +593,7 @@ GraphicsTier (Graphics quality) — объект сцены MainMenu под Extr
 AboutPanel.cs — заглушка  |  Анимация через UI Samples PanelManager
 GameState.score не используется  |  Задел под геймификацию
 Spawner / Projectile  |  Пул есть; slingshot в ProbeSystemController (§2.8)
-Зонд — WIP  |  §2.8 = спецификация; не все edge cases на устройстве; при расхождении — править код под документ
+Зонд — WIP / не всё проверено  |  §2.8 — целевая спецификация; на устройстве не все edge cases (TM на высокой скорости, comet launch, Cockpit + navigation, portrait/landscape overlap). При расхождении — править код под документ
 Тяжёлая иерархия detail-камер  |  Память / поддержка на мобильных
 Рассинхрон комментариев clean view vs кометы  |  Видимость комет завязана на UseCometMovement, не только на UI toggle
 Нет единой документации API каталога комет/тел  |  Расширение требует правок в нескольких местах (каталог, навигация, локализация, префабы описаний)
@@ -630,7 +648,7 @@ Mars  |  —  |  Phobos/Deimos уже есть
 6.2. Геймификация
 ~~~~~~~~~~~~~~~~~
 
-1. Gravity slingshot — реализовано; полная спецификация §2.8. Дальнейшее: миссии / очки.  
+1. Gravity slingshot — реализовано; полная спецификация §2.8. Кратко: тумблер «Зонд» (default off), restricted N-body, 14 моделей (ScrollRect ◀/▶), PNG-портреты в карточке модели, Chase/Cockpit, PIP auto на Launch, телеметрия, циановая проекция. Дальнейшее: миссии / очки.  
 2. Квиз по астрономии — вопросы у тела («какая планета ближе к Солнцу?»), очки в GameState.score.  
 3. Миссии наблюдения — «найди комету», «сфокусируйся на Энцеладе», таймер на обычной скорости.  
 4. Unlockables — открытие описаний/скинов после правильных ответов.  
@@ -709,8 +727,10 @@ SolarSystem_ProbeCoachLaunchCompleted (0) — 1 = coach пройден (перв
 Solar System/Setup SidePanel UI  |  Навбар + боковая панель на Level1
 Solar System/Setup Body Navigation Picker  |  Список тел
 Solar System/Setup Time Control UI  |  Панель паузы/скорости
+Solar System/Setup Graphics Tier UI  |  Переключатель Graphics quality на MainMenu
+Solar System/Bake Probe Portraits  |  Пересборка 14 PNG (256×256) в Resources/ProbePortraits/ из процедурных мешей (ProbePortraitBaker)
 
-При открытии Level1 часть setup может вызываться автоматически (InitializeOnLoad / sceneOpened).
+При открытии Level1 часть setup может вызываться автоматически (InitializeOnLoad / sceneOpened). После правки мешей в ProbePrefabFactory — выполнить Bake Probe Portraits и закоммитить PNG.
 
 ---
 
