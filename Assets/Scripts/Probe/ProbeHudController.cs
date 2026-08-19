@@ -856,7 +856,7 @@ public class ProbeHudController : MonoBehaviour
 
         bool coachPending = !ProbeCoachSettings.LaunchCompleted;
         bool showProbeUi = ProbeSettings.UseProbe;
-        gameObject.SetActive(coachPending || showProbeUi);
+        gameObject.SetActive(showProbeUi);
 
         if (_bar != null)
             _bar.gameObject.SetActive(showProbeUi);
@@ -864,6 +864,9 @@ public class ProbeHudController : MonoBehaviour
             _telemetry.gameObject.SetActive(showProbeUi);
         if (_helpButton != null)
             _helpButton.gameObject.SetActive(showProbeUi && coachPending);
+
+        if (showProbeUi)
+            _coachOverlay?.RefreshVisibility();
     }
 
     static void ApplyFontSize(RectTransform root, float size)

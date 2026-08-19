@@ -18,12 +18,13 @@ public class ProbeCoachOverlay : MonoBehaviour
     TextMeshProUGUI _stepLabel;
     TextMeshProUGUI _title;
     TextMeshProUGUI _body;
-    Button _nextButton;
+    Button _backButton;
     Button _skipButton;
-    Button _launchButton;
-    TextMeshProUGUI _nextLabel;
+    Button _forwardButton;
+    TextMeshProUGUI _backLabel;
     TextMeshProUGUI _skipLabel;
-    TextMeshProUGUI _launchLabel;
+    TextMeshProUGUI _forwardLabel;
+    const int FirstCoachStep = 2;
     int _manualStep = -1;
     LookAtTarget _lookAt;
 
@@ -51,21 +52,21 @@ public class ProbeCoachOverlay : MonoBehaviour
 
     void OnEnable()
     {
-        ProbeCoachSettings.LaunchCompletedChanged += Refresh;
+        ProbeCoachSettings.LaunchCompletedChanged += RefreshVisibility;
         ProbeSettings.UseProbeChanged += OnProbeSettingChanged;
         LocalizationManager.OnLanguageChanged += RefreshLabels;
         _lookAt = FindFirstObjectByType<LookAtTarget>();
-        Refresh();
+        RefreshVisibility();
     }
 
     void OnDisable()
     {
-        ProbeCoachSettings.LaunchCompletedChanged -= Refresh;
+        ProbeCoachSettings.LaunchCompletedChanged -= RefreshVisibility;
         ProbeSettings.UseProbeChanged -= OnProbeSettingChanged;
         LocalizationManager.OnLanguageChanged -= RefreshLabels;
     }
 
-    void OnProbeSettingChanged(bool _) => Refresh();
+    void OnProbeSettingChanged(bool _) => RefreshVisibility();
 
     void Update()
     {
@@ -122,14 +123,12 @@ public class ProbeCoachOverlay : MonoBehaviour
         rowLayout.childControlWidth = true;
         rowLayout.childForceExpandWidth = true;
 
+        _backButton = CreateCoachButton(buttonRow.transform, "ProbeCoachBack", out _backLabel);
         _skipButton = CreateCoachButton(buttonRow.transform, "ProbeCoachSkip", out _skipLabel);
-        _nextButton = CreateCoachButton(buttonRow.transform, "ProbeCoachNext", out _nextLabel);
+        _forwardButton = CreateCoachButton(buttonRow.transform, "ProbeCoachForward", out _forwardLabel);
+        _backButton.onClick.AddListener(GoBackCoach);
         _skipButton.onClick.AddListener(SkipCoach);
-        _nextButton.onClick.AddListener(AdvanceCoach);
-
-        _launchButton = CreateCoachButton(cardGo.transform, "ProbeLaunchLabel", out _launchLabel);
-        _launchButton.onClick.AddListener(() => ProbeSystemController.Instance?.Launch());
-        _launchButton.gameObject.SetActive(false);
+        _forwardButton.onClick.AddListener(ForwardCoach);
 
         RefreshLabels();
         RefreshStep();
@@ -146,7 +145,7 @@ public class ProbeCoachOverlay : MonoBehaviour
         }
 
         _manualStep = ResolveAutoStep();
-        Refresh();
+        RefreshVisibility();
     }
 
     void SkipCoach()
@@ -155,12 +154,22 @@ public class ProbeCoachOverlay : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    void AdvanceCoach()
+    void GoBackCoach()
     {
-        int step = _manualStep >= 0 ? _manualStep : ResolveAutoStep();
+        int step = CurrentStep();
+        if (step <= FirstCoachStep)
+            return;
+
+        _manualStep = step - 1;
+        RefreshStep();
+    }
+
+    void ForwardCoach()
+    {
+        int step = CurrentStep();
         if (step >= 4)
         {
-            SkipCoach();
+            ProbeSystemController.Instance?.Launch();
             return;
         }
 
@@ -168,8 +177,13 @@ public class ProbeCoachOverlay : MonoBehaviour
         RefreshStep();
     }
 
-    void Refresh()
+    int CurrentStep() => _manualStep >= 0 ? _manualStep : ResolveAutoStep();
+
+    public void RefreshVisibility()
     {
+        if (!ProbeSettings.UseProbe)
+            return;
+
         bool show = ShouldShow();
         gameObject.SetActive(show);
         if (!show)
@@ -196,6 +210,9 @@ public class ProbeCoachOverlay : MonoBehaviour
         if (ProbeCoachSettings.LaunchCompleted)
             return false;
 
+        if (!ProbeSettings.UseProbe)
+            return false;
+
         var system = ProbeSystemController.Instance;
         if (system != null && system.IsFlying)
             return false;
@@ -208,7 +225,7 @@ public class ProbeCoachOverlay : MonoBehaviour
         if (!ShouldShow() || _title == null)
             return;
 
-        int step = _manualStep >= 0 ? _manualStep : ResolveAutoStep();
+        int step = CurrentStep();
         _stepLabel.text = string.Format("{0}/4", step);
 
         string titleKey = "ProbeCoachStep" + step + "Title";
@@ -216,22 +233,12 @@ public class ProbeCoachOverlay : MonoBehaviour
         _title.text = T(titleKey, titleKey);
         _body.text = T(bodyKey, bodyKey);
 
-        bool lastStep = step >= 4;
-        _nextLabel.text = T(lastStep ? "ProbeCoachSkip" : "ProbeCoachNext", lastStep ? "Skip" : "Next");
-
-        if (_launchButton != null)
-        {
-            _launchButton.gameObject.SetActive(lastStep);
-            if (lastStep && _launchLabel != null)
-                _launchLabel.text = T("ProbeLaunchLabel", "Launch");
-        }
+        if (_backButton != null)
+            _backButton.interactable = step > FirstCoachStep;
     }
 
     int ResolveAutoStep()
     {
-        if (!ProbeSettings.UseProbe)
-            return 1;
-
         if (!HasCatalogBodyFocused())
             return 2;
 
@@ -255,8 +262,12 @@ public class ProbeCoachOverlay : MonoBehaviour
 
     void RefreshLabels()
     {
+        if (_backLabel != null)
+            _backLabel.text = T("ProbeCoachBack", "Back");
         if (_skipLabel != null)
             _skipLabel.text = T("ProbeCoachSkip", "Skip");
+        if (_forwardLabel != null)
+            _forwardLabel.text = T("ProbeCoachForward", "Forward");
         RefreshStep();
     }
 
