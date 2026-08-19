@@ -228,125 +228,227 @@ Effective High включается только если Extra Graphics ON и:
 2.8. Режим зонда (gravity slingshot)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Статус: этот подраздел — целевая спецификация (source of truth). Если поведение в Editor/APK расходится с описанием — исправлять код под документ. Не все edge cases проверены на устройстве (см. §5).
+Статус: целевая спецификация (source of truth). Расхождение Editor/APK с описанием → править код под документ. Не все edge cases проверены на устройстве (см. §5).
+
+Сценарий пользователя (кратко)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. На боковой панели включить «Зонд» → HUD прицеливания и (до первого запуска) coach-подсказки.
+2. Выбрать тело старта (фокус камеры на планете/комете).
+3. Выбрать модель, настроить Impulse / Heading, смотреть ghost-траекторию и превью слева.
+4. Launch → камера Chase, PIP-обзор, toast об успехе, coach больше не показывается.
+5. В полёте: телеметрия справа, опционально Burn / Postcard, переключение World / Chase / Cockpit.
 
 Включение и жизненный цикл
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Событие  |  Ожидаемое поведение
-Тумблер «Зонд» (ProbeSettings.UseProbe)  |  По умолчанию выкл; только ручное включение (SidePanelProbeLabel_Row → SimulationSidePanelController)
-Включение тумблера  |  HUD ProbeHud на MainScreenCanvas; режим прицеливания (aiming)
-Выключение тумблера  |  Abort полёта, скрытие HUD, восстановление Main Camera
-StartNewSimulation()  |  SetUseProbe(false) — зонд выкл. при новой симуляции
-ResumeGame() / Continue  |  Камера, фокус, орбиты, время — полёт зонда НЕ восстанавливается
-EnterMenu()  |  ProbeSystemController.Abort — полёт прерывается
-Reset / SolarSystemConfigurationReset  |  ProbeSettings.ResetToDefaults()
+Событие  |  Что видит пользователь / что происходит
+Тумблер «Зонд» (default выкл)  |  Режим только вручную с боковой панели
+Включение  |  HUD с launch bar, телеметрия, превью; режим прицеливания
+Выключение  |  Полёт прерывается, HUD скрывается, Main Camera восстанавливается
+Новая симуляция  |  Зонд принудительно выкл.
+Continue  |  Камера и время восстанавливаются; полёт зонда НЕ восстанавливается
+Выход в меню  |  Активный полёт abort
+Reset настроек  |  Все prefs зонда + coach сбрасываются (coach снова до первого Launch)
 
-Архитектура (Assets/Scripts/Probe/)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Coach overlay (до первого Launch)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Класс  |  Роль
-ProbeSystemController  |  Singleton: aiming, launch, integrate, abort, телеметрия для share
-ProbeSettings  |  PlayerPrefs + события
-ProbeHudController  |  Runtime HUD
-ProbeGravityIntegrator  |  Ускорение, Verlet, GetSimulationDeltaTime, калибровка GM☉
-ProbeTrajectoryPredictor  |  Ghost path (72 точки, ~14 с)
-ProbeMassCatalog  |  Массы тел относительно Солнца
-ProbeCraft / ProbePrefabFactory  |  Экземпляр SlingshotProbe
-ProbeCameraController  |  World / Chase / Cockpit на Main Camera
-ProbeViewRig  |  Три PIP-камеры → RT → RawImage
-ProbeGridProjection  |  Циановая проекция на гравитационной сетке
+Цель: провести нового пользователя через 4 шага без чтения документации.
 
-Bootstrap: SimulationViewBootstrap → ProbeSystemController.EnsureOnHost(gameObject).
+№  |  Когда (авто)  |  Заголовок (ключ)  |  Смысл
+1  |  «Зонд» выкл  |  ProbeCoachStep1Title  |  Включить «Зонд» на боковой панели
+2  |  Зонд вкл., нет фокуса на теле  |  ProbeCoachStep2Title  |  Выбрать планету (удобно с Земли)
+3  |  Есть фокус, полёт не начат  |  ProbeCoachStep3Title  |  Модель, Impulse, Heading, ghost, телеметрия
+4  |  Финальный шаг  |  ProbeCoachStep4Title  |  Нажать «Запуск»; камера → Chase
 
-HUD (размеры для мобильных — спецификация)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Тексты: ProbeCoachStep{N}Body (N=1…4). Индикатор N/4 в карточке.
 
-ProbeHudController строит UI в runtime (объект ProbeHud).
+Поведение overlay:
+
+Действие  |  Результат
+Авто-шаг  |  Следует таблице; обновляется при смене тумблера / фокуса
+Далее (ProbeCoachNext)  |  Следующий шаг; на шаге 4 подпись = «Пропустить»
+Запуск (ProbeLaunchLabel, шаг 4)  |  Отдельная кнопка под рядом Skip/Next; видна только на шаге 4; вызывает Launch — равнозначна launch bar (важно на свежем APK, когда coach перекрывает HUD)
+Пропустить (ProbeCoachSkip)  |  Overlay скрывается до конца сессии; prefs не меняются
+? на launch bar  |  Открыть coach вручную (только до первого Launch)
+Успешный Launch  |  Overlay навсегда скрывается (SolarSystem_ProbeCoachLaunchCompleted=1)
+? после первого Launch  |  Toast ProbeCoachHelpDone
+Полёт активен  |  Overlay не показывается
+Reset  |  Coach снова с шага 1
+
+Критерии приёмки: overlay при первом входе; шаги 1→4 по состоянию UI; Skip не блокирует Launch; первый Launch навсегда отключает coach; Reset возвращает coach.
+
+Touch / raycast: затемнение (dim) НЕ перехватывает touch (Image.raycastTarget=false, узел Dim в ProbeCoachOverlay); launch bar, слайдеры Impulse/Heading и телеметрия HUD кликабельны под overlay. Карточка coach и её кнопки (raycastTarget=true) принимают touch только в своей области; подписи TMP на кнопках — raycastTarget=false.
+
+Editor vs APK: в Editor coach часто уже скрыт (SolarSystem_ProbeCoachLaunchCompleted=1 после первого Launch); сохранённый ProbeCameraMode=0 (World) тоже может маскировать баг Chase. На свежем APK coach активен до первого Launch — проверять: (1) dim не блокирует launch bar; (2) Launch в карточке coach (шаг 4) запускает полёт; (3) камера сразу Chase, зонд виден. Для повторной проверки — Reset или удалить prefs.
+
+Визуал: затемнение ~55 %, карточка по центру (до 760 px), шрифты title 30, body 28, кнопки 26.
+
+Превью модели (левый верх HUD)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Параметр  |  Значение
+Когда видно  |  «Зонд» вкл и (прицеливание или первые 3 с после Launch)
+Размер панели  |  280×280 portrait / 240×240 landscape + подпись 36 px
+RenderTexture  |  256×256 (Balanced) / 320×320 (High)
+Камера  |  Orthographic, изолированный слой; модель ~15°/с
+Подпись  |  Имя модели; Custom — A · E · S
+После grace 3 с в полёте  |  Превью скрывается
+
+Панель управления и телеметрия
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+HUD на MainScreenCanvas (ProbeHud). Coach и preview — дочерние; не скрываются в clean view.
 
 Элемент  |  Размещение / размер
 Launch bar  |  Низ по центру, над time bar
-Высота строки / кнопки  |  56 px
-Шрифт  |  26
-Чекбокс  |  28×28
-Слайдер Impulse/Heading  |  высота 36
-Ширина панели  |  portrait: почти вся canvas; landscape: ~720
-Высота панели  |  ~380 (preset) / ~440 (Custom)
-Телеметрия  |  Верхний правый угол; 360×340 portrait, 400×340 landscape; шрифт 26
-Обновление телеметрии  |  ~10 Hz (0.1 с)
+Строки / кнопки  |  56 px, шрифт 26
+Чекбоксы  |  28×28
+Слайдеры  |  высота 36
+Ширина  |  portrait: почти вся canvas; landscape: ~720
+Высота  |  ~380 (preset) / ~440 (Custom)
+Телеметрия  |  Правый верх; 360×392 portrait / 400×392 landscape
+
+Заголовок телеметрии:
+
+Часть  |  Ключ  |  Пример (RU)
+Имя  |  ProbeTelemetryTitle  |  «Зонд · Voyager»
+Прицел  |  ProbeTelemetryAiming  |  «(прицел)»
+Полёт  |  ProbeTelemetryFlying  |  «(полёт)»
+
+Имя модели: ProbeModelVoyager / NewHorizons / Juno / Custom. В полёте — модель запущенного craft.
+
+Тело телеметрии (~10 Hz): ProbeTelemetrySunSpeed, RelSpeed, Radius, Lon, Z, ProbeNearestLabel (3 тела).
+
+Выбор модели: активная кнопка — светлее + cyan outline 2 px.
+Toast при Launch: ProbeLaunchSuccessMessage, 5 с.
+
+Видимость зонда на APK
+~~~~~~~~~~~~~~~~~~~~~~
+
+Механизм  |  Назначение
+SnapChase при Launch  |  ProbeCameraController.SnapChase(craft) — мгновенная позиция Chase в том же кадре, до первого LateUpdate
+SetCameraMode(Chase, force)  |  ProbeSettings.SetCameraMode(Chase, force:true) — игнорирует сохранённый pref World
+Auto-Chase в полёте  |  ProbeCameraController.Tick — сглаживание (~4.5 AU сзади по скорости)
+Масштаб craft  |  Clamp(r_якоря×1.2, 2.0, 6) — пол 2.0 AU
+Слой mesh  |  SetLayerRecursively(root, 0) — Default layer; иначе mesh может не рендериться на APK
+Shader fallback  |  Корпус: mobile/tier≠High → URP Unlit → Mobile/Unlit → Sprites/Default → URP Lit → Standard; blip: URP Unlit → Mobile/Unlit → Sprites/Default
+MinimapBlip  |  Cyan unlit-сфера, local scale ×1.5
+ProbeWorldMarker  |  Billboard-кольцо ~4 AU в режиме World
+
+Ghost-траектория (циан) — при aiming и в полёте.
 
 Модели зонда
 ~~~~~~~~~~~~
 
-Voyager (0) — антенна всегда (postcard).
-New Horizons (1) — скорость запуска ×1.35.
-Juno (2) — стандартный loadout.
-Custom (3) — Antenna (postcard), Engine (3 Burn), Shield (защита от перегрева у Солнца).
+Модель  |  Pref  |  Что даёт
+Voyager  |  0  |  Антенна всегда — открытка
+New Horizons  |  1  |  Старт ~35 % быстрее
+Juno  |  2  |  Стандарт
+Custom  |  3  |  Antenna / Engine (3 Burn) / Shield
+
+Burn ~35 % Impulse. Части: ProbePartAntenna / Engine / Shield.
 
 Запуск (Launch)
 ~~~~~~~~~~~~~~~
 
-1. Якорь: LookAtTarget.currentTarget → ResolveObservationTarget() → Earth.
-2. 19 тел SolarSystemCatalog + 10 комет CometCatalog; кометы — точка старта без массы (ProbeMassCatalog = 0).
-3. Prograde + Heading (−180…+180°) + Impulse (0.15…1.0 → 0.35…2.4 × круговая скорость).
-4. Ghost trajectory: циановая линия при aiming и в полёте.
-5. Launch: SetShowProbeViews(true) на сессию.
+Шаг  |  Поведение
+Якорь  |  Фокус → наблюдаемое тело → Земля
+Тела  |  19 тел + 10 комет (кометы без гравитации)
+Позиция  |  Над поверхностью от Солнца
+Направление  |  Prograde + Heading (−180…+180°)
+После Launch  |  Chase (force), SnapChase, PIP, coach завершён (MarkLaunchCompleted), превью ещё 3 с, scale craft ≥ 2.0
+
+Ошибка: ProbeLaunchFailedMessage.
 
 Физика (restricted N-body)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Test particle; планеты на рельсах. GM☉ из скорости Земли; остальные — ProbeMassCatalog.
-Verlet, 6 substeps, MaxPhysicsDelta = 0.2 с.
-Δt: пауза=0; TM=unscaledDeltaTime×SpeedMultiplier; иначе Time.deltaTime.
-Abort: смена ScaleMode / UseRealOrbits / UseTimeMachine; impact; overheat без щита.
-Зонд не в LookAtTarget.currentTarget / SelectedPlanetName.
+Test particle; планеты на рельсах.
+
+Аспект  |  Спецификация
+GM☉  |  Из скорости Земли
+Интегратор  |  Verlet, 6 substeps, max Δt 0.2 с
+Время  |  Пауза=0; TM=unscaled×множитель; иначе realtime
+Abort  |  Масштаб/орбиты/TM; impact; перегрев без щита
+Сессия  |  Не сохраняется в Continue
+
+Toast: ProbePhysicsCappedMessage, ProbeImpactMessage, ProbeOverheatMessage.
 
 Камера
 ~~~~~~
 
-World — обычная orbit-камера.
-Chase — сзади по velocity.
-Cockpit — внутри зонда; SuppressBodyPicking (MobileOrbitCamera, LookAtTarget).
+Режим  |  Ключ  |  UX
+World  |  ProbeWorldLabel  |  Orbit-камера; marker-кольцо
+Chase  |  ProbeChaseLabel  |  Сзади по скорости (~4.5+1.4 AU); default после Launch; в полёте — Lerp (exp −8)
+Cockpit  |  ProbeCockpitLabel  |  Изнутри; pick тел подавлен
+
+SnapChase: жёсткий snap при Launch (без Lerp) — craft − velocity×4.5 + up×1.4, look-at на craft.
+Порядок кадра: ProbeSystemController [DefaultExecutionOrder(100)]; ProbeCameraController [DefaultExecutionOrder(250)]. Launch создаёт craft; SnapChase ставит камеру сразу; LateUpdate Tick — сглаживание.
+
+Pref: SolarSystem_ProbeCameraMode (0/1/2). Launch — force Chase. Abort — восстановление фокуса.
 
 PIP-обзор (Views)
 ~~~~~~~~~~~~~~~~~
 
-Три окна в полёте: forward (верх-центр), rear-left и rear-right (верхние углы).
-Launch auto-enable SetShowProbeViews(true); тумблер Views — opt-out.
-PlayerPrefs ShowProbeViews=0 по умолчанию; Launch переопределяет на полёт.
-Тёмная рамка, подписи; placeholder до готовности RT.
-PIP: portrait 280×150, landscape 320×180.
+Три окна только в полёте. Launch включает PIP; тумблер ProbeViewsLabel — opt-out.
+Pref ShowProbeViews=0; Launch переопределяет. Размеры: 280×150 / 320×180.
 
-Телеметрия и Share
-~~~~~~~~~~~~~~~~~~
+Share / открытка
+~~~~~~~~~~~~~~~~
 
-v☉, v rel, r/λ/z в AU, 3 ближайших тела (~10 Hz).
-Postcard/share: антенна обязательна; SimulationShareController дополняет текст TelemetryShareLine.
+ProbePostcardLabel → SimulationShareController. Нужна антенна (ProbeNeedAntennaMessage).
 
 Проекция на сетку
 ~~~~~~~~~~~~~~~~~
 
-При UseProjection и полёте: ProbeGridProjection — циановая drop/glow/trail на SpacetimeGridController.
+При проекции и полёте: циановая drop, glow, trail зонда.
 
-PlayerPrefs (зонд)
-~~~~~~~~~~~~~~~~~~
+Справочник PlayerPrefs
+~~~~~~~~~~~~~~~~~~~~~~
 
-SolarSystem_UseProbe (0) — тумблер.
-SolarSystem_ProbeModel (0) — 0=Voyager, 1=NH, 2=Juno, 3=Custom.
-SolarSystem_ProbeCustomAntenna (1), Engine (0), Shield (0).
-SolarSystem_ShowProbeViews (0) — PIP; Launch включает.
-SolarSystem_ProbeCameraMode (0) — 0=World, 1=Chase, 2=Cockpit.
+Ключ  |  Дефолт  |  Назначение
+SolarSystem_UseProbe  |  0  |  Тумблер
+SolarSystem_ProbeModel  |  0  |  0…3 модели
+SolarSystem_ProbeCustomAntenna  |  1  |  Custom: антенна
+SolarSystem_ProbeCustomEngine  |  0  |  Custom: Burn
+SolarSystem_ProbeCustomShield  |  0  |  Custom: щит
+SolarSystem_ShowProbeViews  |  0  |  PIP
+SolarSystem_ProbeCameraMode  |  0  |  World/Chase/Cockpit
+SolarSystem_ProbeCoachLaunchCompleted  |  0  |  1 = coach пройден
 
-Точки интеграции
-~~~~~~~~~~~~~~~~
+Сброс: Reset → ProbeSettings.ResetToDefaults().
 
-SimulationViewBootstrap — EnsureOnHost.
-SimulationSidePanelController / SidePanelUiBootstrap — тумблер.
-PauseAndResume — New выкл., EnterMenu abort.
-CleanViewController — ProbeHud не скрывается в clean view.
-VisualsInitializer — пропуск ProbeView* камер.
-SimulationShareController — PIP off на capture, телеметрия в share.
-Spawner/Projectile не используются.
+Справочник локализации (Probe*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Coach: ProbeCoachStep1Title…4Title, Step1Body…4Body, ProbeCoachNext, Skip, HelpDone.
+Телеметрия: ProbeTelemetryTitle, Aiming, Flying, SunSpeed, RelSpeed, Radius, Lon, Z, NearestLabel.
+Модели: ProbeModelVoyager, NewHorizons, Juno, Custom; ProbePartAntenna, Engine, Shield.
+Кнопки: ProbeLaunchLabel, AbortLabel, BurnLabel, PostcardLabel, World/Chase/Cockpit/Views, Impulse, Heading.
+Сообщения: LaunchSuccess/Failed, NeedAntenna, Impact, Overheat, PhysicsCapped, Aborted*.
+
+Файлы: Assets/Resources/Languages/*.json (7 языков).
+
+Проверка на устройстве (чеклист)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Coach (свежий APK): шаг 1; dim не блокирует launch bar; шаг 4 → Launch в карточке; Launch → coach навсегда; Reset → снова.
+2. ? до Launch открывает coach; после — toast «Подсказки уже пройдены».
+3. Превью при aiming; после Launch ~3 с, затем скрывается.
+4. Телеметрия «Зонд · {модель}» + «(прицел)»/«(полёт)».
+5. Launch: SnapChase — камера мгновенно Chase; toast 5 с; PIP; mesh виден (layer 0, unlit fallback, scale ≥ 2.0); cyan blip.
+6. World: marker-кольцо; Chase/Cockpit без потери полёта.
+7. Portrait + landscape: без перекрытий time bar / safe area.
+8. Custom+Shield у Солнца без abort; без щита — ProbeOverheatMessage.
+
+Где в коде
+~~~~~~~~~~
+
+Assets/Scripts/Probe/ (ProbeSystemController, ProbeCameraController, ProbeHudController, ProbeCoachOverlay, ProbePrefabFactory, ProbePreviewRig, ProbeWorldMarker, ProbeSettings, …).
+Bootstrap: SimulationViewBootstrap → EnsureOnHost. Legacy Spawner/Projectile не используются.
+
 
 ---
 
@@ -544,7 +646,7 @@ Mars  |  —  |  Phobos/Deimos уже есть
 
 1. Единый design token set (цвета/отступы) вместо разрозненных констант в bootstrap.  
 2. Иконки pause/play вместо текста «II» / «>».  
-3. Подсказки первого запуска (coach marks) для side panel и time bar.  
+3. Coach зонда реализован (§2.8); опционально — подсказки для side panel / time bar вне режима зонда.  
 4. Явное разделение «настройки симуляции» vs «настройки сессии» в меню Continue.  
 5. Адаптив: избежать наложений (CpuLoadMonitor / ScaleBar над time bar, minimap слева) для описаний и toast.  
 6. Accessibility: крупные hit-area, контраст, TalkBack/VoiceOver labels (ключи уже частично есть для time control).  
@@ -581,6 +683,7 @@ SolarSystem_ProbeModel (0) — 0=Voyager, 1=New Horizons, 2=Juno, 3=Custom.
 SolarSystem_ProbeCustomAntenna (1), Engine (0), Shield (0).
 SolarSystem_ShowProbeViews (0) — PIP; Launch включает на полёт.
 SolarSystem_ProbeCameraMode (0) — 0=World, 1=Chase, 2=Cockpit.
+SolarSystem_ProbeCoachLaunchCompleted (0) — 1 = coach пройден (первый Launch).
 
 Сессия: SolarSystem_HasSessionState, SolarSystem_SelectedPlanet, SolarSystem_IsDetailCamera, SolarSystem_TimeScale / SpeedMultiplier / IsPaused, камера (Main/Detail X/Y/Distance), SolarSystem_MotionSnapshot.
 

@@ -208,10 +208,10 @@ namespace SolarSystemApp
             ShowProbeViewsChanged?.Invoke();
         }
 
-        public static void SetCameraMode(ProbeCameraMode mode)
+        public static void SetCameraMode(ProbeCameraMode mode, bool force = false)
         {
             EnsureInitialized();
-            if (cameraMode == mode)
+            if (!force && cameraMode == mode)
                 return;
 
             cameraMode = mode;
@@ -254,6 +254,7 @@ namespace SolarSystemApp
             PlayerPrefs.DeleteKey(KeyShield);
             PlayerPrefs.DeleteKey(KeyViews);
             PlayerPrefs.DeleteKey(KeyCamera);
+            ProbeCoachSettings.ResetToDefaults();
 
             initialized = true;
             useProbe = false;

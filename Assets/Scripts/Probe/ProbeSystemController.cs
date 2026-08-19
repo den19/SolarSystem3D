@@ -16,6 +16,7 @@ public class ProbeSystemController : MonoBehaviour
     public ProbeCraft Craft { get; private set; }
     public bool IsFlying => Craft != null && !Craft.Impacted;
     public bool IsAiming => ProbeSettings.UseProbe && !IsFlying;
+    public float FlightPreviewGraceRemaining { get; private set; }
     public Vector3 AimVelocity { get; private set; }
     public float AimHeadingDeg = 0f;
     public float ImpulseNormalized = 0.55f;
@@ -96,8 +97,17 @@ public class ProbeSystemController : MonoBehaviour
         _viewRig = ProbeViewRig.EnsureOnHost(gameObject);
         _gridProjection = ProbeGridProjection.EnsureOnHost(gameObject);
 
-        if (!ProbeSettings.UseProbe)
-            SetHudVisible(false);
+        RefreshHudVisibility();
+    }
+
+    void Update()
+    {
+        if (FlightPreviewGraceRemaining > 0f)
+        {
+            FlightPreviewGraceRemaining -= Time.unscaledDeltaTime;
+            if (FlightPreviewGraceRemaining < 0f)
+                FlightPreviewGraceRemaining = 0f;
+        }
     }
 
     void LateUpdate()
@@ -116,7 +126,6 @@ public class ProbeSystemController : MonoBehaviour
         else
             TickAim();
 
-        _cameraController?.Tick(this);
         _viewRig?.Tick(this);
         _gridProjection?.Tick(this);
     }
@@ -256,9 +265,20 @@ public class ProbeSystemController : MonoBehaviour
         Craft.OriginName = originName;
         Craft.transform.position = position;
         Craft.Velocity = originVelocity + prograde * ResolveImpulseSpeed(position) * ProbeSettings.ResolveLaunchSpeedScale();
+        float craftScale = Mathf.Clamp(originRadius * 1.2f, 2.0f, 6f);
+        Craft.transform.localScale = Vector3.one * craftScale;
         Craft.AlignToVelocity();
+        Craft.gameObject.AddComponent<ProbeWorldMarker>();
         _cappedToastShown = false;
         ProbeSettings.SetShowProbeViews(true);
+        ProbeSettings.SetCameraMode(ProbeCameraMode.Chase, force: true);
+        ProbeCoachSettings.MarkLaunchCompleted();
+        FlightPreviewGraceRemaining = 3f;
+        TransientMessageController.ShowLocalized(
+            "ProbeLaunchSuccessMessage",
+            "Probe launched. Camera: Chase. Watch telemetry on the right.",
+            5f);
+        _cameraController?.SnapChase(Craft);
         StateChanged?.Invoke();
     }
 
@@ -320,7 +340,7 @@ public class ProbeSystemController : MonoBehaviour
         if (!enabled)
             AbortInternal(restoreCamera: true, toastKey: null, toastFallback: null);
 
-        SetHudVisible(enabled);
+        RefreshHudVisibility();
         StateChanged?.Invoke();
     }
 
@@ -343,15 +363,15 @@ public class ProbeSystemController : MonoBehaviour
             AbortInternal(restoreCamera: true, key, fallback);
     }
 
-    void SetHudVisible(bool visible)
+    void RefreshHudVisibility()
     {
         Transform canvas = GameObject.Find("MainScreenCanvas")?.transform;
         if (canvas == null)
             return;
 
-        Transform hud = canvas.Find(HudObjectName);
+        var hud = ProbeHudController.EnsureOnCanvas(canvas);
         if (hud != null)
-            hud.gameObject.SetActive(visible);
+            hud.RefreshRootVisibility();
     }
 
     bool TryGetLaunchPose(out Vector3 position, out Vector3 prograde, out Vector3 originVelocity, out float originRadius, out string originName)

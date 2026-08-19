@@ -14,11 +14,14 @@ public class ProbeHudController : MonoBehaviour
     const float RowHeight = 56f;
     const float ButtonFontSize = 26f;
     const float TelemetryFontSize = 26f;
+    const float TelemetryHeaderFontSize = 27f;
+    const float TelemetryStatusFontSize = 22f;
     const float CheckboxSize = 28f;
     const float SliderHeight = 36f;
     const float TelemetryWidth = 360f;
     const float TelemetryWidthLandscape = 400f;
-    const float TelemetryHeight = 340f;
+    const float TelemetryHeight = 392f;
+    const float TelemetryHeaderHeight = 52f;
     const float BarWidthLandscape = 720f;
     const float BarHeightStandard = 380f;
     const float BarHeightCustom = 440f;
@@ -45,9 +48,17 @@ public class ProbeHudController : MonoBehaviour
     Toggle _engineToggle;
     Toggle _shieldToggle;
     TextMeshProUGUI _telemetryText;
+    TextMeshProUGUI _telemetryHeader;
+    TextMeshProUGUI _telemetryStatus;
+    RectTransform _telemetryBody;
     GameObject _customRow;
     Button _burnButton;
     Button _postcardButton;
+    Button _helpButton;
+    ProbeCoachOverlay _coachOverlay;
+    ProbePreviewRig _previewRig;
+    readonly System.Collections.Generic.Dictionary<ProbeModelKind, Image> _modelButtonImages =
+        new System.Collections.Generic.Dictionary<ProbeModelKind, Image>();
     float _nextTelemetry;
 
     public static ProbeHudController EnsureOnCanvas(Transform canvasTransform)
@@ -61,6 +72,7 @@ public class ProbeHudController : MonoBehaviour
             var controller = existing.GetComponent<ProbeHudController>();
             if (controller == null)
                 controller = existing.gameObject.AddComponent<ProbeHudController>();
+            controller.EnsureExtensions();
             return controller;
         }
 
@@ -78,6 +90,8 @@ public class ProbeHudController : MonoBehaviour
             ProbeSystemController.Instance.StateChanged += RefreshState;
         ProbeSettings.LoadoutChanged += RefreshState;
         ProbeSettings.ShowProbeViewsChanged += RefreshPips;
+        ProbeSettings.UseProbeChanged += OnUseProbeChanged;
+        ProbeCoachSettings.LaunchCompletedChanged += OnCoachCompleted;
         LocalizationManager.OnLanguageChanged += OnLanguageChanged;
     }
 
@@ -87,19 +101,28 @@ public class ProbeHudController : MonoBehaviour
             ProbeSystemController.Instance.StateChanged -= RefreshState;
         ProbeSettings.LoadoutChanged -= RefreshState;
         ProbeSettings.ShowProbeViewsChanged -= RefreshPips;
+        ProbeSettings.UseProbeChanged -= OnUseProbeChanged;
+        ProbeCoachSettings.LaunchCompletedChanged -= OnCoachCompleted;
         LocalizationManager.OnLanguageChanged -= OnLanguageChanged;
     }
 
     void OnLanguageChanged()
     {
         RefreshLabels();
+        RefreshTelemetryHeader();
         RefreshTelemetryNow();
     }
+
+    void OnUseProbeChanged(bool _) => RefreshRootVisibility();
+
+    void OnCoachCompleted() => RefreshRootVisibility();
 
     void Start()
     {
         if (_root == null)
             Build();
+        else
+            EnsureExtensions();
         RefreshState();
     }
 
@@ -151,7 +174,9 @@ public class ProbeHudController : MonoBehaviour
         });
 
         _telemetry = CreatePanel("ProbeTelemetry", new Color(0.02f, 0.05f, 0.1f, 0.78f));
-        _telemetryText = CreateTmp(_telemetry, "ProbeTelemetryBody", TelemetryFontSize, TextAlignmentOptions.TopLeft);
+        BuildTelemetryHeader(_telemetry);
+        _telemetryBody = CreateTelemetryBody(_telemetry);
+        _telemetryText = CreateTmp(_telemetryBody, "ProbeTelemetryBody", TelemetryFontSize, TextAlignmentOptions.TopLeft);
         var le = _telemetryText.gameObject.AddComponent<LayoutElement>();
         le.minHeight = 280f;
         _telemetryText.margin = new Vector4(10f, 8f, 10f, 8f);
@@ -159,6 +184,114 @@ public class ProbeHudController : MonoBehaviour
         _forwardPip = CreatePip("ProbeViewForwardImage", string.Empty, out _forwardImage);
         _rearLeftPip = CreatePip("ProbeViewRearLeftImage", "◀", out _rearLeftImage);
         _rearRightPip = CreatePip("ProbeViewRearRightImage", "▶", out _rearRightImage);
+
+        _coachOverlay = ProbeCoachOverlay.EnsureOnHud(_root);
+        _previewRig = ProbePreviewRig.EnsureOnHud(_root);
+        _helpButton = CreateHelpButton(_root);
+    }
+
+    void EnsureExtensions()
+    {
+        if (_root == null)
+            _root = GetComponent<RectTransform>();
+        if (_root == null)
+            return;
+
+        if (_bar == null)
+        {
+            Build();
+            return;
+        }
+
+        if (_coachOverlay == null)
+            _coachOverlay = ProbeCoachOverlay.EnsureOnHud(_root);
+        if (_previewRig == null)
+            _previewRig = ProbePreviewRig.EnsureOnHud(_root);
+        if (_helpButton == null)
+            _helpButton = CreateHelpButton(_root);
+        if (_telemetryHeader == null && _telemetry != null)
+        {
+            BuildTelemetryHeader(_telemetry);
+            if (_telemetryBody == null)
+            {
+                _telemetryBody = CreateTelemetryBody(_telemetry);
+                if (_telemetryText != null)
+                    _telemetryText.transform.SetParent(_telemetryBody, false);
+            }
+        }
+    }
+
+    void BuildTelemetryHeader(RectTransform parent)
+    {
+        var headerGo = new GameObject("ProbeTelemetryHeaderRow", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        headerGo.layer = gameObject.layer;
+        headerGo.transform.SetParent(parent, false);
+        var headerRt = headerGo.GetComponent<RectTransform>();
+        headerRt.anchorMin = new Vector2(0f, 1f);
+        headerRt.anchorMax = new Vector2(1f, 1f);
+        headerRt.pivot = new Vector2(0.5f, 1f);
+        headerRt.sizeDelta = new Vector2(0f, TelemetryHeaderHeight);
+        headerGo.GetComponent<Image>().color = new Color(0.05f, 0.1f, 0.16f, 0.92f);
+
+        var accentGo = new GameObject("Accent", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        accentGo.layer = gameObject.layer;
+        accentGo.transform.SetParent(headerGo.transform, false);
+        var accentRt = accentGo.GetComponent<RectTransform>();
+        accentRt.anchorMin = new Vector2(0f, 0f);
+        accentRt.anchorMax = new Vector2(1f, 0f);
+        accentRt.pivot = new Vector2(0.5f, 0f);
+        accentRt.sizeDelta = new Vector2(0f, 2f);
+        accentGo.GetComponent<Image>().color = new Color(0.35f, 0.85f, 1f, 0.95f);
+
+        _telemetryHeader = CreateTmp(headerGo.GetComponent<RectTransform>(), "ProbeTelemetryHeader", TelemetryHeaderFontSize, TextAlignmentOptions.TopLeft);
+        _telemetryHeader.fontStyle = FontStyles.Bold;
+        var headerTextRt = _telemetryHeader.GetComponent<RectTransform>();
+        headerTextRt.anchorMin = new Vector2(0f, 0.5f);
+        headerTextRt.anchorMax = new Vector2(1f, 1f);
+        headerTextRt.offsetMin = new Vector2(10f, 2f);
+        headerTextRt.offsetMax = new Vector2(-10f, -4f);
+
+        _telemetryStatus = CreateTmp(headerGo.GetComponent<RectTransform>(), "ProbeTelemetryStatus", TelemetryStatusFontSize, TextAlignmentOptions.BottomLeft);
+        var statusRt = _telemetryStatus.GetComponent<RectTransform>();
+        statusRt.anchorMin = new Vector2(0f, 0f);
+        statusRt.anchorMax = new Vector2(1f, 0.5f);
+        statusRt.offsetMin = new Vector2(10f, 4f);
+        statusRt.offsetMax = new Vector2(-10f, -2f);
+    }
+
+    static RectTransform CreateTelemetryBody(RectTransform parent)
+    {
+        var go = new GameObject("ProbeTelemetryBodyPanel", typeof(RectTransform));
+        go.layer = parent.gameObject.layer;
+        go.transform.SetParent(parent, false);
+        var rt = go.GetComponent<RectTransform>();
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = new Vector2(0f, 0f);
+        rt.offsetMax = new Vector2(0f, -TelemetryHeaderHeight);
+        return rt;
+    }
+
+    Button CreateHelpButton(RectTransform parent)
+    {
+        var go = new GameObject("ProbeCoachHelp", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+        go.layer = gameObject.layer;
+        go.transform.SetParent(parent, false);
+        var rt = go.GetComponent<RectTransform>();
+        rt.anchorMin = new Vector2(0f, 1f);
+        rt.anchorMax = new Vector2(0f, 1f);
+        rt.pivot = new Vector2(0f, 1f);
+        rt.sizeDelta = new Vector2(52f, 52f);
+        go.GetComponent<Image>().color = new Color(0.12f, 0.16f, 0.24f, 0.9f);
+
+        var label = CreateTmp(rt, "ProbeCoachHelp_Text", ButtonFontSize, TextAlignmentOptions.Center);
+        label.text = "?";
+        label.fontStyle = FontStyles.Bold;
+        label.raycastTarget = false;
+
+        var button = go.GetComponent<Button>();
+        button.onClick.AddListener(() => _coachOverlay?.OpenManual());
+        return button;
     }
 
     void CreateModelRow(RectTransform parent)
@@ -199,7 +332,8 @@ public class ProbeHudController : MonoBehaviour
 
     void CreateModeButton(RectTransform parent, string key, ProbeModelKind kind)
     {
-        CreateButton(parent, key, () => ProbeSettings.SetModel(kind));
+        var button = CreateButton(parent, key, () => ProbeSettings.SetModel(kind));
+        _modelButtonImages[kind] = button.GetComponent<Image>();
     }
 
     Button CreateButton(RectTransform parent, string key, UnityEngine.Events.UnityAction action)
@@ -466,12 +600,47 @@ public class ProbeHudController : MonoBehaviour
         _rearRightPip.anchoredPosition = new Vector2(-(right + 8f), -navBottom);
 
         ApplyHudFontSizes();
+        LayoutHelpButton(landscape, right, bottom, timeBar, barWidth);
+    }
+
+    void LayoutHelpButton(bool landscape, float safeRight, float safeBottom, float timeBar, float barWidth)
+    {
+        if (_helpButton == null)
+            return;
+
+        var rt = _helpButton.GetComponent<RectTransform>();
+        rt.anchorMin = new Vector2(0.5f, 0f);
+        rt.anchorMax = new Vector2(0.5f, 0f);
+        rt.pivot = new Vector2(1f, 0f);
+        rt.anchoredPosition = new Vector2(barWidth * 0.5f - 8f, safeBottom + timeBar + (ProbeSettings.Model == ProbeModelKind.Custom ? BarHeightCustom : BarHeightStandard) + 8f);
     }
 
     void ApplyHudFontSizes()
     {
         ApplyFontSize(_bar, ButtonFontSize);
-        ApplyFontSize(_telemetry, TelemetryFontSize);
+        if (_telemetryText != null)
+            _telemetryText.fontSize = TelemetryFontSize;
+        if (_telemetryHeader != null)
+            _telemetryHeader.fontSize = TelemetryHeaderFontSize;
+        if (_telemetryStatus != null)
+            _telemetryStatus.fontSize = TelemetryStatusFontSize;
+    }
+
+    public void RefreshRootVisibility()
+    {
+        if (_root == null)
+            return;
+
+        bool coachPending = !ProbeCoachSettings.LaunchCompleted;
+        bool showProbeUi = ProbeSettings.UseProbe;
+        gameObject.SetActive(coachPending || showProbeUi);
+
+        if (_bar != null)
+            _bar.gameObject.SetActive(showProbeUi);
+        if (_telemetry != null)
+            _telemetry.gameObject.SetActive(showProbeUi);
+        if (_helpButton != null)
+            _helpButton.gameObject.SetActive(showProbeUi && coachPending);
     }
 
     static void ApplyFontSize(RectTransform root, float size)
@@ -496,8 +665,81 @@ public class ProbeHudController : MonoBehaviour
         if (_viewsToggle != null && _viewsToggle.isOn != ProbeSettings.ShowProbeViews)
             _viewsToggle.SetIsOnWithoutNotify(ProbeSettings.ShowProbeViews);
         RefreshLabels();
+        RefreshModelButtonHighlights();
         RefreshPips();
+        RefreshTelemetryHeader();
         RefreshTelemetryNow();
+        RefreshRootVisibility();
+    }
+
+    void RefreshModelButtonHighlights()
+    {
+        var selected = new Color(0.22f, 0.34f, 0.48f, 1f);
+        var normal = new Color(0.18f, 0.22f, 0.32f, 1f);
+        var outlineColor = new Color(0.35f, 0.85f, 1f, 1f);
+
+        foreach (var pair in _modelButtonImages)
+        {
+            if (pair.Value == null)
+                continue;
+
+            bool active = pair.Key == ProbeSettings.Model;
+            pair.Value.color = active ? selected : normal;
+            var outline = pair.Value.GetComponent<Outline>();
+            if (active)
+            {
+                if (outline == null)
+                    outline = pair.Value.gameObject.AddComponent<Outline>();
+                outline.effectColor = outlineColor;
+                outline.effectDistance = new Vector2(2f, -2f);
+            }
+            else if (outline != null)
+            {
+                Destroy(outline);
+            }
+        }
+    }
+
+    void RefreshTelemetryHeader()
+    {
+        if (_telemetryHeader == null || _telemetryStatus == null)
+            return;
+
+        var system = ProbeSystemController.Instance;
+        ProbeModelKind model = ProbeSettings.Model;
+        if (system != null && system.IsFlying && system.Craft != null)
+            model = system.Craft.Model;
+
+        string modelLabel = ResolveModelLabel(model);
+        string titleTemplate = T("ProbeTelemetryTitle", "Probe · {0}");
+        _telemetryHeader.text = string.Format(titleTemplate, modelLabel);
+
+        bool flying = system != null && system.IsFlying;
+        _telemetryStatus.text = flying
+            ? T("ProbeTelemetryFlying", "(in flight)")
+            : T("ProbeTelemetryAiming", "(aiming)");
+    }
+
+    public static string ResolveModelLabel(ProbeModelKind kind)
+    {
+        string key;
+        switch (kind)
+        {
+            case ProbeModelKind.NewHorizons:
+                key = "ProbeModelNewHorizons";
+                break;
+            case ProbeModelKind.Juno:
+                key = "ProbeModelJuno";
+                break;
+            case ProbeModelKind.Custom:
+                key = "ProbeModelCustom";
+                break;
+            default:
+                key = "ProbeModelVoyager";
+                break;
+        }
+
+        return T(key, kind.ToString());
     }
 
     void RefreshLabels()
@@ -553,6 +795,8 @@ public class ProbeHudController : MonoBehaviour
         _telemetry.gameObject.SetActive(show);
         if (!show)
             return;
+
+        RefreshTelemetryHeader();
 
         Vector3 pos;
         Vector3 vel;

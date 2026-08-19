@@ -4,7 +4,7 @@ using UnityEngine;
 /// <summary>
 /// Main-camera chase / cockpit override. Does not write the probe into LookAtTarget.currentTarget.
 /// </summary>
-[DefaultExecutionOrder(110)]
+[DefaultExecutionOrder(250)]
 public class ProbeCameraController : MonoBehaviour
 {
     public static bool SuppressBodyPicking { get; private set; }
@@ -32,6 +32,36 @@ public class ProbeCameraController : MonoBehaviour
         if (_main != null)
             _orbit = _main.GetComponent<MobileOrbitCamera>();
         _lookAt = FindFirstObjectByType<LookAtTarget>();
+    }
+
+    void LateUpdate()
+    {
+        Tick(ProbeSystemController.Instance);
+    }
+
+    public void SnapChase(ProbeCraft craft)
+    {
+        if (craft == null)
+            return;
+
+        if (_main == null)
+        {
+            _main = Camera.main;
+            if (_main != null)
+                _orbit = _main.GetComponent<MobileOrbitCamera>();
+        }
+
+        if (_main == null)
+            return;
+
+        if (!_overrideActive)
+            BeginOverride();
+
+        Vector3 velocity = craft.Velocity.sqrMagnitude > 1e-5f ? craft.Velocity.normalized : craft.transform.forward;
+        Vector3 chasePos = craft.transform.position - velocity * 4.5f + Vector3.up * 1.4f;
+        _main.transform.position = chasePos;
+        _main.transform.rotation = Quaternion.LookRotation(craft.transform.position - _main.transform.position, Vector3.up);
+        _orbit?.SetExternalOrbitControl(true);
     }
 
     public void Tick(ProbeSystemController system)

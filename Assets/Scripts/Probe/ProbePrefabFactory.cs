@@ -40,7 +40,7 @@ public static class ProbePrefabFactory
         var blip = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         blip.name = BlipName;
         blip.transform.SetParent(root.transform, false);
-        blip.transform.localScale = Vector3.one * 1.8f;
+        blip.transform.localScale = Vector3.one * 1.5f;
         Object.Destroy(blip.GetComponent<Collider>());
         var blipRenderer = blip.GetComponent<MeshRenderer>();
         blipRenderer.sharedMaterial = cyanMat;
@@ -49,7 +49,7 @@ public static class ProbePrefabFactory
         var sphere = root.AddComponent<SphereCollider>();
         sphere.radius = 0.45f;
         sphere.isTrigger = true;
-        SetLayerRecursively(root, 2);
+        SetLayerRecursively(root, 0);
 
         craft.Antenna = craftAntenna;
         craftAntenna = null;
@@ -138,10 +138,7 @@ public static class ProbePrefabFactory
 
     static Material CreateLit(Color color, float metallic, float smoothness)
     {
-        Shader shader = Shader.Find("Universal Render Pipeline/Lit");
-        if (shader == null)
-            shader = Shader.Find("Standard");
-
+        Shader shader = ResolveBodyShader();
         var material = new Material(shader);
         if (material.HasProperty("_BaseColor"))
             material.SetColor("_BaseColor", color);
@@ -154,9 +151,50 @@ public static class ProbePrefabFactory
         return material;
     }
 
-    static Material CreateUnlit(Color color)
+    static bool _shaderWarningLogged;
+
+    static Shader ResolveUnlitShader()
     {
         Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
+        if (shader != null)
+            return shader;
+
+        shader = Shader.Find("Mobile/Unlit (Supports Lightmap)");
+        if (shader != null)
+            return shader;
+
+        shader = Shader.Find("Sprites/Default");
+        if (shader != null)
+            return shader;
+
+        if (!_shaderWarningLogged)
+        {
+            _shaderWarningLogged = true;
+            Debug.LogWarning("ProbePrefabFactory: no unlit shader found (URP Unlit, Mobile/Unlit, Sprites/Default).");
+        }
+
+        return null;
+    }
+
+    static Shader ResolveBodyShader()
+    {
+        bool preferUnlit = Application.isMobilePlatform || !GraphicsTierSettings.IsHighEffective;
+        if (preferUnlit)
+        {
+            Shader unlit = ResolveUnlitShader();
+            if (unlit != null)
+                return unlit;
+        }
+
+        Shader lit = Shader.Find("Universal Render Pipeline/Lit");
+        if (lit != null)
+            return lit;
+        return Shader.Find("Standard");
+    }
+
+    static Material CreateUnlit(Color color)
+    {
+        Shader shader = ResolveUnlitShader();
         if (shader == null)
             shader = Shader.Find("Unlit/Color");
 
