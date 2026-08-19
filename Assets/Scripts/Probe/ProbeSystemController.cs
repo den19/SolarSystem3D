@@ -258,6 +258,7 @@ public class ProbeSystemController : MonoBehaviour
         Craft.Velocity = originVelocity + prograde * ResolveImpulseSpeed(position) * ProbeSettings.ResolveLaunchSpeedScale();
         Craft.AlignToVelocity();
         _cappedToastShown = false;
+        ProbeSettings.SetShowProbeViews(true);
         StateChanged?.Invoke();
     }
 

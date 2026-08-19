@@ -5,7 +5,7 @@
 Проект: Solar System 3D (Unity URP)  
 Сцены сборки: Assets/_Scenes/MainMenu.unity, Assets/_Scenes/Level1.unity  
 Скрипты: Assets/Scripts/ (~84 файла)  
-Версия документа: 2026-08-01  
+Версия документа: 2026-08-19  
 
 Документ описывает архитектуру симуляции, режимы работы, особенности, известные недостатки и направления развития. Предназначен для разработчиков, поддерживающих и расширяющих приложение.
 
@@ -30,6 +30,7 @@ MainMenu ──► PauseAndResume (New / Continue)
         ├── CometSystemController
         ├── OrbitLinesManager / BodyLabelManager / MinimapController
         ├── CleanViewController
+        ├── ProbeSystemController (+ HUD, камеры, проекция)
         └── UI: SidePanel, TimeControl, ScaleBar, Share, Descriptions
                 │
                 ▼
@@ -223,6 +224,130 @@ Effective High включается только если Extra Graphics ON и:
 2. Graphics quality: Auto (на флагмане) или High.  
 3. Сфокусировать камеру на Солнце — granulation/sunspots/flicker/CME и усиленный bloom на close zoom (SunCoronalVfxController).  
 
+
+2.8. Режим зонда (gravity slingshot)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Статус: этот подраздел — целевая спецификация (source of truth). Если поведение в Editor/APK расходится с описанием — исправлять код под документ. Не все edge cases проверены на устройстве (см. §5).
+
+Включение и жизненный цикл
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Событие  |  Ожидаемое поведение
+Тумблер «Зонд» (ProbeSettings.UseProbe)  |  По умолчанию выкл; только ручное включение (SidePanelProbeLabel_Row → SimulationSidePanelController)
+Включение тумблера  |  HUD ProbeHud на MainScreenCanvas; режим прицеливания (aiming)
+Выключение тумблера  |  Abort полёта, скрытие HUD, восстановление Main Camera
+StartNewSimulation()  |  SetUseProbe(false) — зонд выкл. при новой симуляции
+ResumeGame() / Continue  |  Камера, фокус, орбиты, время — полёт зонда НЕ восстанавливается
+EnterMenu()  |  ProbeSystemController.Abort — полёт прерывается
+Reset / SolarSystemConfigurationReset  |  ProbeSettings.ResetToDefaults()
+
+Архитектура (Assets/Scripts/Probe/)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Класс  |  Роль
+ProbeSystemController  |  Singleton: aiming, launch, integrate, abort, телеметрия для share
+ProbeSettings  |  PlayerPrefs + события
+ProbeHudController  |  Runtime HUD
+ProbeGravityIntegrator  |  Ускорение, Verlet, GetSimulationDeltaTime, калибровка GM☉
+ProbeTrajectoryPredictor  |  Ghost path (72 точки, ~14 с)
+ProbeMassCatalog  |  Массы тел относительно Солнца
+ProbeCraft / ProbePrefabFactory  |  Экземпляр SlingshotProbe
+ProbeCameraController  |  World / Chase / Cockpit на Main Camera
+ProbeViewRig  |  Три PIP-камеры → RT → RawImage
+ProbeGridProjection  |  Циановая проекция на гравитационной сетке
+
+Bootstrap: SimulationViewBootstrap → ProbeSystemController.EnsureOnHost(gameObject).
+
+HUD (размеры для мобильных — спецификация)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ProbeHudController строит UI в runtime (объект ProbeHud).
+
+Элемент  |  Размещение / размер
+Launch bar  |  Низ по центру, над time bar
+Высота строки / кнопки  |  56 px
+Шрифт  |  26
+Чекбокс  |  28×28
+Слайдер Impulse/Heading  |  высота 36
+Ширина панели  |  portrait: почти вся canvas; landscape: ~720
+Высота панели  |  ~380 (preset) / ~440 (Custom)
+Телеметрия  |  Верхний правый угол; 360×340 portrait, 400×340 landscape; шрифт 26
+Обновление телеметрии  |  ~10 Hz (0.1 с)
+
+Модели зонда
+~~~~~~~~~~~~
+
+Voyager (0) — антенна всегда (postcard).
+New Horizons (1) — скорость запуска ×1.35.
+Juno (2) — стандартный loadout.
+Custom (3) — Antenna (postcard), Engine (3 Burn), Shield (защита от перегрева у Солнца).
+
+Запуск (Launch)
+~~~~~~~~~~~~~~~
+
+1. Якорь: LookAtTarget.currentTarget → ResolveObservationTarget() → Earth.
+2. 19 тел SolarSystemCatalog + 10 комет CometCatalog; кометы — точка старта без массы (ProbeMassCatalog = 0).
+3. Prograde + Heading (−180…+180°) + Impulse (0.15…1.0 → 0.35…2.4 × круговая скорость).
+4. Ghost trajectory: циановая линия при aiming и в полёте.
+5. Launch: SetShowProbeViews(true) на сессию.
+
+Физика (restricted N-body)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Test particle; планеты на рельсах. GM☉ из скорости Земли; остальные — ProbeMassCatalog.
+Verlet, 6 substeps, MaxPhysicsDelta = 0.2 с.
+Δt: пауза=0; TM=unscaledDeltaTime×SpeedMultiplier; иначе Time.deltaTime.
+Abort: смена ScaleMode / UseRealOrbits / UseTimeMachine; impact; overheat без щита.
+Зонд не в LookAtTarget.currentTarget / SelectedPlanetName.
+
+Камера
+~~~~~~
+
+World — обычная orbit-камера.
+Chase — сзади по velocity.
+Cockpit — внутри зонда; SuppressBodyPicking (MobileOrbitCamera, LookAtTarget).
+
+PIP-обзор (Views)
+~~~~~~~~~~~~~~~~~
+
+Три окна в полёте: forward (верх-центр), rear-left и rear-right (верхние углы).
+Launch auto-enable SetShowProbeViews(true); тумблер Views — opt-out.
+PlayerPrefs ShowProbeViews=0 по умолчанию; Launch переопределяет на полёт.
+Тёмная рамка, подписи; placeholder до готовности RT.
+PIP: portrait 280×150, landscape 320×180.
+
+Телеметрия и Share
+~~~~~~~~~~~~~~~~~~
+
+v☉, v rel, r/λ/z в AU, 3 ближайших тела (~10 Hz).
+Postcard/share: антенна обязательна; SimulationShareController дополняет текст TelemetryShareLine.
+
+Проекция на сетку
+~~~~~~~~~~~~~~~~~
+
+При UseProjection и полёте: ProbeGridProjection — циановая drop/glow/trail на SpacetimeGridController.
+
+PlayerPrefs (зонд)
+~~~~~~~~~~~~~~~~~~
+
+SolarSystem_UseProbe (0) — тумблер.
+SolarSystem_ProbeModel (0) — 0=Voyager, 1=NH, 2=Juno, 3=Custom.
+SolarSystem_ProbeCustomAntenna (1), Engine (0), Shield (0).
+SolarSystem_ShowProbeViews (0) — PIP; Launch включает.
+SolarSystem_ProbeCameraMode (0) — 0=World, 1=Chase, 2=Cockpit.
+
+Точки интеграции
+~~~~~~~~~~~~~~~~
+
+SimulationViewBootstrap — EnsureOnHost.
+SimulationSidePanelController / SidePanelUiBootstrap — тумблер.
+PauseAndResume — New выкл., EnterMenu abort.
+CleanViewController — ProbeHud не скрывается в clean view.
+VisualsInitializer — пропуск ProbeView* камер.
+SimulationShareController — PIP off на capture, телеметрия в share.
+Spawner/Projectile не используются.
+
 ---
 
 
@@ -234,9 +359,9 @@ Effective High включается только если Extra Graphics ON и:
 ~~~~~~~~~~~~~~~~~
 
 Режим  |  API  |  Поведение
-New  |  PauseAndResume.StartNewSimulation()  |  Очистка снимка сессии; старт Level1 с дефолтами камеры/движения/времени; Time Machine выкл.
-Continue  |  PauseAndResume.ResumeGame()  |  Восстановление камеры, фокуса, фаз орбит, скорости и паузы
-Enter menu  |  PauseAndResume.EnterMenu()  |  Capture сессии → MainMenu (timeScale = 1 для UI меню)
+New  |  PauseAndResume.StartNewSimulation()  |  Очистка снимка; Level1; Time Machine выкл.; зонд выкл. (SetUseProbe(false))
+Continue  |  PauseAndResume.ResumeGame()  |  Камера, фокус, орбиты, время; полёт зонда НЕ восстанавливается
+Enter menu  |  PauseAndResume.EnterMenu()  |  Capture → MainMenu; abort полёта зонда
 
 Autosave: SimulationSessionAutosave при pause/quit приложения на Level1.
 
@@ -259,7 +384,7 @@ Minimap  |  ShowMinimap  |  вкл
 Свободное наблюдение  |  UseFreeObservation  |  выкл
 Реальное Солнце  |  UseRealSun  |  вкл
 Машина времени  |  UseTimeMachine  |  выкл (только ручной тумблер)
-Зонд  |  UseProbe  |  выкл (только ручной тумблер)
+Зонд  |  UseProbe  |  выкл (только ручной тумблер); см. §2.8
 
 Панель: SimulationSidePanelController + SidePanelUiBootstrap. Базовый размер (authoring / scale 1): 270×~428. Runtime-масштаб через ComputePanelScale():
 
@@ -307,6 +432,7 @@ GraphicsTier (Graphics quality) — объект сцены MainMenu под Extr
 9. ScaleBar — линейка расстояния на MainScreenCanvas (runtime через ScaleBarController.EnsureOnCanvas): portrait/landscape bottom-right над CPU (если CPU выкл — на его месте), не пересекается с minimap (левый низ) и time bar (центр/лево). Подпись в AU (SolarSystemScaleController.AuToUnity + SolarSystemCatalog.AuKm); при близком зуме — км. Tap открывает локализованную подсказку (ключи ScaleBarAu*). В clean view скрывается вместе с HUD.  
 10. Share — скриншот + Android share; сообщения локализованы.  
 11. Mobile graphics tier — High поднимает renderScale/MSAA только на устройстве; в Editor (PC quality) картинка изначально сильнее.  
+12. Зонд (gravity slingshot) — restricted N-body test particle; спецификация §2.8.  
 
 Ключевые пути:
 
@@ -320,6 +446,7 @@ GraphicsTier (Graphics quality) — объект сцены MainMenu под Extr
 - Assets/Scripts/SolarSystemGraphics/SunCoronalVfxController.cs  
 - Assets/Scripts/ScaleBarController.cs  
 - Assets/Scripts/SimulationViewBootstrap.cs  
+- Assets/Scripts/Probe/ (ProbeSystemController, ProbeHudController, …)  
 - Assets/Editor/SidePanelSceneSetup.cs, TimeControlSceneSetup.cs  
 
 ---
@@ -333,7 +460,8 @@ GraphicsTier (Graphics quality) — объект сцены MainMenu под Extr
 Устаревший Publish/PlanEn.txt  |  Часть багов уже исправлена; план не синхронизирован с кодом
 AboutPanel.cs — заглушка  |  Анимация через UI Samples PanelManager
 GameState.score не используется  |  Задел под геймификацию
-Spawner / Projectile  |  Пул есть; игровой slingshot вынесен в ProbeSystemController, эти скрипты не используются
+Spawner / Projectile  |  Пул есть; slingshot в ProbeSystemController (§2.8)
+Зонд — WIP  |  §2.8 = спецификация; не все edge cases на устройстве; при расхождении — править код под документ
 Тяжёлая иерархия detail-камер  |  Память / поддержка на мобильных
 Рассинхрон комментариев clean view vs кометы  |  Видимость комет завязана на UseCometMovement, не только на UI toggle
 Нет единой документации API каталога комет/тел  |  Расширение требует правок в нескольких местах (каталог, навигация, локализация, префабы описаний)
@@ -388,7 +516,7 @@ Mars  |  —  |  Phobos/Deimos уже есть
 6.2. Геймификация
 ~~~~~~~~~~~~~~~~~
 
-1. Gravity slingshot — **реализовано** (режим «Зонд», тумблер боковой панели, default off). Restricted N-body: планеты на рельсах, зонд интегрирует GM; запуск с фокус-тела; Voyager / New Horizons / Juno / Custom; камеры World/Chase/Cockpit; PIP-обзор; телеметрия; циановая проекция на колодец. Abort при смене масштаба / реальных орбит / Машины времени. New выключает тумблер. Continue полёт не сохраняет.  
+1. Gravity slingshot — реализовано; полная спецификация §2.8. Дальнейшее: миссии / очки.  
 2. Квиз по астрономии — вопросы у тела («какая планета ближе к Солнцу?»), очки в GameState.score.  
 3. Миссии наблюдения — «найди комету», «сфокусируйся на Энцеладе», таймер на обычной скорости.  
 4. Unlockables — открытие описаний/скинов после правильных ответов.  
@@ -445,7 +573,14 @@ TimeScale  |  При очень высоких скоростях — fixed subs
 7. Быстрый справочник PlayerPrefs
 ---------------------------------
 
-Настройки: SolarSystem_ScaleMode, SolarSystem_UseRealOrbits, SolarSystem_UseCometMovement, SolarSystem_ShowOrbitLines, SolarSystem_ShowBodyLabels, SolarSystem_ShowMinimap, SolarSystem_ShowSimulationUi, SolarSystem_UseFreeObservation, SolarSystem_UseGravityGrid, SolarSystem_UseProjection, SolarSystem_UseProbe, SolarSystem_ProbeModel, SolarSystem_ProbeCustomAntenna / Engine / Shield, SolarSystem_ShowProbeViews, SolarSystem_ProbeCameraMode, SolarSystem_UseExtraGraphics, SolarSystem_UseRealSun, SolarSystem_GraphicsTier (Auto=0 / Balanced=1 / High=2), SelectedLanguage, ключи аудио.
+Настройки (общие): SolarSystem_ScaleMode, SolarSystem_UseRealOrbits, SolarSystem_UseCometMovement, SolarSystem_ShowOrbitLines, SolarSystem_ShowBodyLabels, SolarSystem_ShowMinimap, SolarSystem_ShowSimulationUi, SolarSystem_UseFreeObservation, SolarSystem_UseGravityGrid, SolarSystem_UseProjection, SolarSystem_UseExtraGraphics, SolarSystem_UseRealSun, SolarSystem_GraphicsTier (Auto=0 / Balanced=1 / High=2), SelectedLanguage, ключи аудио.
+
+Зонд (детально — §2.8):
+SolarSystem_UseProbe (0) — тумблер режима.
+SolarSystem_ProbeModel (0) — 0=Voyager, 1=New Horizons, 2=Juno, 3=Custom.
+SolarSystem_ProbeCustomAntenna (1), Engine (0), Shield (0).
+SolarSystem_ShowProbeViews (0) — PIP; Launch включает на полёт.
+SolarSystem_ProbeCameraMode (0) — 0=World, 1=Chase, 2=Cockpit.
 
 Сессия: SolarSystem_HasSessionState, SolarSystem_SelectedPlanet, SolarSystem_IsDetailCamera, SolarSystem_TimeScale / SpeedMultiplier / IsPaused, камера (Main/Detail X/Y/Distance), SolarSystem_MotionSnapshot.
 
@@ -469,11 +604,11 @@ Solar System/Setup Time Control UI  |  Панель паузы/скорости
 ----------------------------------
 
 1. Стабилизация документации и reset prefs (короткий техдолг).  
-2. Добавление 1–2 высокоценных спутников (Энцелад, Миранда) + Харон к уже добавленному Плутону.  
-3. Образовательные карточки фактов без геймификации.  
-4. Опциональный квиз / миссии.  
-5. Оптимизация камер и LOD под mid-range Android.  
-6. Доработки зонда (миссии / очки), не новый experimental mode.  
+2. Зонд: довести реализацию до §2.8 на устройстве; затем миссии / очки.  
+3. Добавление 1–2 высокоценных спутников (Энцелад, Миранда) + Харон к уже добавленному Плутону.  
+4. Образовательные карточки фактов без геймификации.  
+5. Опциональный квиз / миссии.  
+6. Оптимизация камер и LOD под mid-range Android.  
 
 ---
 

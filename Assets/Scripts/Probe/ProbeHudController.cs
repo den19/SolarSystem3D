@@ -11,6 +11,23 @@ public class ProbeHudController : MonoBehaviour
     public const string ObjectName = ProbeSystemController.HudObjectName;
 
     const float UpdateInterval = 0.1f;
+    const float RowHeight = 56f;
+    const float ButtonFontSize = 26f;
+    const float TelemetryFontSize = 26f;
+    const float CheckboxSize = 28f;
+    const float SliderHeight = 36f;
+    const float TelemetryWidth = 360f;
+    const float TelemetryWidthLandscape = 400f;
+    const float TelemetryHeight = 340f;
+    const float BarWidthLandscape = 720f;
+    const float BarHeightStandard = 380f;
+    const float BarHeightCustom = 440f;
+    const float PipWidthLandscape = 320f;
+    const float PipHeightLandscape = 180f;
+    const float PipWidthPortrait = 280f;
+    const float PipHeightPortrait = 150f;
+    const float PipFrameInset = 4f;
+    const float PipCaptionHeight = 28f;
 
     RectTransform _root;
     RectTransform _bar;
@@ -107,8 +124,8 @@ public class ProbeHudController : MonoBehaviour
 
         _bar = CreatePanel("ProbeControlBar", new Color(0.08f, 0.1f, 0.16f, 0.92f));
         var layout = _bar.gameObject.AddComponent<VerticalLayoutGroup>();
-        layout.padding = new RectOffset(8, 8, 6, 6);
-        layout.spacing = 4f;
+        layout.padding = new RectOffset(10, 10, 8, 8);
+        layout.spacing = 6f;
         layout.childAlignment = TextAnchor.MiddleCenter;
         layout.childControlHeight = true;
         layout.childControlWidth = true;
@@ -134,13 +151,14 @@ public class ProbeHudController : MonoBehaviour
         });
 
         _telemetry = CreatePanel("ProbeTelemetry", new Color(0.02f, 0.05f, 0.1f, 0.78f));
-        _telemetryText = CreateTmp(_telemetry, "ProbeTelemetryBody", 15, TextAlignmentOptions.TopLeft);
+        _telemetryText = CreateTmp(_telemetry, "ProbeTelemetryBody", TelemetryFontSize, TextAlignmentOptions.TopLeft);
         var le = _telemetryText.gameObject.AddComponent<LayoutElement>();
-        le.minHeight = 120f;
+        le.minHeight = 280f;
+        _telemetryText.margin = new Vector4(10f, 8f, 10f, 8f);
 
-        _forwardPip = CreatePip("ProbeViewForwardImage", out _forwardImage);
-        _rearLeftPip = CreatePip("ProbeViewRearLeftImage", out _rearLeftImage);
-        _rearRightPip = CreatePip("ProbeViewRearRightImage", out _rearRightImage);
+        _forwardPip = CreatePip("ProbeViewForwardImage", string.Empty, out _forwardImage);
+        _rearLeftPip = CreatePip("ProbeViewRearLeftImage", "◀", out _rearLeftImage);
+        _rearRightPip = CreatePip("ProbeViewRearRightImage", "▶", out _rearRightImage);
     }
 
     void CreateModelRow(RectTransform parent)
@@ -191,9 +209,9 @@ public class ProbeHudController : MonoBehaviour
         go.transform.SetParent(parent, false);
         go.GetComponent<Image>().color = new Color(0.18f, 0.22f, 0.32f, 1f);
         var le = go.GetComponent<LayoutElement>();
-        le.minHeight = 32f;
-        le.preferredHeight = 32f;
-        var label = CreateTmp(go.GetComponent<RectTransform>(), key + "_Text", 14, TextAlignmentOptions.Center);
+        le.minHeight = RowHeight;
+        le.preferredHeight = RowHeight;
+        var label = CreateTmp(go.GetComponent<RectTransform>(), key + "_Text", ButtonFontSize, TextAlignmentOptions.Center);
         label.text = key;
         label.raycastTarget = false;
 
@@ -208,11 +226,12 @@ public class ProbeHudController : MonoBehaviour
         var go = new GameObject(key + "_Row", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Toggle), typeof(LayoutElement), typeof(HorizontalLayoutGroup));
         go.layer = gameObject.layer;
         go.transform.SetParent(parent, false);
-        go.GetComponent<LayoutElement>().minHeight = 32f;
+        go.GetComponent<LayoutElement>().minHeight = RowHeight;
+        go.GetComponent<LayoutElement>().preferredHeight = RowHeight;
         go.GetComponent<Image>().color = new Color(0.12f, 0.14f, 0.2f, 0.95f);
         var rowLayout = go.GetComponent<HorizontalLayoutGroup>();
-        rowLayout.padding = new RectOffset(6, 6, 4, 4);
-        rowLayout.spacing = 6f;
+        rowLayout.padding = new RectOffset(8, 8, 6, 6);
+        rowLayout.spacing = 8f;
         rowLayout.childAlignment = TextAnchor.MiddleLeft;
         rowLayout.childControlHeight = true;
         rowLayout.childControlWidth = true;
@@ -224,25 +243,25 @@ public class ProbeHudController : MonoBehaviour
         boxGo.transform.SetParent(go.transform, false);
         boxGo.GetComponent<Image>().color = new Color(0.08f, 0.1f, 0.14f, 1f);
         var boxLe = boxGo.GetComponent<LayoutElement>();
-        boxLe.minWidth = 18f;
-        boxLe.minHeight = 18f;
-        boxLe.preferredWidth = 18f;
-        boxLe.preferredHeight = 18f;
+        boxLe.minWidth = CheckboxSize;
+        boxLe.minHeight = CheckboxSize;
+        boxLe.preferredWidth = CheckboxSize;
+        boxLe.preferredHeight = CheckboxSize;
         boxLe.flexibleWidth = 0f;
 
         var checkGo = new GameObject("Checkmark", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         checkGo.layer = gameObject.layer;
         checkGo.transform.SetParent(boxGo.transform, false);
         Stretch(checkGo.GetComponent<RectTransform>());
-        checkGo.GetComponent<RectTransform>().offsetMin = new Vector2(3f, 3f);
-        checkGo.GetComponent<RectTransform>().offsetMax = new Vector2(-3f, -3f);
+        checkGo.GetComponent<RectTransform>().offsetMin = new Vector2(4f, 4f);
+        checkGo.GetComponent<RectTransform>().offsetMax = new Vector2(-4f, -4f);
         checkGo.GetComponent<Image>().color = new Color(0.35f, 0.85f, 1f, 1f);
 
-        var label = CreateTmp(go.GetComponent<RectTransform>(), key, 13, TextAlignmentOptions.MidlineLeft);
+        var label = CreateTmp(go.GetComponent<RectTransform>(), key, ButtonFontSize, TextAlignmentOptions.MidlineLeft);
         label.enableWordWrapping = false;
         var labelLe = label.gameObject.AddComponent<LayoutElement>();
         labelLe.flexibleWidth = 1f;
-        labelLe.minHeight = 20f;
+        labelLe.minHeight = RowHeight;
 
         var toggle = go.GetComponent<Toggle>();
         toggle.targetGraphic = go.GetComponent<Image>();
@@ -256,11 +275,12 @@ public class ProbeHudController : MonoBehaviour
     void CreateSliderRow(RectTransform parent, string key, string fallback, out Slider slider, float min, float max, float value)
     {
         var row = CreateRow(parent, key + "_Row");
-        CreateTmp(row, key, 13, TextAlignmentOptions.MidlineLeft);
+        CreateTmp(row, key, ButtonFontSize, TextAlignmentOptions.MidlineLeft);
         var sliderGo = new GameObject(key + "_Slider", typeof(RectTransform), typeof(Slider), typeof(LayoutElement));
         sliderGo.layer = gameObject.layer;
         sliderGo.transform.SetParent(row, false);
-        sliderGo.GetComponent<LayoutElement>().minHeight = 24f;
+        sliderGo.GetComponent<LayoutElement>().minHeight = SliderHeight;
+        sliderGo.GetComponent<LayoutElement>().preferredHeight = SliderHeight;
         sliderGo.GetComponent<LayoutElement>().flexibleWidth = 1f;
         slider = sliderGo.GetComponent<Slider>();
         slider.minValue = min;
@@ -288,14 +308,14 @@ public class ProbeHudController : MonoBehaviour
         go.layer = gameObject.layer;
         go.transform.SetParent(parent, false);
         var h = go.GetComponent<HorizontalLayoutGroup>();
-        h.spacing = 4f;
+        h.spacing = 6f;
         h.childAlignment = TextAnchor.MiddleCenter;
         h.childControlHeight = true;
         h.childControlWidth = true;
         h.childForceExpandWidth = true;
         h.childForceExpandHeight = false;
-        go.GetComponent<LayoutElement>().minHeight = 32f;
-        go.GetComponent<LayoutElement>().preferredHeight = 32f;
+        go.GetComponent<LayoutElement>().minHeight = RowHeight;
+        go.GetComponent<LayoutElement>().preferredHeight = RowHeight;
         return go.GetComponent<RectTransform>();
     }
 
@@ -308,18 +328,50 @@ public class ProbeHudController : MonoBehaviour
         return go.GetComponent<RectTransform>();
     }
 
-    RectTransform CreatePip(string name, out RawImage image)
+    RectTransform CreatePip(string name, string caption, out RawImage image)
     {
-        var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(RawImage));
+        var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         go.layer = gameObject.layer;
         go.transform.SetParent(_root, false);
-        image = go.GetComponent<RawImage>();
+        go.GetComponent<Image>().color = new Color(0.18f, 0.24f, 0.34f, 0.95f);
+        var outline = go.AddComponent<Outline>();
+        outline.effectColor = new Color(0.55f, 0.82f, 1f, 0.9f);
+        outline.effectDistance = new Vector2(2f, -2f);
+
+        var innerGo = new GameObject("Inner", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        innerGo.layer = gameObject.layer;
+        innerGo.transform.SetParent(go.transform, false);
+        var innerRt = innerGo.GetComponent<RectTransform>();
+        innerRt.anchorMin = Vector2.zero;
+        innerRt.anchorMax = Vector2.one;
+        innerRt.offsetMin = new Vector2(PipFrameInset, PipFrameInset);
+        innerRt.offsetMax = new Vector2(-PipFrameInset, -PipFrameInset);
+        innerGo.GetComponent<Image>().color = new Color(0.02f, 0.04f, 0.08f, 1f);
+
+        var viewportGo = new GameObject("Viewport", typeof(RectTransform), typeof(CanvasRenderer), typeof(RawImage));
+        viewportGo.layer = gameObject.layer;
+        viewportGo.transform.SetParent(innerGo.transform, false);
+        Stretch(viewportGo.GetComponent<RectTransform>());
+        image = viewportGo.GetComponent<RawImage>();
         image.color = Color.white;
+        image.raycastTarget = false;
+
+        var captionTmp = CreateTmp(go.GetComponent<RectTransform>(), name + "_Caption", ButtonFontSize, TextAlignmentOptions.TopLeft);
+        captionTmp.enableWordWrapping = false;
+        captionTmp.text = caption ?? string.Empty;
+        captionTmp.fontSize = ButtonFontSize;
+        var capRt = captionTmp.GetComponent<RectTransform>();
+        capRt.anchorMin = new Vector2(0f, 1f);
+        capRt.anchorMax = new Vector2(1f, 1f);
+        capRt.pivot = new Vector2(0.5f, 1f);
+        capRt.offsetMin = new Vector2(8f, -PipCaptionHeight);
+        capRt.offsetMax = new Vector2(-8f, -4f);
+
         go.SetActive(false);
         return go.GetComponent<RectTransform>();
     }
 
-    static TextMeshProUGUI CreateTmp(RectTransform parent, string name, int size, TextAlignmentOptions align)
+    static TextMeshProUGUI CreateTmp(RectTransform parent, string name, float size, TextAlignmentOptions align)
     {
         var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
         go.layer = parent.gameObject.layer;
@@ -335,7 +387,7 @@ public class ProbeHudController : MonoBehaviour
         var font = LocalizationFontHelper.GetFontForLanguage(LocalizationManager.CurrentLanguage);
         if (font != null)
             tmp.font = font;
-        if (go.GetComponent<LocalizedText>() == null && !name.EndsWith("_Text") && !name.EndsWith("Body"))
+        if (go.GetComponent<LocalizedText>() == null && !name.EndsWith("_Text") && !name.EndsWith("Body") && !name.EndsWith("_Caption"))
             go.AddComponent<LocalizedText>();
         return tmp;
     }
@@ -370,8 +422,12 @@ public class ProbeHudController : MonoBehaviour
         Canvas canvas = GetComponentInParent<Canvas>();
         SafeAreaInsets.GetCanvasInsets(canvas, out float left, out float right, out float top, out float bottom);
 
-        float barWidth = landscape ? 520f : Mathf.Min(520f, Screen.width / (canvas != null ? canvas.scaleFactor : 1f) - 24f);
-        float barHeight = ProbeSettings.Model == ProbeModelKind.Custom ? 248f : 216f;
+        float scale = canvas != null && canvas.scaleFactor > 0.01f ? canvas.scaleFactor : 1f;
+        float canvasWidth = Screen.width / scale;
+        float barWidth = landscape
+            ? BarWidthLandscape
+            : Mathf.Max(280f, canvasWidth - left - right - 24f);
+        float barHeight = ProbeSettings.Model == ProbeModelKind.Custom ? BarHeightCustom : BarHeightStandard;
         float timeBar = TimeControlUiBootstrap.BarHeight + TimeControlUiBootstrap.BarBottomMargin + 10f;
 
         _bar.anchorMin = new Vector2(0.5f, 0f);
@@ -380,32 +436,52 @@ public class ProbeHudController : MonoBehaviour
         _bar.sizeDelta = new Vector2(barWidth, barHeight);
         _bar.anchoredPosition = new Vector2(0f, bottom + timeBar);
 
-        _telemetry.anchorMin = new Vector2(1f, 0.5f);
-        _telemetry.anchorMax = new Vector2(1f, 0.5f);
-        _telemetry.pivot = new Vector2(1f, 0.5f);
-        _telemetry.sizeDelta = new Vector2(210f, 200f);
-        _telemetry.anchoredPosition = new Vector2(-(right + 10f), landscape ? 40f : 80f);
+        float pipW = landscape ? PipWidthLandscape : PipWidthPortrait;
+        float pipH = landscape ? PipHeightLandscape : PipHeightPortrait;
+        float navBottom = top + SidePanelUiBootstrap.BarHeight + 8f;
+        float telemW = landscape ? TelemetryWidthLandscape : TelemetryWidth;
 
-        float pipW = landscape ? 220f : 180f;
-        float pipH = landscape ? 124f : 100f;
+        _telemetry.anchorMin = new Vector2(1f, 1f);
+        _telemetry.anchorMax = new Vector2(1f, 1f);
+        _telemetry.pivot = new Vector2(1f, 1f);
+        _telemetry.sizeDelta = new Vector2(telemW, TelemetryHeight);
+        _telemetry.anchoredPosition = new Vector2(-(right + 10f), -(navBottom + pipH + 8f));
+
         _forwardPip.anchorMin = new Vector2(0.5f, 1f);
         _forwardPip.anchorMax = new Vector2(0.5f, 1f);
         _forwardPip.pivot = new Vector2(0.5f, 1f);
-        _forwardPip.sizeDelta = new Vector2(pipW * 1.6f, pipH);
-        _forwardPip.anchoredPosition = new Vector2(0f, -(top + SidePanelUiBootstrap.BarHeight + 8f));
+        _forwardPip.sizeDelta = new Vector2(pipW, pipH);
+        _forwardPip.anchoredPosition = new Vector2(0f, -navBottom);
 
-        float rearY = bottom + timeBar + barHeight + 8f;
-        _rearLeftPip.anchorMin = new Vector2(0f, 0f);
-        _rearLeftPip.anchorMax = new Vector2(0f, 0f);
-        _rearLeftPip.pivot = new Vector2(0f, 0f);
+        _rearLeftPip.anchorMin = new Vector2(0f, 1f);
+        _rearLeftPip.anchorMax = new Vector2(0f, 1f);
+        _rearLeftPip.pivot = new Vector2(0f, 1f);
         _rearLeftPip.sizeDelta = new Vector2(pipW, pipH);
-        _rearLeftPip.anchoredPosition = new Vector2(left + (landscape ? 96f : 8f), rearY);
+        _rearLeftPip.anchoredPosition = new Vector2(left + (landscape ? 96f : 8f), -navBottom);
 
-        _rearRightPip.anchorMin = new Vector2(1f, 0f);
-        _rearRightPip.anchorMax = new Vector2(1f, 0f);
-        _rearRightPip.pivot = new Vector2(1f, 0f);
+        _rearRightPip.anchorMin = new Vector2(1f, 1f);
+        _rearRightPip.anchorMax = new Vector2(1f, 1f);
+        _rearRightPip.pivot = new Vector2(1f, 1f);
         _rearRightPip.sizeDelta = new Vector2(pipW, pipH);
-        _rearRightPip.anchoredPosition = new Vector2(-(right + 8f), rearY);
+        _rearRightPip.anchoredPosition = new Vector2(-(right + 8f), -navBottom);
+
+        ApplyHudFontSizes();
+    }
+
+    void ApplyHudFontSizes()
+    {
+        ApplyFontSize(_bar, ButtonFontSize);
+        ApplyFontSize(_telemetry, TelemetryFontSize);
+    }
+
+    static void ApplyFontSize(RectTransform root, float size)
+    {
+        if (root == null)
+            return;
+
+        var labels = root.GetComponentsInChildren<TextMeshProUGUI>(true);
+        for (int i = 0; i < labels.Length; i++)
+            labels[i].fontSize = size;
     }
 
     void RefreshState()
@@ -417,6 +493,8 @@ public class ProbeHudController : MonoBehaviour
             _burnButton.interactable = flying && ProbeSettings.ResolveHasEngine();
         if (_postcardButton != null)
             _postcardButton.interactable = flying && ProbeSettings.ResolveHasAntenna();
+        if (_viewsToggle != null && _viewsToggle.isOn != ProbeSettings.ShowProbeViews)
+            _viewsToggle.SetIsOnWithoutNotify(ProbeSettings.ShowProbeViews);
         RefreshLabels();
         RefreshPips();
         RefreshTelemetryNow();
@@ -448,15 +526,21 @@ public class ProbeHudController : MonoBehaviour
             ? ProbeSystemController.Instance.GetComponent<ProbeViewRig>()
             : null;
 
-        _forwardPip.gameObject.SetActive(show);
-        _rearLeftPip.gameObject.SetActive(show);
-        _rearRightPip.gameObject.SetActive(show);
+        if (_forwardPip != null)
+            _forwardPip.gameObject.SetActive(show);
+        if (_rearLeftPip != null)
+            _rearLeftPip.gameObject.SetActive(show);
+        if (_rearRightPip != null)
+            _rearRightPip.gameObject.SetActive(show);
         if (!show || rig == null)
             return;
 
-        _forwardImage.texture = rig.ForwardTexture;
-        _rearLeftImage.texture = rig.RearLeftTexture;
-        _rearRightImage.texture = rig.RearRightTexture;
+        if (rig.ForwardTexture != null && _forwardImage != null)
+            _forwardImage.texture = rig.ForwardTexture;
+        if (rig.RearLeftTexture != null && _rearLeftImage != null)
+            _rearLeftImage.texture = rig.RearLeftTexture;
+        if (rig.RearRightTexture != null && _rearRightImage != null)
+            _rearRightImage.texture = rig.RearRightTexture;
     }
 
     void RefreshTelemetryNow()

@@ -111,10 +111,10 @@ public class ProbeViewRig : MonoBehaviour
             return;
 
         bool balanced = !GraphicsTierSettings.IsHighEffective;
-        int fw = balanced ? 256 : 320;
-        int fh = balanced ? 144 : 180;
-        int rw = balanced ? 192 : 256;
-        int rh = balanced ? 108 : 144;
+        int fw = balanced ? 280 : 320;
+        int fh = balanced ? 150 : 180;
+        int rw = balanced ? 280 : 320;
+        int rh = balanced ? 150 : 180;
 
         _forwardRt = CreateRt(fw, fh);
         _rearLeftRt = CreateRt(rw, rh);
