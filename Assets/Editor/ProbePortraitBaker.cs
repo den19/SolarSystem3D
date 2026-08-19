@@ -13,17 +13,35 @@ public static class ProbePortraitBaker
     const int Size = 256;
     const int PreviewLayer = 31;
 
+    /// <summary>Photo-sourced portraits; bake must not overwrite these PNGs.</summary>
+    static readonly ProbeModelKind[] SkipBakeKinds =
+    {
+        ProbeModelKind.Voyager,
+        ProbeModelKind.NewHorizons,
+        ProbeModelKind.Juno,
+        ProbeModelKind.Luna1,
+        ProbeModelKind.Venera7,
+        ProbeModelKind.Luna16,
+    };
+
     [MenuItem("Solar System/Bake Probe Portraits")]
     public static void BakeAll()
     {
         EnsureFolder();
         var lightGo = CreateBakeLight();
         var camGo = CreateBakeCamera(out Camera camera, out RenderTexture rt);
+        int baked = 0;
 
         try
         {
             foreach (ProbeModelCatalog.Entry entry in ProbeModelCatalog.Entries)
+            {
+                if (ShouldSkipBake(entry.Kind))
+                    continue;
+
                 BakeOne(entry.Kind, entry.PortraitResourcePath, camera, rt);
+                baked++;
+            }
         }
         finally
         {
@@ -37,7 +55,27 @@ public static class ProbePortraitBaker
         AssetDatabase.Refresh();
         ConfigureAllImporters();
         AssetDatabase.SaveAssets();
-        Debug.Log($"Probe portraits baked to {OutputFolder} ({ProbeModelCatalog.Count} files).");
+        Debug.Log($"Probe portraits baked to {OutputFolder} ({baked} files, {SkipBakeKinds.Length} photo portraits preserved).");
+    }
+
+    [MenuItem("Solar System/Reimport Probe Portraits")]
+    public static void ReimportAll()
+    {
+        EnsureFolder();
+        ConfigureAllImporters();
+        AssetDatabase.SaveAssets();
+        Debug.Log($"Probe portrait importers refreshed in {OutputFolder} ({ProbeModelCatalog.Count} files).");
+    }
+
+    static bool ShouldSkipBake(ProbeModelKind kind)
+    {
+        for (int i = 0; i < SkipBakeKinds.Length; i++)
+        {
+            if (SkipBakeKinds[i] == kind)
+                return true;
+        }
+
+        return false;
     }
 
     static void EnsureFolder()

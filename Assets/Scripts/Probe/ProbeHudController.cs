@@ -519,6 +519,13 @@ public class ProbeHudController : MonoBehaviour
             ScrollModelIntoView(kind, instant: true);
         }, GetModelButtonWidth());
         _modelButtonImages[kind] = button.GetComponent<Image>();
+
+        var label = button.GetComponentInChildren<TextMeshProUGUI>();
+        if (label != null)
+        {
+            label.enableWordWrapping = true;
+            label.text = ResolveModelLabel(kind);
+        }
     }
 
     float GetModelButtonWidth()
@@ -939,8 +946,12 @@ public class ProbeHudController : MonoBehaviour
 
     public static string ResolveModelLabel(ProbeModelKind kind)
     {
-        string key = ProbeModelCatalog.GetLocalizationKey(kind);
-        return T(key, kind.ToString());
+        string name = T(ProbeModelCatalog.GetLocalizationKey(kind), kind.ToString());
+        string originKey = ProbeModelCatalog.GetOriginKey(kind);
+        if (string.IsNullOrEmpty(originKey))
+            return name;
+        string origin = T(originKey, string.Empty);
+        return string.IsNullOrEmpty(origin) ? name : $"{name} ({origin})";
     }
 
     void RefreshLabels()
@@ -956,6 +967,12 @@ public class ProbeHudController : MonoBehaviour
                 key = key.Substring(0, key.Length - 5);
             if (key.EndsWith("Body", System.StringComparison.Ordinal))
                 continue;
+            if (key.StartsWith("ProbeModel", System.StringComparison.Ordinal)
+                && ProbeModelCatalog.TryGetKindFromLocalizationKey(key, out ProbeModelKind kind))
+            {
+                labels[i].text = ResolveModelLabel(kind);
+                continue;
+            }
             ApplyLocalizedName(labels[i].gameObject, key);
         }
     }

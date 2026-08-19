@@ -130,7 +130,8 @@ public class ProbePreviewRig : MonoBehaviour
         _portraitImage = portraitGo.GetComponent<Image>();
         _portraitImage.raycastTarget = false;
         _portraitImage.preserveAspect = true;
-        _portraitImage.color = Color.white;
+        _portraitImage.type = Image.Type.Simple;
+        ApplyPortraitSprite(null);
 
         _title = CreateText(frameGo.transform, "Title", 23f, TextAlignmentOptions.Midline, false);
         var titleRt = _title.rectTransform;
@@ -175,13 +176,17 @@ public class ProbePreviewRig : MonoBehaviour
         bool shield = ProbeSettings.CustomShield;
         bool compact = IsCompactMode();
 
+        Sprite portrait = _portraitImage != null ? ProbePortraitLibrary.Get(model) : null;
+        bool portraitReady = portrait != null;
+
         if (_shownModel == model
             && _customAntenna == antenna
             && _customEngine == engine
             && _customShield == shield
             && _compactMode == compact
             && _portraitImage != null
-            && _portraitImage.sprite != null)
+            && _portraitImage.sprite == portrait
+            && (_portraitImage.enabled == portraitReady))
         {
             RefreshTexts(model, compact);
             return;
@@ -194,7 +199,7 @@ public class ProbePreviewRig : MonoBehaviour
         _compactMode = compact;
 
         if (_portraitImage != null)
-            _portraitImage.sprite = ProbePortraitLibrary.Get(model);
+            ApplyPortraitSprite(portrait);
 
         ApplyCompactLayout(compact);
         ApplyFonts();
@@ -224,6 +229,28 @@ public class ProbePreviewRig : MonoBehaviour
     {
         var system = ProbeSystemController.Instance;
         return system != null && system.IsFlying && system.FlightPreviewGraceRemaining > 0f;
+    }
+
+    static void ApplyPortraitSprite(Image portraitImage, Sprite sprite)
+    {
+        portraitImage.sprite = sprite;
+        if (sprite != null)
+        {
+            portraitImage.enabled = true;
+            portraitImage.color = Color.white;
+            return;
+        }
+
+        portraitImage.enabled = false;
+        portraitImage.color = new Color(1f, 1f, 1f, 0f);
+    }
+
+    void ApplyPortraitSprite(Sprite sprite)
+    {
+        if (_portraitImage == null)
+            return;
+
+        ApplyPortraitSprite(_portraitImage, sprite);
     }
 
     void ApplyCompactLayout(bool compact)

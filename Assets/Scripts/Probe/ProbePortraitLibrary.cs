@@ -21,7 +21,7 @@ public static class ProbePortraitLibrary
         if (Cache.TryGetValue(path, out Sprite cached) && cached != null)
             return cached;
 
-        Sprite sprite = Resources.Load<Sprite>(path);
+        Sprite sprite = LoadSprite(path);
         if (sprite == null)
             return GetFallback();
 
@@ -29,12 +29,30 @@ public static class ProbePortraitLibrary
         return sprite;
     }
 
+    static Sprite LoadSprite(string resourcePath)
+    {
+        Sprite sprite = Resources.Load<Sprite>(resourcePath);
+        if (sprite != null)
+            return sprite;
+
+        // Hand-authored .meta files may import as Texture2D before Unity assigns a sub-sprite.
+        Texture2D texture = Resources.Load<Texture2D>(resourcePath);
+        if (texture == null)
+            return null;
+
+        return Sprite.Create(
+            texture,
+            new Rect(0f, 0f, texture.width, texture.height),
+            new Vector2(0.5f, 0.5f),
+            100f);
+    }
+
     static Sprite GetFallback()
     {
         if (_fallback != null)
             return _fallback;
 
-        _fallback = Resources.Load<Sprite>(FallbackResourcePath);
+        _fallback = LoadSprite(FallbackResourcePath);
         return _fallback;
     }
 
