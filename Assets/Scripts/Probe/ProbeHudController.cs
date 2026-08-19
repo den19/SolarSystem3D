@@ -31,6 +31,9 @@ public class ProbeHudController : MonoBehaviour
     const float PipHeightPortrait = 150f;
     const float PipFrameInset = 4f;
     const float PipCaptionHeight = 28f;
+    const float ModelScrollArrowWidth = 48f;
+    const float ModelButtonWidthPortrait = 148f;
+    const float ModelButtonWidthLandscape = 120f;
 
     RectTransform _root;
     RectTransform _bar;
@@ -57,6 +60,10 @@ public class ProbeHudController : MonoBehaviour
     Button _helpButton;
     ProbeCoachOverlay _coachOverlay;
     ProbePreviewRig _previewRig;
+    ScrollRect _modelScroll;
+    RectTransform _modelScrollContent;
+    Button _modelPrevBtn;
+    Button _modelNextBtn;
     readonly System.Collections.Generic.Dictionary<ProbeModelKind, Image> _modelButtonImages =
         new System.Collections.Generic.Dictionary<ProbeModelKind, Image>();
     float _nextTelemetry;
@@ -209,6 +216,7 @@ public class ProbeHudController : MonoBehaviour
             _previewRig = ProbePreviewRig.EnsureOnHud(_root);
         if (_helpButton == null)
             _helpButton = CreateHelpButton(_root);
+        EnsureModelScroller();
         if (_telemetryHeader == null && _telemetry != null)
         {
             BuildTelemetryHeader(_telemetry);
@@ -294,13 +302,186 @@ public class ProbeHudController : MonoBehaviour
         return button;
     }
 
-    void CreateModelRow(RectTransform parent)
+    void EnsureModelScroller()
+    {
+        if (_bar == null || _modelScroll != null)
+            return;
+
+        Transform oldRow = _bar.Find("ProbeModelRow");
+        if (oldRow != null)
+            Destroy(oldRow.gameObject);
+
+        _modelButtonImages.Clear();
+        var row = CreateModelRow(_bar);
+        row.SetAsFirstSibling();
+    }
+
+    RectTransform CreateModelRow(RectTransform parent)
     {
         var row = CreateRow(parent, "ProbeModelRow");
-        CreateModeButton(row, "ProbeModelVoyager", ProbeModelKind.Voyager);
-        CreateModeButton(row, "ProbeModelNewHorizons", ProbeModelKind.NewHorizons);
-        CreateModeButton(row, "ProbeModelJuno", ProbeModelKind.Juno);
-        CreateModeButton(row, "ProbeModelCustom", ProbeModelKind.Custom);
+        var rowLayout = row.GetComponent<HorizontalLayoutGroup>();
+        rowLayout.childForceExpandWidth = false;
+
+        _modelPrevBtn = CreateScrollArrow(row, "ProbeModelPrev", "◀", ScrollModelsPrev);
+        BuildModelScrollViewport(row);
+        _modelNextBtn = CreateScrollArrow(row, "ProbeModelNext", "▶", ScrollModelsNext);
+
+        var entries = ProbeModelCatalog.Entries;
+        for (int i = 0; i < entries.Count; i++)
+        {
+            var entry = entries[i];
+            CreateModeButton(_modelScrollContent, entry.LocalizationKey, entry.Kind);
+        }
+
+        if (_modelScroll != null)
+            _modelScroll.onValueChanged.AddListener(_ => RefreshModelScrollArrows());
+
+        Canvas.ForceUpdateCanvases();
+        ScrollModelIntoView(ProbeSettings.Model, instant: true);
+        RefreshModelScrollArrows();
+        return row;
+    }
+
+    void BuildModelScrollViewport(RectTransform row)
+    {
+        var viewportGo = new GameObject("ProbeModelViewport", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Mask), typeof(ScrollRect), typeof(LayoutElement));
+        viewportGo.layer = gameObject.layer;
+        viewportGo.transform.SetParent(row, false);
+        var viewportLe = viewportGo.GetComponent<LayoutElement>();
+        viewportLe.flexibleWidth = 1f;
+        viewportLe.minHeight = RowHeight;
+        viewportLe.preferredHeight = RowHeight;
+        viewportGo.GetComponent<Image>().color = new Color(0.06f, 0.08f, 0.12f, 0.85f);
+
+        var viewportRt = viewportGo.GetComponent<RectTransform>();
+        _modelScroll = viewportGo.GetComponent<ScrollRect>();
+        _modelScroll.horizontal = true;
+        _modelScroll.vertical = false;
+        _modelScroll.movementType = ScrollRect.MovementType.Clamped;
+        _modelScroll.inertia = true;
+        _modelScroll.decelerationRate = 0.2f;
+        _modelScroll.scrollSensitivity = 24f;
+
+        var contentGo = new GameObject("ProbeModelContent", typeof(RectTransform), typeof(HorizontalLayoutGroup), typeof(ContentSizeFitter));
+        contentGo.layer = gameObject.layer;
+        contentGo.transform.SetParent(viewportGo.transform, false);
+        _modelScrollContent = contentGo.GetComponent<RectTransform>();
+        _modelScrollContent.anchorMin = new Vector2(0f, 0.5f);
+        _modelScrollContent.anchorMax = new Vector2(0f, 0.5f);
+        _modelScrollContent.pivot = new Vector2(0f, 0.5f);
+        _modelScrollContent.anchoredPosition = Vector2.zero;
+        var contentLayout = contentGo.GetComponent<HorizontalLayoutGroup>();
+        contentLayout.spacing = 6f;
+        contentLayout.childAlignment = TextAnchor.MiddleLeft;
+        contentLayout.childControlHeight = true;
+        contentLayout.childControlWidth = true;
+        contentLayout.childForceExpandWidth = false;
+        contentLayout.childForceExpandHeight = false;
+        contentLayout.padding = new RectOffset(4, 4, 0, 0);
+        var fitter = contentGo.GetComponent<ContentSizeFitter>();
+        fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+        fitter.verticalFit = ContentSizeFitter.FitMode.Unconstrained;
+
+        _modelScroll.content = _modelScrollContent;
+        _modelScroll.viewport = viewportRt;
+        Stretch(viewportRt);
+    }
+
+    Button CreateScrollArrow(RectTransform parent, string name, string glyph, UnityEngine.Events.UnityAction action)
+    {
+        var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button), typeof(LayoutElement));
+        go.layer = gameObject.layer;
+        go.transform.SetParent(parent, false);
+        go.GetComponent<Image>().color = new Color(0.14f, 0.18f, 0.28f, 1f);
+        var le = go.GetComponent<LayoutElement>();
+        le.minWidth = ModelScrollArrowWidth;
+        le.preferredWidth = ModelScrollArrowWidth;
+        le.minHeight = RowHeight;
+        le.preferredHeight = RowHeight;
+        le.flexibleWidth = 0f;
+
+        var label = CreateTmp(go.GetComponent<RectTransform>(), name + "_Text", ButtonFontSize, TextAlignmentOptions.Center);
+        label.text = glyph;
+        label.fontStyle = FontStyles.Bold;
+        label.raycastTarget = false;
+
+        var button = go.GetComponent<Button>();
+        button.onClick.AddListener(action);
+        return button;
+    }
+
+    void ScrollModelsPrev() => ScrollModelsByPage(-1);
+
+    void ScrollModelsNext() => ScrollModelsByPage(1);
+
+    void ScrollModelsByPage(int direction)
+    {
+        if (_modelScroll == null || _modelScrollContent == null || direction == 0)
+            return;
+
+        float viewportWidth = _modelScroll.viewport != null ? _modelScroll.viewport.rect.width : 0f;
+        if (viewportWidth <= 1f)
+            return;
+
+        float maxScroll = Mathf.Max(0f, _modelScrollContent.rect.width - viewportWidth);
+        if (maxScroll <= 0f)
+            return;
+
+        float target = _modelScrollContent.anchoredPosition.x - direction * viewportWidth * 0.85f;
+        target = Mathf.Clamp(target, -maxScroll, 0f);
+        _modelScrollContent.anchoredPosition = new Vector2(target, _modelScrollContent.anchoredPosition.y);
+        RefreshModelScrollArrows();
+    }
+
+    void ScrollModelIntoView(ProbeModelKind kind, bool instant)
+    {
+        if (_modelScroll == null || _modelScrollContent == null)
+            return;
+
+        int index = ProbeModelCatalog.GetDisplayIndex(kind);
+        if (index < 0 || index >= _modelScrollContent.childCount)
+            return;
+
+        var child = _modelScrollContent.GetChild(index) as RectTransform;
+        if (child == null)
+            return;
+
+        Canvas.ForceUpdateCanvases();
+        float viewportWidth = _modelScroll.viewport != null ? _modelScroll.viewport.rect.width : 0f;
+        float contentWidth = _modelScrollContent.rect.width;
+        float maxScroll = Mathf.Max(0f, contentWidth - viewportWidth);
+        if (maxScroll <= 0f)
+            return;
+
+        float childLeft = child.anchoredPosition.x;
+        float childRight = childLeft + child.rect.width;
+        float current = -_modelScrollContent.anchoredPosition.x;
+        float visibleLeft = current;
+        float visibleRight = current + viewportWidth;
+
+        float targetScroll = current;
+        if (childLeft < visibleLeft)
+            targetScroll = childLeft;
+        else if (childRight > visibleRight)
+            targetScroll = childRight - viewportWidth;
+
+        targetScroll = Mathf.Clamp(targetScroll, 0f, maxScroll);
+        _modelScrollContent.anchoredPosition = new Vector2(-targetScroll, _modelScrollContent.anchoredPosition.y);
+        RefreshModelScrollArrows();
+    }
+
+    void RefreshModelScrollArrows()
+    {
+        if (_modelScroll == null || _modelScrollContent == null)
+            return;
+
+        float viewportWidth = _modelScroll.viewport != null ? _modelScroll.viewport.rect.width : 0f;
+        float maxScroll = Mathf.Max(0f, _modelScrollContent.rect.width - viewportWidth);
+        float pos = -_modelScrollContent.anchoredPosition.x;
+        if (_modelPrevBtn != null)
+            _modelPrevBtn.interactable = maxScroll > 1f && pos > 1f;
+        if (_modelNextBtn != null)
+            _modelNextBtn.interactable = maxScroll > 1f && pos < maxScroll - 1f;
     }
 
     RectTransform CreateCustomRow(RectTransform parent)
@@ -332,11 +513,20 @@ public class ProbeHudController : MonoBehaviour
 
     void CreateModeButton(RectTransform parent, string key, ProbeModelKind kind)
     {
-        var button = CreateButton(parent, key, () => ProbeSettings.SetModel(kind));
+        var button = CreateButton(parent, key, () =>
+        {
+            ProbeSettings.SetModel(kind);
+            ScrollModelIntoView(kind, instant: true);
+        }, GetModelButtonWidth());
         _modelButtonImages[kind] = button.GetComponent<Image>();
     }
 
-    Button CreateButton(RectTransform parent, string key, UnityEngine.Events.UnityAction action)
+    float GetModelButtonWidth()
+    {
+        return Screen.width > Screen.height ? ModelButtonWidthLandscape : ModelButtonWidthPortrait;
+    }
+
+    Button CreateButton(RectTransform parent, string key, UnityEngine.Events.UnityAction action, float? preferredWidth = null)
     {
         var go = new GameObject(key, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button), typeof(LayoutElement));
         go.layer = gameObject.layer;
@@ -345,6 +535,12 @@ public class ProbeHudController : MonoBehaviour
         var le = go.GetComponent<LayoutElement>();
         le.minHeight = RowHeight;
         le.preferredHeight = RowHeight;
+        if (preferredWidth.HasValue)
+        {
+            le.minWidth = preferredWidth.Value;
+            le.preferredWidth = preferredWidth.Value;
+            le.flexibleWidth = 0f;
+        }
         var label = CreateTmp(go.GetComponent<RectTransform>(), key + "_Text", ButtonFontSize, TextAlignmentOptions.Center);
         label.text = key;
         label.raycastTarget = false;
@@ -601,6 +797,26 @@ public class ProbeHudController : MonoBehaviour
 
         ApplyHudFontSizes();
         LayoutHelpButton(landscape, right, bottom, timeBar, barWidth);
+        LayoutModelScroller();
+    }
+
+    void LayoutModelScroller()
+    {
+        if (_modelScrollContent == null)
+            return;
+
+        float buttonWidth = GetModelButtonWidth();
+        for (int i = 0; i < _modelScrollContent.childCount; i++)
+        {
+            var childLe = _modelScrollContent.GetChild(i).GetComponent<LayoutElement>();
+            if (childLe == null)
+                continue;
+            childLe.minWidth = buttonWidth;
+            childLe.preferredWidth = buttonWidth;
+        }
+
+        Canvas.ForceUpdateCanvases();
+        RefreshModelScrollArrows();
     }
 
     void LayoutHelpButton(bool landscape, float safeRight, float safeBottom, float timeBar, float barWidth)
@@ -666,6 +882,7 @@ public class ProbeHudController : MonoBehaviour
             _viewsToggle.SetIsOnWithoutNotify(ProbeSettings.ShowProbeViews);
         RefreshLabels();
         RefreshModelButtonHighlights();
+        ScrollModelIntoView(ProbeSettings.Model, instant: true);
         RefreshPips();
         RefreshTelemetryHeader();
         RefreshTelemetryNow();
@@ -722,23 +939,7 @@ public class ProbeHudController : MonoBehaviour
 
     public static string ResolveModelLabel(ProbeModelKind kind)
     {
-        string key;
-        switch (kind)
-        {
-            case ProbeModelKind.NewHorizons:
-                key = "ProbeModelNewHorizons";
-                break;
-            case ProbeModelKind.Juno:
-                key = "ProbeModelJuno";
-                break;
-            case ProbeModelKind.Custom:
-                key = "ProbeModelCustom";
-                break;
-            default:
-                key = "ProbeModelVoyager";
-                break;
-        }
-
+        string key = ProbeModelCatalog.GetLocalizationKey(kind);
         return T(key, kind.ToString());
     }
 

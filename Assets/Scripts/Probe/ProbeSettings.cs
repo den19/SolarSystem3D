@@ -8,7 +8,17 @@ namespace SolarSystemApp
         Voyager = 0,
         NewHorizons = 1,
         Juno = 2,
-        Custom = 3
+        Custom = 3,
+        Luna1 = 4,
+        Venera7 = 5,
+        Luna16 = 6,
+        Mars3 = 7,
+        Change4 = 8,
+        Tianwen1 = 9,
+        Change5 = 10,
+        Hayabusa2 = 11,
+        Akatsuki = 12,
+        Chandrayaan3 = 13,
     }
 
     public enum ProbeCameraMode
@@ -124,7 +134,7 @@ namespace SolarSystemApp
 
         static ProbeModelKind ClampModel(int raw)
         {
-            if (raw < 0 || raw > (int)ProbeModelKind.Custom)
+            if (raw < 0 || raw > (int)ProbeModelKind.Chandrayaan3)
                 return ProbeModelKind.Voyager;
             return (ProbeModelKind)raw;
         }

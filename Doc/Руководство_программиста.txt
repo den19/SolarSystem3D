@@ -317,11 +317,11 @@ Launch bar  |  Низ по центру, над time bar
 Прицел  |  ProbeTelemetryAiming  |  «(прицел)»
 Полёт  |  ProbeTelemetryFlying  |  «(полёт)»
 
-Имя модели: ProbeModelVoyager / NewHorizons / Juno / Custom. В полёте — модель запущенного craft.
+Имя модели: ключи ProbeModel* (таблица ниже). В полёте — модель запущенного craft.
 
 Тело телеметрии (~10 Hz): ProbeTelemetrySunSpeed, RelSpeed, Radius, Lon, Z, ProbeNearestLabel (3 тела).
 
-Выбор модели: активная кнопка — светлее + cyan outline 2 px.
+Выбор модели: горизонтальный ScrollRect с кнопками ◀ / ▶; видно 2–3 модели (portrait ~148 px, landscape ~120 px). Порядок — ProbeModelCatalog: NASA → SU/RU → CN → JP → IN → Custom последним. Активная кнопка — светлее + cyan outline 2 px.
 Toast при Launch: ProbeLaunchSuccessMessage, 5 с.
 
 Видимость зонда на APK
@@ -342,13 +342,25 @@ Ghost-траектория (циан) — при aiming и в полёте.
 Модели зонда
 ~~~~~~~~~~~~
 
-Модель  |  Pref  |  Что даёт
-Voyager  |  0  |  Антенна всегда — открытка
-New Horizons  |  1  |  Старт ~35 % быстрее
-Juno  |  2  |  Стандарт
-Custom  |  3  |  Antenna / Engine (3 Burn) / Shield
+15 моделей (14 именованных + Custom). Pref SolarSystem_ProbeModel: 0–13. Значение 3 = Custom (совместимость prefs); новые зонды 4–13.
 
-Burn ~35 % Impulse. Части: ProbePartAntenna / Engine / Shield.
+Pref  |  Модель  |  Ключ  |  Регион
+0  |  Voyager  |  ProbeModelVoyager  |  NASA — открытка
+1  |  New Horizons  |  ProbeModelNewHorizons  |  NASA — старт ~35 % быстрее
+2  |  Juno  |  ProbeModelJuno  |  NASA
+3  |  Custom  |  ProbeModelCustom  |  Antenna / Engine / Shield
+4  |  Luna 1  |  ProbeModelLuna1  |  SU/RU
+5  |  Venera 7  |  ProbeModelVenera7  |  SU/RU
+6  |  Luna 16  |  ProbeModelLuna16  |  SU/RU
+7  |  Mars 3  |  ProbeModelMars3  |  SU/RU
+8  |  Chang'e 4  |  ProbeModelChange4  |  CN
+9  |  Tianwen-1  |  ProbeModelTianwen1  |  CN
+10  |  Chang'e 5  |  ProbeModelChange5  |  CN
+11  |  Hayabusa2  |  ProbeModelHayabusa2  |  JP
+12  |  Akatsuki  |  ProbeModelAkatsuki  |  JP
+13  |  Chandrayaan-3  |  ProbeModelChandrayaan3  |  IN
+
+Burn ~35 % Impulse. Части Custom: ProbePartAntenna / Engine / Shield. Меши — ProbePrefabFactory (процедурные силуэты).
 
 Запуск (Launch)
 ~~~~~~~~~~~~~~~
@@ -410,7 +422,7 @@ ProbePostcardLabel → SimulationShareController. Нужна антенна (Pro
 
 Ключ  |  Дефолт  |  Назначение
 SolarSystem_UseProbe  |  0  |  Тумблер
-SolarSystem_ProbeModel  |  0  |  0…3 модели
+SolarSystem_ProbeModel  |  0  |  0–13 (3=Custom, см. §2.8)
 SolarSystem_ProbeCustomAntenna  |  1  |  Custom: антенна
 SolarSystem_ProbeCustomEngine  |  0  |  Custom: Burn
 SolarSystem_ProbeCustomShield  |  0  |  Custom: щит
@@ -425,7 +437,7 @@ SolarSystem_ProbeCoachLaunchCompleted  |  0  |  1 = coach пройден
 
 Coach: ProbeCoachStep1Title…4Title, Step1Body…4Body, ProbeCoachNext, Skip, HelpDone.
 Телеметрия: ProbeTelemetryTitle, Aiming, Flying, SunSpeed, RelSpeed, Radius, Lon, Z, NearestLabel.
-Модели: ProbeModelVoyager, NewHorizons, Juno, Custom; ProbePartAntenna, Engine, Shield.
+Модели: ProbeModelVoyager … ProbeModelChandrayaan3, ProbeModelCustom; ProbePartAntenna / Engine / Shield.
 Кнопки: ProbeLaunchLabel, AbortLabel, BurnLabel, PostcardLabel, World/Chase/Cockpit/Views, Impulse, Heading.
 Сообщения: LaunchSuccess/Failed, NeedAntenna, Impact, Overheat, PhysicsCapped, Aborted*.
 
@@ -446,7 +458,7 @@ Coach: ProbeCoachStep1Title…4Title, Step1Body…4Body, ProbeCoachNext, Skip, H
 Где в коде
 ~~~~~~~~~~
 
-Assets/Scripts/Probe/ (ProbeSystemController, ProbeCameraController, ProbeHudController, ProbeCoachOverlay, ProbePrefabFactory, ProbePreviewRig, ProbeWorldMarker, ProbeSettings, …).
+Assets/Scripts/Probe/ (ProbeSystemController, ProbeCameraController, ProbeHudController, ProbeModelCatalog, ProbeCoachOverlay, ProbePrefabFactory, ProbePreviewRig, ProbeWorldMarker, ProbeSettings, …).
 Bootstrap: SimulationViewBootstrap → EnsureOnHost. Legacy Spawner/Projectile не используются.
 
 
@@ -679,7 +691,7 @@ TimeScale  |  При очень высоких скоростях — fixed subs
 
 Зонд (детально — §2.8):
 SolarSystem_UseProbe (0) — тумблер режима.
-SolarSystem_ProbeModel (0) — 0=Voyager, 1=New Horizons, 2=Juno, 3=Custom.
+SolarSystem_ProbeModel (0) — 0–13 (3=Custom, см. §2.8).
 SolarSystem_ProbeCustomAntenna (1), Engine (0), Shield (0).
 SolarSystem_ShowProbeViews (0) — PIP; Launch включает на полёт.
 SolarSystem_ProbeCameraMode (0) — 0=World, 1=Chase, 2=Cockpit.
