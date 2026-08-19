@@ -12,6 +12,7 @@ public class ProbeHudController : MonoBehaviour
 
     const float UpdateInterval = 0.1f;
     const float RowHeight = 56f;
+    const float ModelRowHeight = 70f;
     const float ButtonFontSize = 26f;
     const float TelemetryFontSize = 26f;
     const float TelemetryHeaderFontSize = 27f;
@@ -23,7 +24,7 @@ public class ProbeHudController : MonoBehaviour
     const float TelemetryHeight = 392f;
     const float TelemetryHeaderHeight = 52f;
     const float BarWidthLandscape = 720f;
-    const float BarHeightStandard = 380f;
+    const float BarHeightStandard = 394f;
     const float BarHeightCustom = 440f;
     const float PipWidthLandscape = 320f;
     const float PipHeightLandscape = 180f;
@@ -318,7 +319,7 @@ public class ProbeHudController : MonoBehaviour
 
     RectTransform CreateModelRow(RectTransform parent)
     {
-        var row = CreateRow(parent, "ProbeModelRow");
+        var row = CreateRow(parent, "ProbeModelRow", ModelRowHeight);
         var rowLayout = row.GetComponent<HorizontalLayoutGroup>();
         rowLayout.childForceExpandWidth = false;
 
@@ -349,8 +350,8 @@ public class ProbeHudController : MonoBehaviour
         viewportGo.transform.SetParent(row, false);
         var viewportLe = viewportGo.GetComponent<LayoutElement>();
         viewportLe.flexibleWidth = 1f;
-        viewportLe.minHeight = RowHeight;
-        viewportLe.preferredHeight = RowHeight;
+        viewportLe.minHeight = ModelRowHeight;
+        viewportLe.preferredHeight = ModelRowHeight;
         viewportGo.GetComponent<Image>().color = new Color(0.06f, 0.08f, 0.12f, 0.85f);
 
         var viewportRt = viewportGo.GetComponent<RectTransform>();
@@ -396,8 +397,8 @@ public class ProbeHudController : MonoBehaviour
         var le = go.GetComponent<LayoutElement>();
         le.minWidth = ModelScrollArrowWidth;
         le.preferredWidth = ModelScrollArrowWidth;
-        le.minHeight = RowHeight;
-        le.preferredHeight = RowHeight;
+        le.minHeight = ModelRowHeight;
+        le.preferredHeight = ModelRowHeight;
         le.flexibleWidth = 0f;
 
         var label = CreateTmp(go.GetComponent<RectTransform>(), name + "_Text", ButtonFontSize, TextAlignmentOptions.Center);
@@ -517,7 +518,7 @@ public class ProbeHudController : MonoBehaviour
         {
             ProbeSettings.SetModel(kind);
             ScrollModelIntoView(kind, instant: true);
-        }, GetModelButtonWidth());
+        }, GetModelButtonWidth(), ModelRowHeight);
         _modelButtonImages[kind] = button.GetComponent<Image>();
 
         var label = button.GetComponentInChildren<TextMeshProUGUI>();
@@ -533,15 +534,15 @@ public class ProbeHudController : MonoBehaviour
         return Screen.width > Screen.height ? ModelButtonWidthLandscape : ModelButtonWidthPortrait;
     }
 
-    Button CreateButton(RectTransform parent, string key, UnityEngine.Events.UnityAction action, float? preferredWidth = null)
+    Button CreateButton(RectTransform parent, string key, UnityEngine.Events.UnityAction action, float? preferredWidth = null, float rowHeight = RowHeight)
     {
         var go = new GameObject(key, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button), typeof(LayoutElement));
         go.layer = gameObject.layer;
         go.transform.SetParent(parent, false);
         go.GetComponent<Image>().color = new Color(0.18f, 0.22f, 0.32f, 1f);
         var le = go.GetComponent<LayoutElement>();
-        le.minHeight = RowHeight;
-        le.preferredHeight = RowHeight;
+        le.minHeight = rowHeight;
+        le.preferredHeight = rowHeight;
         if (preferredWidth.HasValue)
         {
             le.minWidth = preferredWidth.Value;
@@ -639,7 +640,7 @@ public class ProbeHudController : MonoBehaviour
         ApplyLocalizedName(row.Find(key)?.gameObject, key);
     }
 
-    RectTransform CreateRow(RectTransform parent, string name)
+    RectTransform CreateRow(RectTransform parent, string name, float rowHeight = RowHeight)
     {
         var go = new GameObject(name, typeof(RectTransform), typeof(HorizontalLayoutGroup), typeof(LayoutElement));
         go.layer = gameObject.layer;
@@ -651,8 +652,8 @@ public class ProbeHudController : MonoBehaviour
         h.childControlWidth = true;
         h.childForceExpandWidth = true;
         h.childForceExpandHeight = false;
-        go.GetComponent<LayoutElement>().minHeight = RowHeight;
-        go.GetComponent<LayoutElement>().preferredHeight = RowHeight;
+        go.GetComponent<LayoutElement>().minHeight = rowHeight;
+        go.GetComponent<LayoutElement>().preferredHeight = rowHeight;
         return go.GetComponent<RectTransform>();
     }
 

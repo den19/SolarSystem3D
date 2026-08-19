@@ -234,7 +234,7 @@ Effective High включается только если Extra Graphics ON и:
 Сценарий пользователя (кратко)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-1. На боковой панели включить «Зонд» → HUD прицеливания и (до первого запуска) coach-подсказки.
+1. На боковой панели включить «Зонд (экспериментальный)» (SidePanelProbeLabel) → HUD прицеливания и (до первого запуска) coach-подсказки.
 2. Выбрать тело старта (фокус камеры на планете/комете).
 3. Выбрать модель, настроить Impulse / Heading, смотреть ghost-траекторию и превью слева.
 4. Launch → камера Chase, PIP-обзор, toast об успехе, coach больше не показывается.
@@ -244,7 +244,7 @@ Effective High включается только если Extra Graphics ON и:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Событие  |  Что видит пользователь / что происходит
-Тумблер «Зонд» (default выкл)  |  Режим только вручную с боковой панели
+Тумблер «Зонд (экспериментальный)» (default выкл)  |  Режим только вручную с боковой панели; ключ SidePanelProbeLabel
 Включение  |  HUD с launch bar, телеметрия, превью; режим прицеливания
 Выключение  |  Полёт прерывается, HUD скрывается, Main Camera восстанавливается
 Новая симуляция  |  Зонд принудительно выкл.
@@ -255,24 +255,23 @@ Reset настроек  |  Все prefs зонда + coach сбрасывают�
 Coach overlay (до первого Launch)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Цель: провести нового пользователя через 4 шага без чтения документации.
+Цель: провести нового пользователя через 4 шага без чтения документации. Overlay и кнопка ? на launch bar — только при включённом UseProbe (SolarSystem_UseProbe=1).
 
 №  |  Когда (авто)  |  Заголовок (ключ)  |  Смысл
-1  |  «Зонд» выкл  |  ProbeCoachStep1Title  |  Включить «Зонд» на боковой панели
 2  |  Зонд вкл., нет фокуса на теле  |  ProbeCoachStep2Title  |  Выбрать планету (удобно с Земли)
 3  |  Есть фокус, полёт не начат  |  ProbeCoachStep3Title  |  Модель, Impulse, Heading, ghost, телеметрия
-4  |  Финальный шаг  |  ProbeCoachStep4Title  |  Нажать «Запуск»; камера → Chase
+4  |  Финальный шаг  |  ProbeCoachStep4Title  |  Нажать «Запуск» на launch bar; камера → Chase
 
 Тексты: ProbeCoachStep{N}Body (N=1…4). Индикатор N/4 в карточке.
 
 Поведение overlay:
 
 Действие  |  Результат
-Авто-шаг  |  Следует таблице; обновляется при смене тумблера / фокуса
-Далее (ProbeCoachNext)  |  Следующий шаг; на шаге 4 подпись = «Пропустить»
-Запуск (ProbeLaunchLabel, шаг 4)  |  Отдельная кнопка под рядом Skip/Next; видна только на шаге 4; вызывает Launch — равнозначна launch bar (важно на свежем APK, когда coach перекрывает HUD)
+Авто-шаг  |  Шаги 2–4; обновляется при смене фокуса
+Назад (ProbeCoachBack)  |  Предыдущий шаг (с шага 2)
 Пропустить (ProbeCoachSkip)  |  Overlay скрывается до конца сессии; prefs не меняются
-? на launch bar  |  Открыть coach вручную (только до первого Launch)
+Вперёд (ProbeCoachForward)  |  Следующий шаг
+? на launch bar  |  Открыть coach вручную (до первого Launch, только при UseProbe)
 Успешный Launch  |  Overlay навсегда скрывается (SolarSystem_ProbeCoachLaunchCompleted=1)
 ? после первого Launch  |  Toast ProbeCoachHelpDone
 Полёт активен  |  Overlay не показывается
@@ -282,7 +281,7 @@ Reset  |  Coach снова с шага 1
 
 Touch / raycast: затемнение (dim) НЕ перехватывает touch (Image.raycastTarget=false, узел Dim в ProbeCoachOverlay); launch bar, слайдеры Impulse/Heading и телеметрия HUD кликабельны под overlay. Карточка coach и её кнопки (raycastTarget=true) принимают touch только в своей области; подписи TMP на кнопках — raycastTarget=false.
 
-Editor vs APK: в Editor coach часто уже скрыт (SolarSystem_ProbeCoachLaunchCompleted=1 после первого Launch); сохранённый ProbeCameraMode=0 (World) тоже может маскировать баг Chase. На свежем APK coach активен до первого Launch — проверять: (1) dim не блокирует launch bar; (2) Launch в карточке coach (шаг 4) запускает полёт; (3) камера сразу Chase, зонд виден. Для повторной проверки — Reset или удалить prefs.
+Editor vs APK: в Editor coach часто уже скрыт (SolarSystem_ProbeCoachLaunchCompleted=1 после первого Launch); сохранённый ProbeCameraMode=0 (World) тоже может маскировать баг Chase. На свежем APK coach активен до первого Launch при UseProbe — проверять: (1) dim не блокирует launch bar; (2) Launch на launch bar запускает полёт; (3) камера сразу Chase, зонд виден. Для повторной проверки — Reset или удалить prefs.
 
 Визуал: затемнение ~55 %, карточка по центру (до 760 px), шрифты title 30, body 28, кнопки 26.
 
@@ -296,7 +295,7 @@ Editor vs APK: в Editor coach часто уже скрыт (SolarSystem_ProbeCo
 Размер (прицел)  |  300×400 portrait / 260×340 landscape
 Размер (grace 3 с)  |  240×268 portrait / 220×248 landscape — компактная (портрет + имя)
 Портрет  |  PNG 256×256 из Resources/ProbePortraits/ (~192 px, preserveAspect)
-Заголовок  |  ProbeModel*; Custom — A · E · S
+Заголовок  |  ProbeModel* + страна в скобках (ProbeOrigin*); Custom — A · E · S
 Описание  |  ProbeDesc* (2–3 строки); Custom + части A/E/S
 Полёт (3D)  |  ProbePrefabFactory, highDetail: true на Launch
 
@@ -311,17 +310,17 @@ HUD на MainScreenCanvas (ProbeHud). Coach и preview — дочерние; н�
 
 Элемент  |  Размещение / размер
 Launch bar  |  Низ по центру, над time bar
-Строки / кнопки  |  56 px, шрифт 26
+Строки / кнопки  |  56 px (стандарт); строка моделей 70 px; шрифт 26
 Чекбоксы  |  28×28
 Слайдеры  |  высота 36
 Ширина  |  portrait: почти вся canvas; landscape: ~720
-Высота  |  ~380 (preset) / ~440 (Custom)
+Высота  |  ~394 (preset) / ~440 (Custom)
 Телеметрия  |  Правый верх; 360×392 portrait / 400×392 landscape
 
 Заголовок телеметрии:
 
 Часть  |  Ключ  |  Пример (RU)
-Имя  |  ProbeTelemetryTitle  |  «Зонд · Voyager»
+Имя  |  ProbeTelemetryTitle  |  «Зонд · Voyager (USA)»
 Прицел  |  ProbeTelemetryAiming  |  «(прицел)»
 Полёт  |  ProbeTelemetryFlying  |  «(полёт)»
 
@@ -329,7 +328,7 @@ Launch bar  |  Низ по центру, над time bar
 
 Тело телеметрии (~10 Hz): ProbeTelemetrySunSpeed, RelSpeed, Radius, Lon, Z, ProbeNearestLabel (3 тела).
 
-Выбор модели: горизонтальный ScrollRect с кнопками ◀ / ▶ по краям (ProbeModelRow); видно 2–3 модели (portrait ~148 px, landscape ~120 px на кнопку). Порядок — ProbeModelCatalog: NASA → SU/RU → CN → JP → IN → Custom последним. Активная кнопка — светлее + cyan outline 2 px. При выборе модели — авто-прокрутка к кнопке.
+Выбор модели: горизонтальный ScrollRect с кнопками ◀ / ▶ по краям (ProbeModelRow, 70 px); видно 2–3 модели (portrait ~148 px, landscape ~120 px). Подписи: имя + страна в скобках (ResolveModelLabel). Порядок — ProbeModelCatalog: NASA → SU/RU → CN → JP → IN → Custom последним. Активная кнопка — светлее + cyan outline 2 px. При выборе модели — авто-прокрутка к кнопке.
 
 Toast при Launch: ProbeLaunchSuccessMessage, 5 с («Зонд запущен. Камера: Кузов…»).
 
@@ -453,7 +452,7 @@ SolarSystem_ProbeCoachLaunchCompleted  |  0  |  1 = coach пройден
 Справочник локализации (Probe*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Coach: ProbeCoachStep1Title…4Title, Step1Body…4Body, ProbeCoachNext, Skip, HelpDone.
+Coach: ProbeCoachStep1Title…4Title, Step1Body…4Body, ProbeCoachBack, Skip, Forward, HelpDone. Боковая панель: SidePanelProbeLabel («Зонд (экспериментальный)» / «Probe (experimental)»).
 Телеметрия: ProbeTelemetryTitle, Aiming, Flying, SunSpeed, RelSpeed, Radius, Lon, Z, NearestLabel.
 Модели: ProbeModelVoyager … ProbeModelChandrayaan3, ProbeModelCustom; ProbePartAntenna / Engine / Shield. Описания: ProbeDescVoyager … ProbeDescCustom.
 Кнопки: ProbeLaunchLabel, AbortLabel, BurnLabel, PostcardLabel, World/Chase/Cockpit/Views, Impulse, Heading.
