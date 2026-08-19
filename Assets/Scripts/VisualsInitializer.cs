@@ -47,6 +47,10 @@ public class VisualsInitializer : MonoBehaviour
         Camera[] allCameras = FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         foreach (Camera cam in allCameras)
         {
+            if (cam == null)
+                continue;
+            if (cam.targetTexture != null || cam.name.StartsWith("ProbeView"))
+                continue;
             var cameraData = cam.GetComponent<UniversalAdditionalCameraData>();
             if (cameraData == null)
             {

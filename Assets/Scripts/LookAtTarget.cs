@@ -247,6 +247,9 @@ public class LookAtTarget : MonoBehaviour {
         {
             if (Input.GetMouseButtonDown(0))
             {
+                if (ProbeCameraController.SuppressBodyPicking)
+                    return;
+
                 if (IsPointerOverUi(-1))
                     return;
 

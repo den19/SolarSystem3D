@@ -259,6 +259,7 @@ Minimap  |  ShowMinimap  |  вкл
 Свободное наблюдение  |  UseFreeObservation  |  выкл
 Реальное Солнце  |  UseRealSun  |  вкл
 Машина времени  |  UseTimeMachine  |  выкл (только ручной тумблер)
+Зонд  |  UseProbe  |  выкл (только ручной тумблер)
 
 Панель: SimulationSidePanelController + SidePanelUiBootstrap. Базовый размер (authoring / scale 1): 270×~428. Runtime-масштаб через ComputePanelScale():
 
@@ -332,7 +333,7 @@ GraphicsTier (Graphics quality) — объект сцены MainMenu под Extr
 Устаревший Publish/PlanEn.txt  |  Часть багов уже исправлена; план не синхронизирован с кодом
 AboutPanel.cs — заглушка  |  Анимация через UI Samples PanelManager
 GameState.score не используется  |  Задел под геймификацию
-Spawner / Projectile  |  Пул есть, игрового режима slingshot нет
+Spawner / Projectile  |  Пул есть; игровой slingshot вынесен в ProbeSystemController, эти скрипты не используются
 Тяжёлая иерархия detail-камер  |  Память / поддержка на мобильных
 Рассинхрон комментариев clean view vs кометы  |  Видимость комет завязана на UseCometMovement, не только на UI toggle
 Нет единой документации API каталога комет/тел  |  Расширение требует правок в нескольких местах (каталог, навигация, локализация, префабы описаний)
@@ -387,7 +388,7 @@ Mars  |  —  |  Phobos/Deimos уже есть
 6.2. Геймификация
 ~~~~~~~~~~~~~~~~~
 
-1. Gravity slingshot — запуск зонда, гравитационные манёвры около планет (задел: Spawner/Projectile).  
+1. Gravity slingshot — **реализовано** (режим «Зонд», тумблер боковой панели, default off). Restricted N-body: планеты на рельсах, зонд интегрирует GM; запуск с фокус-тела; Voyager / New Horizons / Juno / Custom; камеры World/Chase/Cockpit; PIP-обзор; телеметрия; циановая проекция на колодец. Abort при смене масштаба / реальных орбит / Машины времени. New выключает тумблер. Continue полёт не сохраняет.  
 2. Квиз по астрономии — вопросы у тела («какая планета ближе к Солнцу?»), очки в GameState.score.  
 3. Миссии наблюдения — «найди комету», «сфокусируйся на Энцеладе», таймер на обычной скорости.  
 4. Unlockables — открытие описаний/скинов после правильных ответов.  
@@ -444,7 +445,7 @@ TimeScale  |  При очень высоких скоростях — fixed subs
 7. Быстрый справочник PlayerPrefs
 ---------------------------------
 
-Настройки: SolarSystem_ScaleMode, SolarSystem_UseRealOrbits, SolarSystem_UseCometMovement, SolarSystem_ShowOrbitLines, SolarSystem_ShowBodyLabels, SolarSystem_ShowMinimap, SolarSystem_ShowSimulationUi, SolarSystem_UseFreeObservation, SolarSystem_UseGravityGrid, SolarSystem_UseProjection, SolarSystem_UseExtraGraphics, SolarSystem_UseRealSun, SolarSystem_GraphicsTier (Auto=0 / Balanced=1 / High=2), SelectedLanguage, ключи аудио.
+Настройки: SolarSystem_ScaleMode, SolarSystem_UseRealOrbits, SolarSystem_UseCometMovement, SolarSystem_ShowOrbitLines, SolarSystem_ShowBodyLabels, SolarSystem_ShowMinimap, SolarSystem_ShowSimulationUi, SolarSystem_UseFreeObservation, SolarSystem_UseGravityGrid, SolarSystem_UseProjection, SolarSystem_UseProbe, SolarSystem_ProbeModel, SolarSystem_ProbeCustomAntenna / Engine / Shield, SolarSystem_ShowProbeViews, SolarSystem_ProbeCameraMode, SolarSystem_UseExtraGraphics, SolarSystem_UseRealSun, SolarSystem_GraphicsTier (Auto=0 / Balanced=1 / High=2), SelectedLanguage, ключи аудио.
 
 Сессия: SolarSystem_HasSessionState, SolarSystem_SelectedPlanet, SolarSystem_IsDetailCamera, SolarSystem_TimeScale / SpeedMultiplier / IsPaused, камера (Main/Detail X/Y/Distance), SolarSystem_MotionSnapshot.
 
@@ -472,7 +473,7 @@ Solar System/Setup Time Control UI  |  Панель паузы/скорости
 3. Образовательные карточки фактов без геймификации.  
 4. Опциональный квиз / миссии.  
 5. Оптимизация камер и LOD под mid-range Android.  
-6. Gravity slingshot как отдельный experimental mode.  
+6. Доработки зонда (миссии / очки), не новый experimental mode.  
 
 ---
 

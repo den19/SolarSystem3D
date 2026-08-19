@@ -827,9 +827,11 @@ public static class SidePanelSceneSetup
     {
         Transform labelTransform = row.Find(labelName);
         GameObject labelGo;
+        Text label;
         if (labelTransform != null)
         {
             labelGo = labelTransform.gameObject;
+            label = labelGo.GetComponent<Text>();
         }
         else
         {
@@ -837,11 +839,14 @@ public static class SidePanelSceneSetup
             labelGo.layer = row.gameObject.layer;
             labelGo.transform.SetParent(row, false);
 
-            var label = labelGo.GetComponent<Text>();
+            label = labelGo.GetComponent<Text>();
             label.alignment = TextAnchor.MiddleLeft;
             label.color = new Color(0.92f, 0.95f, 1f, 1f);
             label.text = labelName;
         }
+
+        if (label != null && label.font == null)
+            label.font = SidePanelUiBootstrap.ResolveUiFont(row);
 
         if (labelGo.GetComponent<LocalizedText>() == null)
             labelGo.AddComponent<LocalizedText>();

@@ -34,6 +34,7 @@ public class PauseAndResume : MonoBehaviour
     public void EnterMenu()
     {
         SimulationSessionState.CaptureFromScene();
+        ProbeSystemController.Instance?.Abort(null, null);
 
         // Menu animations need normal time flow.
         Time.timeScale = 1f;
@@ -48,6 +49,7 @@ public class PauseAndResume : MonoBehaviour
         SimulationTimeController.ResetToDefaults();
         // Time Machine is manual-only; never auto-start on New.
         TimeMachineSettings.SetUseTimeMachine(false);
+        ProbeSettings.SetUseProbe(false);
         Time.timeScale = 1f;
         // Load here so menu works even if AudioManager OnClick target is stale.
         SceneManager.LoadSceneAsync(gameSceneName);

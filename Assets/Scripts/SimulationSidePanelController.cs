@@ -34,6 +34,7 @@ public class SimulationSidePanelController : MonoBehaviour
     [SerializeField] Toggle freeObservationToggle;
     [SerializeField] Toggle realSunToggle;
     [SerializeField] Toggle timeMachineToggle;
+    [SerializeField] Toggle probeToggle;
 
     bool isInitializing;
     bool isPanelOpen;
@@ -118,6 +119,8 @@ public class SimulationSidePanelController : MonoBehaviour
             realSunToggle = FindToggle("SidePanelRealSunLabel_Row");
         if (timeMachineToggle == null)
             timeMachineToggle = FindToggle("SidePanelTimeMachineLabel_Row");
+        if (probeToggle == null)
+            probeToggle = FindToggle("SidePanelProbeLabel_Row");
     }
 
     Toggle FindToggle(string rowName)
@@ -179,11 +182,13 @@ public class SimulationSidePanelController : MonoBehaviour
     void ApplyScaledLayout()
     {
         float scale = ComputePanelScale();
-        if (Mathf.Abs(scale - lastAppliedScale) < 0.001f)
+        bool missingProbeRow = transform.Find("SidePanelProbeLabel_Row") == null;
+        if (!missingProbeRow && Mathf.Abs(scale - lastAppliedScale) < 0.001f)
             return;
 
         SidePanelUiBootstrap.ApplyCompactLayout(transform, scale);
         lastAppliedScale = scale;
+        ResolveReferences();
     }
 
     float ComputePanelScale()
@@ -265,6 +270,7 @@ public class SimulationSidePanelController : MonoBehaviour
     IEnumerator Start()
     {
         isInitializing = true;
+        ResolveReferences();
 
         if (orbitsToggle != null)
         {
@@ -347,6 +353,13 @@ public class SimulationSidePanelController : MonoBehaviour
             timeMachineToggle.onValueChanged.AddListener(OnTimeMachineToggleChanged);
         }
 
+        if (probeToggle != null)
+        {
+            probeToggle.SetIsOnWithoutNotify(ProbeSettings.UseProbe);
+            probeToggle.onValueChanged.RemoveAllListeners();
+            probeToggle.onValueChanged.AddListener(OnProbeToggleChanged);
+        }
+
         SimulationViewSettings.ShowOrbitLinesChanged += OnOrbitsSettingChanged;
         SimulationViewSettings.ShowBodyLabelsChanged += OnLabelsSettingChanged;
         SimulationViewSettings.ShowMinimapChanged += OnMinimapSettingChanged;
@@ -359,6 +372,7 @@ public class SimulationSidePanelController : MonoBehaviour
         CometMovementSettings.UseCometMovementChanged += OnCometMovementSettingChanged;
         SunAppearanceSettings.UseRealSunChanged += OnRealSunSettingChanged;
         TimeMachineSettings.UseTimeMachineChanged += OnTimeMachineSettingChanged;
+        ProbeSettings.UseProbeChanged += OnProbeSettingChanged;
 
         yield return new WaitForEndOfFrame();
         isInitializing = false;
@@ -379,6 +393,7 @@ public class SimulationSidePanelController : MonoBehaviour
         CometMovementSettings.UseCometMovementChanged -= OnCometMovementSettingChanged;
         SunAppearanceSettings.UseRealSunChanged -= OnRealSunSettingChanged;
         TimeMachineSettings.UseTimeMachineChanged -= OnTimeMachineSettingChanged;
+        ProbeSettings.UseProbeChanged -= OnProbeSettingChanged;
 
         if (menuButton != null)
             menuButton.onClick.RemoveListener(TogglePanel);
@@ -497,6 +512,12 @@ public class SimulationSidePanelController : MonoBehaviour
         TimeMachineSettings.SetUseTimeMachine(isOn);
     }
 
+    void OnProbeToggleChanged(bool isOn)
+    {
+        if (isInitializing) return;
+        ProbeSettings.SetUseProbe(isOn);
+    }
+
     void OnOrbitsSettingChanged(bool isOn)
     {
         if (orbitsToggle != null)
@@ -566,6 +587,12 @@ public class SimulationSidePanelController : MonoBehaviour
     {
         if (timeMachineToggle != null)
             timeMachineToggle.SetIsOnWithoutNotify(isOn);
+    }
+
+    void OnProbeSettingChanged(bool isOn)
+    {
+        if (probeToggle != null)
+            probeToggle.SetIsOnWithoutNotify(isOn);
     }
 
     public void TogglePanel()

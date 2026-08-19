@@ -35,7 +35,8 @@ public static class SidePanelUiBootstrap
         ("SidePanelCometMovementLabel_Row", "SidePanelCometMovementLabel"),
         ("SidePanelFreeObservationLabel_Row", "SidePanelFreeObservationLabel"),
         ("SidePanelRealSunLabel_Row", "SidePanelRealSunLabel"),
-        ("SidePanelTimeMachineLabel_Row", "SidePanelTimeMachineLabel")
+        ("SidePanelTimeMachineLabel_Row", "SidePanelTimeMachineLabel"),
+        ("SidePanelProbeLabel_Row", "SidePanelProbeLabel")
     };
 
     public static float GetScaledPanelWidth(float scale) => PanelWidth * Mathf.Max(0.01f, scale);
@@ -204,6 +205,9 @@ public static class SidePanelUiBootstrap
 
         if (labelTransform.TryGetComponent(out Text label))
         {
+            if (label.font == null)
+                label.font = ResolveUiFont(labelTransform);
+
             label.fontSize = Mathf.Max(1, Mathf.RoundToInt(LabelFontSize * scale));
             label.horizontalOverflow = HorizontalWrapMode.Wrap;
             label.verticalOverflow = VerticalWrapMode.Truncate;
@@ -226,7 +230,8 @@ public static class SidePanelUiBootstrap
         return rowName == "SidePanelProjectionLabel_Row"
             || rowName == "SidePanelRealOrbitsLabel_Row"
             || rowName == "SidePanelFreeObservationLabel_Row"
-            || rowName == "SidePanelTimeMachineLabel_Row";
+            || rowName == "SidePanelTimeMachineLabel_Row"
+            || rowName == "SidePanelProbeLabel_Row";
     }
 
     static Transform EnsureToggleRow(Transform panel, string rowName, string labelName, ref float y, int siblingIndex, float scale, bool defaultOn = true)
@@ -246,9 +251,11 @@ public static class SidePanelUiBootstrap
     {
         Transform labelTransform = row.Find(labelName);
         GameObject labelGo;
+        Text label;
         if (labelTransform != null)
         {
             labelGo = labelTransform.gameObject;
+            label = labelGo.GetComponent<Text>();
         }
         else
         {
@@ -256,14 +263,37 @@ public static class SidePanelUiBootstrap
             labelGo.layer = row.gameObject.layer;
             labelGo.transform.SetParent(row, false);
 
-            var label = labelGo.GetComponent<Text>();
+            label = labelGo.GetComponent<Text>();
             label.alignment = TextAnchor.MiddleLeft;
             label.color = new Color(0.92f, 0.95f, 1f, 1f);
             label.text = labelName;
         }
 
+        if (label != null && label.font == null)
+            label.font = ResolveUiFont(row);
+
         if (labelGo.GetComponent<LocalizedText>() == null)
             labelGo.AddComponent<LocalizedText>();
+    }
+
+    public static Font ResolveUiFont(Transform context)
+    {
+        Transform search = context;
+        while (search != null)
+        {
+            Text[] texts = search.GetComponentsInChildren<Text>(true);
+            for (int i = 0; i < texts.Length; i++)
+            {
+                Text candidate = texts[i];
+                if (candidate != null && candidate.font != null)
+                    return candidate.font;
+            }
+
+            search = search.parent;
+        }
+
+        return Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf")
+            ?? Resources.GetBuiltinResource<Font>("Arial.ttf");
     }
 
     static Toggle EnsureToggle(Transform row, bool defaultOn)

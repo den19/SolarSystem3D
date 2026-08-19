@@ -138,6 +138,7 @@ public class SimulationShareController : MonoBehaviour
         {
             if (_minimapCamera != null)
                 _minimapCamera.enabled = false;
+            ProbeViewRig.SetEnabledForCapture(false);
 
             captureCamera.aspect = 9f / 16f;
             captureCamera.targetTexture = renderTexture;
@@ -175,6 +176,7 @@ public class SimulationShareController : MonoBehaviour
 
         if (_minimapCamera != null)
             _minimapCamera.enabled = minimapWasEnabled;
+        ProbeViewRig.SetEnabledForCapture(true);
 
         if (renderTexture != null)
             RenderTexture.ReleaseTemporary(renderTexture);
@@ -345,7 +347,9 @@ public class SimulationShareController : MonoBehaviour
         for (int i = 0; i < cameras.Length; i++)
         {
             Camera camera = cameras[i];
-            if (camera == null || !camera.enabled || camera == _minimapCamera)
+            if (camera == null || !camera.enabled || camera == _minimapCamera || camera.targetTexture != null)
+                continue;
+            if (camera.name.StartsWith("ProbeView"))
                 continue;
 
             return camera;
@@ -383,7 +387,15 @@ public class SimulationShareController : MonoBehaviour
                 format = translation;
         }
 
-        return string.Format(format, version, buildDate);
+        string text = string.Format(format, version, buildDate);
+        if (ProbeSystemController.Instance != null && ProbeSystemController.Instance.IsFlying)
+        {
+            string extra = ProbeSystemController.Instance.TelemetryShareLine;
+            if (!string.IsNullOrEmpty(extra))
+                text += "\n" + extra;
+        }
+
+        return text;
     }
 
     static string ResolveBuildDate()

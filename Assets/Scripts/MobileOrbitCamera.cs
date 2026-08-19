@@ -264,6 +264,9 @@ public class MobileOrbitCamera : MonoBehaviour
 
     private void OnSingleTap(Vector2 screenPosition, int fingerId = -1)
     {
+        if (ProbeCameraController.SuppressBodyPicking)
+            return;
+
         if (gameObject.name == "Main Camera" && globalLookAtScript != null)
         {
             if (LookAtTarget.IsPointerOverUi(fingerId))
@@ -302,6 +305,9 @@ public class MobileOrbitCamera : MonoBehaviour
 
     private void OnDoubleTap(Vector2 screenPosition)
     {
+        if (ProbeCameraController.SuppressBodyPicking)
+            return;
+
         if (globalLookAtScript == null) return;
 
         if (gameObject.name == "Main Camera")

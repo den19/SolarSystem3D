@@ -12,7 +12,8 @@ public class CleanViewController : MonoBehaviour
     {
         "BodyNavigationBar",
         "SimulationSidePanel",
-        TimeControlUiBootstrap.BarObjectName
+        TimeControlUiBootstrap.BarObjectName,
+        ProbeSystemController.HudObjectName
     };
 
     static readonly HashSet<string> NavigationBarChildrenToHide = new HashSet<string>

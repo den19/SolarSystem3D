@@ -16,6 +16,7 @@ public static class SolarSystemConfigurationReset
         MilkyWaySettings.ResetToDefaults();
         SunAppearanceSettings.ResetToDefaults();
         TimeMachineSettings.ResetToDefaults();
+        ProbeSettings.ResetToDefaults();
         GraphicsTierSettings.ResetToDefaults();
         SimulationSessionState.Clear();
         SimulationClock.ResetToSweepStart();

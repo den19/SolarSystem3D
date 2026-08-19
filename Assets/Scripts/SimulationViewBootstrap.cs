@@ -78,6 +78,7 @@ public class SimulationViewBootstrap : MonoBehaviour
             gameObject.AddComponent<BodyOrbitSystemController>();
             gameObject.AddComponent<BodyGridProjectionController>();
             TimeMachineController.EnsureOnHost(gameObject);
+            ProbeSystemController.EnsureOnHost(gameObject);
 
             Canvas canvas = null;
             GameObject canvasGo = GameObject.Find("MainScreenCanvas");
