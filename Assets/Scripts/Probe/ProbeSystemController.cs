@@ -306,14 +306,6 @@ public class ProbeSystemController : MonoBehaviour
         if (!IsFlying)
             return;
 
-        if (Craft == null || !Craft.HasAntenna)
-        {
-            TransientMessageController.ShowLocalized(
-                "ProbeNeedAntennaMessage",
-                "Antenna required to send a postcard.");
-            return;
-        }
-
         if (SimulationShareController.Instance != null)
             SimulationShareController.Instance.RequestShare();
     }

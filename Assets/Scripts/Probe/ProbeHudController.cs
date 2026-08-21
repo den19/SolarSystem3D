@@ -907,7 +907,7 @@ public class ProbeHudController : MonoBehaviour
         if (_burnButton != null)
             _burnButton.interactable = flying && ProbeSettings.ResolveHasEngine();
         if (_postcardButton != null)
-            _postcardButton.interactable = flying && ProbeSettings.ResolveHasAntenna();
+            _postcardButton.interactable = flying;
         if (_viewsToggle != null && _viewsToggle.isOn != ProbeSettings.ShowProbeViews)
             _viewsToggle.SetIsOnWithoutNotify(ProbeSettings.ShowProbeViews);
         RefreshLabels();
