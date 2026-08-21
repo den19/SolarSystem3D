@@ -1,0 +1,3 @@
+Place Venera7-source.glb here (or set SKETCHFAB_TOKEN) then re-run:
+  python Tools/_probe_mesh_import/fetch_probe_meshes.py --only Venera7
+Page: https://sketchfab.com/3d-models/venera-7-fd464eedd93a41c98d2608faeb871cd0

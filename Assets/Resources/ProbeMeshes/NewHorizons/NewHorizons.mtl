@@ -1,0 +1,42 @@
+newmtl mat_Ulysses.016
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Ulysses.016_albedo.png
+
+newmtl mat_BODY.006
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd BODY.006_albedo.png
+
+newmtl mat_BODY.002
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd BODY.002_albedo.png
+
+newmtl mat_Cylinder.002
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Cylinder.002_albedo.png
+
+newmtl mat_Cube.008
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Cube.008_albedo.png
+
+newmtl mat_Cube.004
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Cube.004_albedo.png
+

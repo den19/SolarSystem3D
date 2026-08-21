@@ -2,7 +2,8 @@ using SolarSystemApp;
 using UnityEngine;
 
 /// <summary>
-/// Probe meshes: Voyager 1 / Mars 3 from Resources when available; other kinds are procedural primitives.
+/// Probe meshes: Voyager 1 / Mars 3 / New Horizons / Juno / Venera 7 / Luna 1 / Hayabusa2 / Chang'e 4
+/// from Resources when available; other kinds are procedural primitives.
 /// </summary>
 public static class ProbePrefabFactory
 {
@@ -12,10 +13,11 @@ public static class ProbePrefabFactory
     public const int MinimapBlipLayer = 8;
     public const string MinimapBlipLayerName = "MinimapBlip";
 
+    const float DefaultMeshFitSize = 1.6f;
+
     /// <summary>Resources path for Voyager 1 prefab (Editor-built) or imported OBJ root.</summary>
     public const string Voyager1PrefabResourcePath = "ProbeMeshes/Voyager1/Voyager1";
     public const string Voyager1PrefabAltResourcePath = "ProbeMeshes/Voyager1/Voyager1Prefab";
-    const float Voyager1FitSize = 1.6f;
     /// <summary>VTAD model HGA tip in mesh-local space (Y-up dish); Visual wrapper rotates to craft frame.</summary>
     static readonly Vector3 Voyager1AntennaLocal = new Vector3(-0.007f, 8.12f, 0.54f);
     static readonly Vector3 Voyager1VisualEuler = new Vector3(90f, 0f, 0f);
@@ -24,11 +26,40 @@ public static class ProbePrefabFactory
     /// <summary>Resources path for Mars 3 prefab (Editor-built) or imported OBJ root.</summary>
     public const string Mars3PrefabResourcePath = "ProbeMeshes/Mars3/Mars3";
     public const string Mars3PrefabAltResourcePath = "ProbeMeshes/Mars3/Mars3Prefab";
-    const float Mars3FitSize = 1.6f;
     /// <summary>HGA tip in mesh-local space (Y-up); from Tools/_mars3_import mesh_info.json.</summary>
     static readonly Vector3 Mars3AntennaLocal = new Vector3(0.01f, 0.699f, -0.097f);
     static readonly Vector3 Mars3VisualEuler = new Vector3(0f, 0f, 0f);
     static bool _mars3MeshFallbackWarned;
+
+    public const string NewHorizonsPrefabResourcePath = "ProbeMeshes/NewHorizons/NewHorizons";
+    public const string NewHorizonsPrefabAltResourcePath = "ProbeMeshes/NewHorizons/NewHorizonsPrefab";
+    static readonly Vector3 NewHorizonsAntennaLocal = new Vector3(-0.018f, 1.516f, -0.029f);
+    static bool _newHorizonsMeshFallbackWarned;
+
+    public const string JunoPrefabResourcePath = "ProbeMeshes/Juno/Juno";
+    public const string JunoPrefabAltResourcePath = "ProbeMeshes/Juno/JunoPrefab";
+    static readonly Vector3 JunoAntennaLocal = new Vector3(-0.075f, 1.681f, 0.043f);
+    static bool _junoMeshFallbackWarned;
+
+    public const string Venera7PrefabResourcePath = "ProbeMeshes/Venera7/Venera7";
+    public const string Venera7PrefabAltResourcePath = "ProbeMeshes/Venera7/Venera7Prefab";
+    static readonly Vector3 Venera7AntennaLocal = new Vector3(0.004f, 0.827f, 0.003f);
+    static bool _venera7MeshFallbackWarned;
+
+    public const string Luna1PrefabResourcePath = "ProbeMeshes/Luna1/Luna1";
+    public const string Luna1PrefabAltResourcePath = "ProbeMeshes/Luna1/Luna1Prefab";
+    static readonly Vector3 Luna1AntennaLocal = new Vector3(0f, 1.144f, 0f);
+    static bool _luna1MeshFallbackWarned;
+
+    public const string Hayabusa2PrefabResourcePath = "ProbeMeshes/Hayabusa2/Hayabusa2";
+    public const string Hayabusa2PrefabAltResourcePath = "ProbeMeshes/Hayabusa2/Hayabusa2Prefab";
+    static readonly Vector3 Hayabusa2AntennaLocal = new Vector3(0f, 0.385f, 0.013f);
+    static bool _hayabusa2MeshFallbackWarned;
+
+    public const string Change4PrefabResourcePath = "ProbeMeshes/Change4/Change4";
+    public const string Change4PrefabAltResourcePath = "ProbeMeshes/Change4/Change4Prefab";
+    static readonly Vector3 Change4AntennaLocal = new Vector3(-0.001f, 0.307f, 0.011f);
+    static bool _change4MeshFallbackWarned;
 
     public static ProbeCraft Create(ProbeModelKind kind, bool highDetail)
     {
@@ -184,8 +215,74 @@ public static class ProbePrefabFactory
 
         craftAntenna = antenna;
         ApplyProbeBodyMaterials(wrap.transform);
-        FitToBounds(wrap.transform, Voyager1FitSize);
+        FitToBounds(wrap.transform, DefaultMeshFitSize);
         return true;
+    }
+
+    static bool TryBuildImportedMesh(
+        Transform parent,
+        string visualName,
+        string meshChildName,
+        string prefabAltPath,
+        string prefabPath,
+        Vector3 antennaLocal,
+        Vector3 visualEuler)
+    {
+        GameObject prefab = Resources.Load<GameObject>(prefabAltPath);
+        if (prefab == null)
+            prefab = Resources.Load<GameObject>(prefabPath);
+        if (prefab == null)
+            return false;
+
+        var wrap = new GameObject(visualName);
+        wrap.transform.SetParent(parent, false);
+        wrap.transform.localRotation = Quaternion.Euler(visualEuler);
+
+        GameObject instance = Object.Instantiate(prefab, wrap.transform, false);
+        instance.name = meshChildName;
+        instance.transform.localPosition = Vector3.zero;
+        instance.transform.localRotation = Quaternion.identity;
+        instance.transform.localScale = Vector3.one;
+
+        if (!HasValidMeshFilters(instance))
+        {
+            Object.Destroy(wrap);
+            return false;
+        }
+
+        foreach (Collider col in instance.GetComponentsInChildren<Collider>(true))
+            Object.Destroy(col);
+
+        Transform antenna = FindNamedChild(instance.transform, "Antenna");
+        if (antenna == null)
+        {
+            var antennaGo = new GameObject("Antenna");
+            antennaGo.transform.SetParent(wrap.transform, false);
+            antennaGo.transform.localPosition = antennaLocal;
+            antennaGo.transform.localRotation = Quaternion.identity;
+            antenna = antennaGo.transform;
+        }
+        else if (antenna.parent != wrap.transform)
+        {
+            Vector3 world = antenna.position;
+            antenna.SetParent(wrap.transform, true);
+            antenna.position = world;
+        }
+
+        craftAntenna = antenna;
+        ApplyProbeBodyMaterials(wrap.transform);
+        FitToBounds(wrap.transform, DefaultMeshFitSize);
+        return true;
+    }
+
+    static void WarnMeshFallbackOnce(ref bool warned, string label, string altPath, string path)
+    {
+        if (warned)
+            return;
+        warned = true;
+        Debug.LogWarning(
+            $"ProbePrefabFactory: {label} mesh unavailable or empty; using primitive fallback. " +
+            $"Tried Resources '{altPath}' then '{path}'.");
     }
 
     static bool HasValidMeshFilters(GameObject root)
@@ -395,6 +492,18 @@ public static class ProbePrefabFactory
 
     static void BuildNewHorizons(Transform parent, Material bus, Material gold, Material dish, Material dark, bool highDetail)
     {
+        if (TryBuildImportedMesh(
+                parent,
+                "NewHorizonsVisual",
+                "NewHorizonsMesh",
+                NewHorizonsPrefabAltResourcePath,
+                NewHorizonsPrefabResourcePath,
+                NewHorizonsAntennaLocal,
+                Vector3.zero))
+            return;
+
+        WarnMeshFallbackOnce(ref _newHorizonsMeshFallbackWarned, "New Horizons", NewHorizonsPrefabAltResourcePath, NewHorizonsPrefabResourcePath);
+
         AddPrimitive(parent, PrimitiveType.Cube, gold, Vector3.zero, new Vector3(0.7f, 0.28f, 0.5f));
         Transform hga = AddPrimitive(parent, PrimitiveType.Cylinder, dish, new Vector3(0f, 0.08f, -0.42f), new Vector3(0.85f, 0.035f, 0.85f));
         hga.localRotation = Quaternion.Euler(90f, 0f, 0f);
@@ -410,6 +519,18 @@ public static class ProbePrefabFactory
 
     static void BuildJuno(Transform parent, Material bus, Material gold, Material dark, bool highDetail)
     {
+        if (TryBuildImportedMesh(
+                parent,
+                "JunoVisual",
+                "JunoMesh",
+                JunoPrefabAltResourcePath,
+                JunoPrefabResourcePath,
+                JunoAntennaLocal,
+                Vector3.zero))
+            return;
+
+        WarnMeshFallbackOnce(ref _junoMeshFallbackWarned, "Juno", JunoPrefabAltResourcePath, JunoPrefabResourcePath);
+
         AddPrimitive(parent, PrimitiveType.Cylinder, bus, Vector3.zero, new Vector3(0.45f, 0.22f, 0.45f));
         craftAntenna = AddPrimitive(parent, PrimitiveType.Sphere, gold, new Vector3(0f, 0.28f, 0f), Vector3.one * 0.18f);
         int wings = highDetail ? 3 : 3;
@@ -457,6 +578,18 @@ public static class ProbePrefabFactory
 
     static void BuildLuna1(Transform parent, Material bus, Material gold, Material dark, bool highDetail)
     {
+        if (TryBuildImportedMesh(
+                parent,
+                "Luna1Visual",
+                "Luna1Mesh",
+                Luna1PrefabAltResourcePath,
+                Luna1PrefabResourcePath,
+                Luna1AntennaLocal,
+                Vector3.zero))
+            return;
+
+        WarnMeshFallbackOnce(ref _luna1MeshFallbackWarned, "Luna 1", Luna1PrefabAltResourcePath, Luna1PrefabResourcePath);
+
         AddPrimitive(parent, PrimitiveType.Cylinder, bus, Vector3.zero, new Vector3(0.38f, 0.5f, 0.38f));
         craftAntenna = AddPrimitive(parent, PrimitiveType.Cylinder, gold, new Vector3(0f, 0.38f, 0f), new Vector3(0.06f, 0.55f, 0.06f));
         for (int i = 0; i < 4; i++)
@@ -476,6 +609,18 @@ public static class ProbePrefabFactory
 
     static void BuildVenera7(Transform parent, Material bus, Material gold, Material dish, Material dark, bool highDetail)
     {
+        if (TryBuildImportedMesh(
+                parent,
+                "Venera7Visual",
+                "Venera7Mesh",
+                Venera7PrefabAltResourcePath,
+                Venera7PrefabResourcePath,
+                Venera7AntennaLocal,
+                Vector3.zero))
+            return;
+
+        WarnMeshFallbackOnce(ref _venera7MeshFallbackWarned, "Venera 7", Venera7PrefabAltResourcePath, Venera7PrefabResourcePath);
+
         AddPrimitive(parent, PrimitiveType.Sphere, bus, new Vector3(0f, 0.08f, 0f), new Vector3(0.55f, 0.45f, 0.55f));
         Transform hga = AddPrimitive(parent, PrimitiveType.Cylinder, dish, new Vector3(0f, 0.38f, 0f), new Vector3(0.5f, 0.03f, 0.5f));
         hga.localRotation = Quaternion.Euler(90f, 0f, 0f);
@@ -586,12 +731,24 @@ public static class ProbePrefabFactory
 
         craftAntenna = antenna;
         ApplyProbeBodyMaterials(wrap.transform);
-        FitToBounds(wrap.transform, Mars3FitSize);
+        FitToBounds(wrap.transform, DefaultMeshFitSize);
         return true;
     }
 
     static void BuildChange4(Transform parent, Material bus, Material gold, Material dark, bool highDetail)
     {
+        if (TryBuildImportedMesh(
+                parent,
+                "Change4Visual",
+                "Change4Mesh",
+                Change4PrefabAltResourcePath,
+                Change4PrefabResourcePath,
+                Change4AntennaLocal,
+                Vector3.zero))
+            return;
+
+        WarnMeshFallbackOnce(ref _change4MeshFallbackWarned, "Chang'e 4", Change4PrefabAltResourcePath, Change4PrefabResourcePath);
+
         AddPrimitive(parent, PrimitiveType.Cube, bus, Vector3.zero, new Vector3(0.75f, 0.14f, 0.55f));
         AddPrimitive(parent, PrimitiveType.Cube, gold, new Vector3(-0.62f, 0.06f, 0f), new Vector3(0.35f, 0.02f, 0.48f));
         AddPrimitive(parent, PrimitiveType.Cube, gold, new Vector3(0.62f, 0.06f, 0f), new Vector3(0.35f, 0.02f, 0.48f));
@@ -631,6 +788,18 @@ public static class ProbePrefabFactory
 
     static void BuildHayabusa2(Transform parent, Material bus, Material gold, Material dark, bool highDetail)
     {
+        if (TryBuildImportedMesh(
+                parent,
+                "Hayabusa2Visual",
+                "Hayabusa2Mesh",
+                Hayabusa2PrefabAltResourcePath,
+                Hayabusa2PrefabResourcePath,
+                Hayabusa2AntennaLocal,
+                Vector3.zero))
+            return;
+
+        WarnMeshFallbackOnce(ref _hayabusa2MeshFallbackWarned, "Hayabusa2", Hayabusa2PrefabAltResourcePath, Hayabusa2PrefabResourcePath);
+
         AddPrimitive(parent, PrimitiveType.Cube, bus, Vector3.zero, new Vector3(0.58f, 0.38f, 0.58f));
         craftAntenna = AddPrimitive(parent, PrimitiveType.Cylinder, gold, new Vector3(0f, 0.05f, 0.52f), new Vector3(0.14f, 0.32f, 0.14f));
         AddPrimitive(parent, PrimitiveType.Cylinder, dark, new Vector3(0f, -0.08f, 0.38f), new Vector3(0.1f, 0.18f, 0.1f));

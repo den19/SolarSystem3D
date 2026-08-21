@@ -1,0 +1,3 @@
+Place Luna1-source.glb here (or set SKETCHFAB_TOKEN) then re-run:
+  python Tools/_probe_mesh_import/fetch_probe_meshes.py --only Luna1
+Page: https://sketchfab.com/3d-models/soviet-space-satellite-moon-1-1b7feef6a0614837b21790e219e68ab2

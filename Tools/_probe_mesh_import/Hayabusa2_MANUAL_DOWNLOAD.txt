@@ -1,0 +1,3 @@
+Place Hayabusa2-source.glb here (or set SKETCHFAB_TOKEN) then re-run:
+  python Tools/_probe_mesh_import/fetch_probe_meshes.py --only Hayabusa2
+Page: https://sketchfab.com/search?q=hayabusa2&type=models&features=downloadable

@@ -1,0 +1,11 @@
+Juno spacecraft 3D model
+========================
+
+Source: NASA Visualization Technology Applications and Development (VTAD)
+  https://science.nasa.gov/resource/juno-3d-model/
+  GLB: https://assets.science.nasa.gov/content/dam/science/psd/solar/2023/09/j/Juno.glb
+
+NASA media generally may be used for educational / informational purposes per
+NASA Images and Media Usage Guidelines (no NASA emblem endorsement implied).
+
+Converted/decimated to OBJ + PNG for Unity mobile (no runtime glTF dependency).

@@ -79,6 +79,10 @@ mono_crash.*
 *.aab
 build_apk.log
 Tools/keystore.local.ps1
+Tools/sketchfab.local.ps1
+Tools/_probe_mesh_import/*-source.glb
+Tools/_probe_mesh_import/*-source.gltf
+Tools/_probe_mesh_import/*_unpacked/
 *.unitypackage
 *.unitypackage.meta
 *.app

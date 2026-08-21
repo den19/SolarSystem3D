@@ -1,0 +1,133 @@
+newmtl mat_Geometry-Body.000
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Geometry-Body.000_albedo.png
+
+newmtl mat_Geometry-Mesh.001
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Geometry-Mesh.001_albedo.png
+
+newmtl mat_Geometry-Mesh.001_1
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Geometry-Mesh.001_1_albedo.png
+
+newmtl mat_Geometry-Mesh.001_2
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Geometry-Mesh.001_2_albedo.png
+
+newmtl mat_Geometry-Body.000_1
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Geometry-Body.000_1_albedo.png
+
+newmtl mat_Object3843.000
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Object3843.000_albedo.png
+
+newmtl mat_Object3843.000_1
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Object3843.000_1_albedo.png
+
+newmtl mat_Object3843.000_2
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Object3843.000_2_albedo.png
+
+newmtl mat_Object3843.000_3
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Object3843.000_3_albedo.png
+
+newmtl mat_Geometry-Body.000_2
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Geometry-Body.000_2_albedo.png
+
+newmtl mat_Geometry-Body.000_3
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Geometry-Body.000_3_albedo.png
+
+newmtl mat_Geometry-Body.000_4
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Geometry-Body.000_4_albedo.png
+
+newmtl mat_Geometry-Body.000_5
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Geometry-Body.000_5_albedo.png
+
+newmtl mat_Geometry-Body.000_6
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Geometry-Body.000_6_albedo.png
+
+newmtl mat_Geometry-Body.000_7
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Geometry-Body.000_7_albedo.png
+
+newmtl mat_Geometry-Body.000_8
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Geometry-Body.000_8_albedo.png
+
+newmtl mat_Geometry-Body.000_9
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Geometry-Body.000_9_albedo.png
+
+newmtl mat_Geometry-Body.000_10
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Geometry-Body.000_10_albedo.png
+
+newmtl mat_Cube.001
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Cube.001_albedo.png
+

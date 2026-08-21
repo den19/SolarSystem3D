@@ -1,0 +1,3 @@
+Place Change4-source.glb here (or set SKETCHFAB_TOKEN) then re-run:
+  python Tools/_probe_mesh_import/fetch_probe_meshes.py --only Change4
+Page: https://sketchfab.com/3d-models/change-3-d04a86f43d4549328a19a30da3e7509f

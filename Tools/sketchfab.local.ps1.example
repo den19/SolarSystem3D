@@ -1,0 +1,5 @@
+# Optional Sketchfab API token for Tools/_probe_mesh_import/fetch_probe_meshes.py
+# Copy to sketchfab.local.ps1 (gitignored) and set your token:
+#   $SketchfabToken = "your_token_here"
+# Or set env SKETCHFAB_TOKEN.
+$SketchfabToken = ""
