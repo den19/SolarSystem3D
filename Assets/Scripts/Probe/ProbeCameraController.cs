@@ -121,6 +121,8 @@ public class ProbeCameraController : MonoBehaviour
                 _lookAt.TurnOnMainCamera();
         }
 
+        ProbePrefabFactory.EnsureMinimapBlipCameraCulling();
+
         var showcase = _main != null ? _main.GetComponent<BodyShowcaseCameraController>() : null;
         showcase?.StopShowcase();
         _orbit?.SetExternalOrbitControl(true);

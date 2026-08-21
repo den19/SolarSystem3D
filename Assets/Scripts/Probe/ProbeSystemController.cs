@@ -267,6 +267,8 @@ public class ProbeSystemController : MonoBehaviour
         Craft.Velocity = originVelocity + prograde * ResolveImpulseSpeed(position) * ProbeSettings.ResolveLaunchSpeedScale();
         float craftScale = Mathf.Clamp(originRadius * 1.2f, 2.0f, 6f);
         Craft.transform.localScale = Vector3.one * craftScale;
+        ProbePrefabFactory.NormalizeBlipLocalScale(Craft.transform, craftScale);
+        ProbePrefabFactory.EnsureMinimapBlipCameraCulling();
         Craft.AlignToVelocity();
         Craft.gameObject.AddComponent<ProbeWorldMarker>();
         _cappedToastShown = false;

@@ -29,7 +29,6 @@ public static class ProbePrefabFactory
     static readonly Vector3 Mars3AntennaLocal = new Vector3(0.01f, 0.699f, -0.097f);
     static readonly Vector3 Mars3VisualEuler = new Vector3(0f, 0f, 0f);
     static bool _mars3MeshFallbackWarned;
-    static bool _blipCamerasConfigured;
 
     public static ProbeCraft Create(ProbeModelKind kind, bool highDetail)
     {
@@ -331,7 +330,7 @@ public static class ProbePrefabFactory
         }
     }
 
-    static int ResolveMinimapBlipLayer()
+    public static int ResolveMinimapBlipLayer()
     {
         int named = LayerMask.NameToLayer(MinimapBlipLayerName);
         if (named >= 0)
@@ -339,14 +338,46 @@ public static class ProbePrefabFactory
         return MinimapBlipLayer;
     }
 
-    static void EnsureMinimapBlipCameraCulling()
+    /// <summary>
+    /// Keep MinimapBlip world size stable when the craft root is scaled for launch.
+    /// </summary>
+    public static void NormalizeBlipLocalScale(Transform craftRoot, float craftScale)
     {
-        if (_blipCamerasConfigured)
+        if (craftRoot == null)
             return;
-        _blipCamerasConfigured = true;
+        Transform blip = craftRoot.Find(BlipName);
+        if (blip == null)
+            return;
+        float scale = Mathf.Max(craftScale, 0.01f);
+        blip.localScale = Vector3.one * (1.5f / scale);
+    }
 
+    /// <summary>
+    /// Minimap-only cyan sphere: exclude from every camera except Minimap Camera.
+    /// </summary>
+    public static void EnsureMinimapBlipCameraCulling()
+    {
         int layer = ResolveMinimapBlipLayer();
         int bit = 1 << layer;
+
+        Camera minimap = null;
+        GameObject minimapGo = GameObject.Find("Minimap Camera");
+        if (minimapGo != null)
+            minimap = minimapGo.GetComponent<Camera>();
+
+        Camera[] cameras = Camera.allCameras;
+        for (int i = 0; i < cameras.Length; i++)
+        {
+            Camera cam = cameras[i];
+            if (cam == null)
+                continue;
+            if (minimap != null && cam == minimap)
+                continue;
+            cam.cullingMask &= ~bit;
+        }
+
+        if (minimap != null)
+            minimap.cullingMask |= bit;
 
         Camera main = Camera.main;
         if (main == null)
@@ -358,14 +389,6 @@ public static class ProbePrefabFactory
 
         if (main != null)
             main.cullingMask &= ~bit;
-
-        GameObject minimapGo = GameObject.Find("Minimap Camera");
-        if (minimapGo != null)
-        {
-            Camera minimap = minimapGo.GetComponent<Camera>();
-            if (minimap != null)
-                minimap.cullingMask |= bit;
-        }
     }
 
     static Transform craftAntenna;

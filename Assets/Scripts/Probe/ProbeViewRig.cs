@@ -141,7 +141,9 @@ public class ProbeViewRig : MonoBehaviour
         cam.nearClipPlane = 0.15f;
         cam.farClipPlane = 800f;
         cam.depth = -20f;
-        cam.cullingMask = ~(1 << 5);
+        // UI (5) + MinimapBlip — иначе PIP сидит внутри cyan-сферы и «зеркала» залиты синим.
+        int blipLayer = ProbePrefabFactory.ResolveMinimapBlipLayer();
+        cam.cullingMask = ~((1 << 5) | (1 << blipLayer));
         cam.targetTexture = rt;
         cam.enabled = false;
         cam.allowHDR = false;
