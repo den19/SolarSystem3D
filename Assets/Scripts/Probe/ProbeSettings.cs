@@ -40,6 +40,7 @@ namespace SolarSystemApp
         const string KeyShield = "SolarSystem_ProbeCustomShield";
         const string KeyViews = "SolarSystem_ShowProbeViews";
         const string KeyCamera = "SolarSystem_ProbeCameraMode";
+        const string KeyKeepChaseInspectAngle = "SolarSystem_KeepChaseInspectAngle";
 
         static bool initialized;
         static bool useProbe;
@@ -49,10 +50,12 @@ namespace SolarSystemApp
         static bool customShield;
         static bool showProbeViews;
         static ProbeCameraMode cameraMode;
+        static bool keepChaseInspectAngle = true;
 
         public static event Action<bool> UseProbeChanged;
         public static event Action ShowProbeViewsChanged;
         public static event Action LoadoutChanged;
+        public static event Action<bool> KeepChaseInspectAngleChanged;
 
         public static bool UseProbe
         {
@@ -117,6 +120,15 @@ namespace SolarSystemApp
             }
         }
 
+        public static bool KeepChaseInspectAngle
+        {
+            get
+            {
+                EnsureInitialized();
+                return keepChaseInspectAngle;
+            }
+        }
+
         static void EnsureInitialized()
         {
             if (initialized)
@@ -129,6 +141,7 @@ namespace SolarSystemApp
             customShield = PlayerPrefs.GetInt(KeyShield, 0) != 0;
             showProbeViews = PlayerPrefs.GetInt(KeyViews, 0) != 0;
             cameraMode = ClampCamera(PlayerPrefs.GetInt(KeyCamera, 0));
+            keepChaseInspectAngle = PlayerPrefs.GetInt(KeyKeepChaseInspectAngle, 1) != 0;
             initialized = true;
         }
 
@@ -229,6 +242,18 @@ namespace SolarSystemApp
             PlayerPrefs.Save();
         }
 
+        public static void SetKeepChaseInspectAngle(bool enabled)
+        {
+            EnsureInitialized();
+            if (keepChaseInspectAngle == enabled)
+                return;
+
+            keepChaseInspectAngle = enabled;
+            PlayerPrefs.SetInt(KeyKeepChaseInspectAngle, keepChaseInspectAngle ? 1 : 0);
+            PlayerPrefs.Save();
+            KeepChaseInspectAngleChanged?.Invoke(keepChaseInspectAngle);
+        }
+
         public static bool ResolveHasAntenna()
         {
             EnsureInitialized();
@@ -264,6 +289,7 @@ namespace SolarSystemApp
             PlayerPrefs.DeleteKey(KeyShield);
             PlayerPrefs.DeleteKey(KeyViews);
             PlayerPrefs.DeleteKey(KeyCamera);
+            PlayerPrefs.DeleteKey(KeyKeepChaseInspectAngle);
             ProbeCoachSettings.ResetToDefaults();
 
             initialized = true;
@@ -274,11 +300,13 @@ namespace SolarSystemApp
             customShield = false;
             showProbeViews = false;
             cameraMode = ProbeCameraMode.World;
+            keepChaseInspectAngle = true;
 
             PlayerPrefs.Save();
             UseProbeChanged?.Invoke(useProbe);
             ShowProbeViewsChanged?.Invoke();
             LoadoutChanged?.Invoke();
+            KeepChaseInspectAngleChanged?.Invoke(keepChaseInspectAngle);
         }
     }
 }

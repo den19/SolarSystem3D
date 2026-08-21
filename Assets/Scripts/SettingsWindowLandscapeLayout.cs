@@ -24,6 +24,7 @@ public class SettingsWindowLandscapeLayout : MonoBehaviour
         "MilkyWay",
         "GraphicsTier",
         "CpuMonitor",
+        "KeepChaseInspectAngle",
         "Back",
         "Reset",
         "Audio",
@@ -39,6 +40,7 @@ public class SettingsWindowLandscapeLayout : MonoBehaviour
         "MilkyWay",
         "GraphicsTier",
         "CpuMonitor",
+        "KeepChaseInspectAngle",
     };
 
     RectTransform panelRect;
@@ -146,6 +148,7 @@ public class SettingsWindowLandscapeLayout : MonoBehaviour
         CacheToggle("Extra Graphics Toggle");
         CacheToggle("Milky Way Toggle");
         CacheToggle("CPU Monitor Toggle");
+        CacheToggle("Keep Chase Inspect Angle Toggle");
     }
 
     void CacheToggle(string objectName)
@@ -172,6 +175,7 @@ public class SettingsWindowLandscapeLayout : MonoBehaviour
         AlignToggle(FindDeepChild(transform, "Extra Graphics Toggle"));
         AlignToggle(FindDeepChild(transform, "Milky Way Toggle"));
         AlignToggle(FindDeepChild(transform, "CPU Monitor Toggle"));
+        AlignToggle(FindDeepChild(transform, "Keep Chase Inspect Angle Toggle"));
     }
 
     static void AlignToggle(Transform toggleTransform)

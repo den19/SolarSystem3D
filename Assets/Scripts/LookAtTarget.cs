@@ -365,7 +365,7 @@ public class LookAtTarget : MonoBehaviour {
         if (_mainOrbitCamera == null && mainCamera != null)
             _mainOrbitCamera = mainCamera.GetComponent<MobileOrbitCamera>();
 
-        if (_mainOrbitCamera != null)
+        if (_mainOrbitCamera != null && !ProbeCameraController.SuppressBodyPicking)
         {
             _mainOrbitCamera.target = cometRoot.transform;
             AlignMainCameraBehindComet(cometRoot.transform);
@@ -401,7 +401,7 @@ public class LookAtTarget : MonoBehaviour {
         if (_mainOrbitCamera == null && mainCamera != null)
             _mainOrbitCamera = mainCamera.GetComponent<MobileOrbitCamera>();
 
-        if (_mainOrbitCamera != null)
+        if (_mainOrbitCamera != null && !ProbeCameraController.SuppressBodyPicking)
         {
             _mainOrbitCamera.target = root.transform;
             AlignMainCameraBehindComet(root.transform);
@@ -794,6 +794,9 @@ public class LookAtTarget : MonoBehaviour {
     public bool TryPlaceMainCameraAtScreenPoint(Vector2 screenPosition, int pointerId = -1)
     {
         if (!SimulationViewSettings.UseFreeObservation || mainCamera == null)
+            return false;
+
+        if (ProbeCameraController.SuppressBodyPicking)
             return false;
 
         if (IsPointerOverUi(pointerId))

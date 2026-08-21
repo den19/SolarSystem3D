@@ -31,6 +31,8 @@ public class MobileOrbitCamera : MonoBehaviour
 
     private LookAtTarget globalLookAtScript;
     private bool isControlled;
+    private bool _lockFollowTarget;
+    private Transform _lockedFollow;
 
     private Vector2 _activeTouchBeganPosition;
     private bool _trackTapGesture;
@@ -71,7 +73,12 @@ public class MobileOrbitCamera : MonoBehaviour
         if (cam != null && !cam.enabled)
             return;
 
-        if (gameObject.name == "Main Camera" && globalLookAtScript != null)
+        if (_lockFollowTarget && _lockedFollow != null)
+            target = _lockedFollow;
+
+        if (!_lockFollowTarget &&
+            gameObject.name == "Main Camera" &&
+            globalLookAtScript != null)
         {
             if (globalLookAtScript.currentTarget != null &&
                 target != globalLookAtScript.currentTarget.transform)
@@ -126,33 +133,11 @@ public class MobileOrbitCamera : MonoBehaviour
             }
         }
 
-        if (touchCount == 0 && Application.isEditor)
-        {
-            bool pointerOverUi = LookAtTarget.IsPointerOverUi(Input.mousePosition);
+#if UNITY_EDITOR || UNITY_STANDALONE
+        HandleStandaloneMouseOrbit(touchCount);
+#endif
 
-            if (!pointerOverUi && Input.GetMouseButton(0))
-            {
-                isControlled = true;
-                IsUserControlling = true;
-                x += Input.GetAxis("Mouse X") * xSpeed * 20f;
-                y -= Input.GetAxis("Mouse Y") * ySpeed * 20f;
-                y = ClampAngle(y, yMinLimit, yMaxLimit);
-            }
-
-            if (!pointerOverUi)
-            {
-                float scroll = Input.GetAxis("Mouse ScrollWheel");
-                if (Mathf.Abs(scroll) > 0.01f)
-                {
-                    isControlled = true;
-                    IsUserControlling = true;
-                    distance -= scroll * zoomSpeed * 300f;
-                    distance = Mathf.Clamp(distance, minDistance, maxDistance);
-                }
-            }
-        }
-
-        if (isControlled)
+        if (isControlled || _lockFollowTarget)
         {
             ApplyOrbitTransform();
         }
@@ -161,12 +146,86 @@ public class MobileOrbitCamera : MonoBehaviour
             Vector3 angles = transform.eulerAngles;
             x = angles.y;
             y = angles.x;
+            if (y > 180f)
+                y -= 360f;
         }
         else
         {
             ApplyOrbitTransform();
         }
     }
+
+    /// <summary>
+    /// Apply this frame's orbit/zoom input after an external owner hands control back.
+    /// </summary>
+    public void ApplyOrbitInputFromCurrentFrame()
+    {
+        if (target == null)
+            return;
+
+        isControlled = false;
+        int touchCount = TouchInputBridge.touchCount;
+        if (touchCount == 1)
+        {
+            TouchInputBridge.TouchSample touch = TouchInputBridge.GetTouch(0);
+            if (!LookAtTarget.IsPointerOverUi(touch.position))
+            {
+                isControlled = true;
+                HandleSingleFingerTouch(touch);
+            }
+        }
+        else if (touchCount == 2)
+        {
+            TouchInputBridge.TouchSample touchZero = TouchInputBridge.GetTouch(0);
+            TouchInputBridge.TouchSample touchOne = TouchInputBridge.GetTouch(1);
+            bool pinchOverUi = LookAtTarget.IsPointerOverUi(touchZero.position)
+                || LookAtTarget.IsPointerOverUi(touchOne.position);
+            if (!pinchOverUi)
+            {
+                isControlled = true;
+                _trackTapGesture = false;
+                HandlePinchZoom(touchZero, touchOne);
+            }
+        }
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+        HandleStandaloneMouseOrbit(touchCount);
+#endif
+
+        if (isControlled || _lockFollowTarget)
+            ApplyOrbitTransform();
+    }
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+    void HandleStandaloneMouseOrbit(int touchCount)
+    {
+        if (touchCount != 0)
+            return;
+
+        bool pointerOverUi = LookAtTarget.IsPointerOverUi(Input.mousePosition);
+
+        if (!pointerOverUi && Input.GetMouseButton(0))
+        {
+            isControlled = true;
+            IsUserControlling = true;
+            x += Input.GetAxis("Mouse X") * xSpeed * 20f;
+            y -= Input.GetAxis("Mouse Y") * ySpeed * 20f;
+            y = ClampAngle(y, yMinLimit, yMaxLimit);
+        }
+
+        if (!pointerOverUi)
+        {
+            float scroll = Input.GetAxis("Mouse ScrollWheel");
+            if (Mathf.Abs(scroll) > 0.01f)
+            {
+                isControlled = true;
+                IsUserControlling = true;
+                distance -= scroll * zoomSpeed * 300f;
+                distance = Mathf.Clamp(distance, minDistance, maxDistance);
+            }
+        }
+    }
+#endif
 
     void HandleSingleFingerTouch(TouchInputBridge.TouchSample touch)
     {
@@ -250,6 +309,8 @@ public class MobileOrbitCamera : MonoBehaviour
         Vector3 euler = orbitRotation.eulerAngles;
         x = euler.y;
         y = euler.x;
+        if (y > 180f)
+            y -= 360f;
         y = ClampAngle(y, yMinLimit, yMaxLimit);
     }
 
@@ -463,6 +524,21 @@ public class MobileOrbitCamera : MonoBehaviour
         distance = Mathf.Clamp(distance, minDistance, maxDistance);
     }
 
+    public void SetDistanceLimits(float newMinDistance, float newMaxDistance)
+    {
+        minDistance = Mathf.Max(0.1f, newMinDistance);
+        maxDistance = Mathf.Max(minDistance + 1f, newMaxDistance);
+        distance = Mathf.Clamp(distance, minDistance, maxDistance);
+    }
+
+    public void SetLockedFollowTarget(Transform followTarget, bool locked)
+    {
+        _lockFollowTarget = locked && followTarget != null;
+        _lockedFollow = _lockFollowTarget ? followTarget : null;
+        if (_lockFollowTarget)
+            target = followTarget;
+    }
+
     public void SetExternalOrbitControl(bool enabled)
     {
         ShowcaseOverrideActive = enabled;
@@ -485,8 +561,13 @@ public class MobileOrbitCamera : MonoBehaviour
         }
 
 #if UNITY_EDITOR || UNITY_STANDALONE
-        if (!LookAtTarget.IsPointerOverUi(Input.mousePosition) && Input.GetMouseButton(0))
-            IsUserControlling = true;
+        if (!LookAtTarget.IsPointerOverUi(Input.mousePosition))
+        {
+            if (Input.GetMouseButton(0))
+                IsUserControlling = true;
+            else if (Mathf.Abs(Input.GetAxis("Mouse ScrollWheel")) > 0.01f)
+                IsUserControlling = true;
+        }
 #endif
     }
 
