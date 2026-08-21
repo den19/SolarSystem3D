@@ -74,6 +74,9 @@ public class SimulationViewBootstrap : MonoBehaviour
             var cometSystem = gameObject.AddComponent<CometSystemController>();
             cometSystem.Initialize(orbitLines, bodyLabels);
 
+            var asteroidSystem = gameObject.AddComponent<AsteroidSystemController>();
+            asteroidSystem.Initialize(orbitLines, bodyLabels);
+
             gameObject.AddComponent<SolarSystemScaleController>();
             gameObject.AddComponent<BodyOrbitSystemController>();
             gameObject.AddComponent<BodyGridProjectionController>();

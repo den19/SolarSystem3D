@@ -256,7 +256,8 @@ public class LookAtTarget : MonoBehaviour {
             if (SimulationViewSettings.UseFreeObservation)
             {
                 Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-                if (Physics.Raycast(ray, out RaycastHit hit) && TryFocusCometFromHit(hit))
+                if (Physics.Raycast(ray, out RaycastHit hit) &&
+                    (TryFocusCometFromHit(hit) || TryFocusAsteroidFromHit(hit)))
                     return;
 
                 TryPlaceMainCameraAtScreenPoint(Input.mousePosition);
@@ -266,7 +267,7 @@ public class LookAtTarget : MonoBehaviour {
                     Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
                     bool rayHit = Physics.Raycast(ray, out RaycastHit hit);
 
-                    if (rayHit && TryFocusCometFromHit(hit))
+                    if (rayHit && (TryFocusCometFromHit(hit) || TryFocusAsteroidFromHit(hit)))
                         return;
 
                     GameObject picked = BodyPickUtility.PickBody(mainCamera, Input.mousePosition);
@@ -378,6 +379,42 @@ public class LookAtTarget : MonoBehaviour {
             ShowCometDescription(info);
     }
 
+    public void FocusAsteroid(GameObject asteroid, bool showDescription = true)
+    {
+        if (asteroid == null)
+            return;
+
+        var info = asteroid.GetComponent<AsteroidInfo>();
+        if (info == null)
+            info = asteroid.GetComponentInParent<AsteroidInfo>();
+        if (info == null)
+            return;
+
+        StopActiveShowcase();
+        GameObject root = info.gameObject;
+        currentTarget = root;
+        NotifyTargetChanged(root);
+        MakeAllDescriptionsInvisible();
+        TurnOffAllDetailCameras();
+        TurnOnMainCamera();
+
+        if (_mainOrbitCamera == null && mainCamera != null)
+            _mainOrbitCamera = mainCamera.GetComponent<MobileOrbitCamera>();
+
+        if (_mainOrbitCamera != null)
+        {
+            _mainOrbitCamera.target = root.transform;
+            AlignMainCameraBehindComet(root.transform);
+        }
+
+        var scaleController = FindFirstObjectByType<SolarSystemScaleController>();
+        if (scaleController != null)
+            scaleController.RefreshMainCameraLimits(resetDistance: true);
+
+        if (showDescription)
+            ShowAsteroidDescription(info);
+    }
+
     public bool TryFocusCometFromHit(RaycastHit hit)
     {
         if (hit.collider == null)
@@ -388,6 +425,19 @@ public class LookAtTarget : MonoBehaviour {
             return false;
 
         FocusComet(info.gameObject, showDescription: true);
+        return true;
+    }
+
+    public bool TryFocusAsteroidFromHit(RaycastHit hit)
+    {
+        if (hit.collider == null)
+            return false;
+
+        var info = hit.collider.GetComponentInParent<AsteroidInfo>();
+        if (info == null)
+            return false;
+
+        FocusAsteroid(info.gameObject, showDescription: true);
         return true;
     }
 
@@ -420,11 +470,30 @@ public class LookAtTarget : MonoBehaviour {
             CometDescriptionPanel.Instance.Show(info);
     }
 
+    void ShowAsteroidDescription(AsteroidInfo info)
+    {
+        if (info == null)
+            return;
+
+        if (CometDescriptionPanel.Instance == null && myCanvasGameObject != null)
+            CometDescriptionPanel.EnsureOnCanvas(myCanvasGameObject.transform);
+
+        if (CometDescriptionPanel.Instance != null)
+            CometDescriptionPanel.Instance.Show(info);
+    }
+
     public static bool IsCometObject(GameObject go)
     {
         if (go == null)
             return false;
         return go.GetComponent<CometInfo>() != null || go.GetComponentInParent<CometInfo>() != null;
+    }
+
+    public static bool IsAsteroidObject(GameObject go)
+    {
+        if (go == null)
+            return false;
+        return go.GetComponent<AsteroidInfo>() != null || go.GetComponentInParent<AsteroidInfo>() != null;
     }
 
     public void TurnOffAllDetailCameras()

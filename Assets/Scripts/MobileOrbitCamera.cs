@@ -276,7 +276,8 @@ public class MobileOrbitCamera : MonoBehaviour
             {
                 Ray cometRay = Camera.main.ScreenPointToRay(screenPosition);
                 if (Physics.Raycast(cometRay, out RaycastHit cometHit) &&
-                    globalLookAtScript.TryFocusCometFromHit(cometHit))
+                    (globalLookAtScript.TryFocusCometFromHit(cometHit) ||
+                     globalLookAtScript.TryFocusAsteroidFromHit(cometHit)))
                     return;
             }
 
@@ -287,7 +288,9 @@ public class MobileOrbitCamera : MonoBehaviour
             Ray ray = Camera.main.ScreenPointToRay(screenPosition);
             bool rayHit = Physics.Raycast(ray, out RaycastHit hit);
 
-            if (rayHit && globalLookAtScript.TryFocusCometFromHit(hit))
+            if (rayHit &&
+                (globalLookAtScript.TryFocusCometFromHit(hit) ||
+                 globalLookAtScript.TryFocusAsteroidFromHit(hit)))
                 return;
 
             GameObject picked = BodyPickUtility.PickBody(Camera.main, screenPosition);
@@ -318,7 +321,9 @@ public class MobileOrbitCamera : MonoBehaviour
             Ray ray = Camera.main.ScreenPointToRay(screenPosition);
             bool rayHit = Physics.Raycast(ray, out RaycastHit hit);
 
-            if (rayHit && globalLookAtScript.TryFocusCometFromHit(hit))
+            if (rayHit &&
+                (globalLookAtScript.TryFocusCometFromHit(hit) ||
+                 globalLookAtScript.TryFocusAsteroidFromHit(hit)))
                 return;
 
             GameObject picked = BodyPickUtility.PickBody(Camera.main, screenPosition);

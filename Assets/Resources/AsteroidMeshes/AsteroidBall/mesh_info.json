@@ -1,0 +1,52 @@
+{
+  "source": "free_asteroid_ball.glb",
+  "sketchfab": "https://sketchfab.com/3d-models/free-asteroid-ball-7cd9225dd6f841638f6fa747fecbe260",
+  "author": "Lucas Patez (lukpatez)",
+  "license": "Sketchfab Free Standard",
+  "mesh": {
+    "vertexCount": 4750,
+    "triangleCount": 9370,
+    "radius": 0.5,
+    "sourceScale": 0.0003839733138546871,
+    "center": [
+      -10.3616943359375,
+      5.23822021484375,
+      19.50860595703125
+    ]
+  },
+  "variants": {
+    "Cold": {
+      "material": "Asteroid_1",
+      "orm": "Asteroid_1_orm.png",
+      "emissive": null
+    },
+    "Warm": {
+      "material": "Asteroid_2",
+      "orm": "Asteroid_2_orm.png",
+      "emissive": "Asteroid_2_emissive.png"
+    },
+    "Hot": {
+      "material": "Asteroid_3",
+      "orm": "Asteroid_2_orm.png",
+      "emissive": "Asteroid_3_emissive.png"
+    }
+  },
+  "shared": {
+    "albedo": "Asteroid_albedo.png",
+    "normal": "Asteroid_normal.png",
+    "obj": "AsteroidBall.obj"
+  },
+  "textureGuids": {
+    "Asteroid_albedo.png": "eef6cefcdbe243628458b9dbb3feb545",
+    "Asteroid_normal.png": "adea0e8ebdfe4ff5864e1a46a01c8952",
+    "Asteroid_1_orm.png": "65eeb0d4d53648069b7904b9481e5217",
+    "Asteroid_2_orm.png": "5e45724c66e34735a1b54d07088b062c",
+    "Asteroid_2_emissive.png": "2815f0e670554bff86f34d5b0983e5c9",
+    "Asteroid_3_emissive.png": "36c61747f68d46058c1ad054adeeee6f"
+  },
+  "objGuid": "2183d1df93ae456bad745eb866998e84",
+  "thresholdsAu": {
+    "hotBelow": 0.8,
+    "warmBelow": 2.2
+  }
+}

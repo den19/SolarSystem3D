@@ -4,14 +4,15 @@ using UnityEngine;
 
 /// <summary>
 /// Canonical navigation order: Sun through Pluto with moons grouped after parents,
-/// comets appended after Pluto sorted by semi-major axis.
+/// asteroids after Mars moons, comets after Pluto sorted by semi-major axis.
 /// </summary>
 public static class BodyNavigationOrder
 {
     public enum EntryKind
     {
         Planet,
-        Comet
+        Comet,
+        Asteroid
     }
 
     public struct NavigationEntry
@@ -28,12 +29,37 @@ public static class BodyNavigationOrder
         "Jupiter", "Io", "Europa", "Ganymede", "Callisto", "Saturn", "Titan", "Uranus", "Neptune", "Triton", "Pluto"
     };
 
+    const string AsteroidInsertAfter = "Deimos";
     const string CometInsertAfter = "Pluto";
 
     public static List<NavigationEntry> BuildNavigationList()
     {
         var entries = new List<NavigationEntry>();
+        var asteroidBuffer = new List<NavigationEntry>();
         var cometBuffer = new List<NavigationEntry>();
+
+        for (int i = 0; i < AsteroidCatalog.Asteroids.Length; i++)
+        {
+            AsteroidCatalog.AsteroidDefinition definition = AsteroidCatalog.Asteroids[i];
+            GameObject asteroidGo = GameObject.Find(definition.objectName);
+            if (asteroidGo == null || !asteroidGo.activeInHierarchy)
+                continue;
+
+            asteroidBuffer.Add(new NavigationEntry
+            {
+                kind = EntryKind.Asteroid,
+                objectName = definition.objectName,
+                labelKey = definition.labelKey,
+                sceneObject = asteroidGo
+            });
+        }
+
+        asteroidBuffer.Sort((a, b) =>
+        {
+            AsteroidCatalog.TryGetByObjectName(a.objectName, out AsteroidCatalog.AsteroidDefinition defA);
+            AsteroidCatalog.TryGetByObjectName(b.objectName, out AsteroidCatalog.AsteroidDefinition defB);
+            return defA.semiMajorAxisAu.CompareTo(defB.semiMajorAxisAu);
+        });
 
         if (CometMovementSettings.UseCometMovement)
         {
@@ -75,6 +101,9 @@ public static class BodyNavigationOrder
                 labelKey = bodyName + "Header",
                 sceneObject = bodyGo
             });
+
+            if (bodyName == AsteroidInsertAfter && asteroidBuffer.Count > 0)
+                entries.AddRange(asteroidBuffer);
 
             if (bodyName == CometInsertAfter && cometBuffer.Count > 0)
                 entries.AddRange(cometBuffer);

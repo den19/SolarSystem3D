@@ -52,12 +52,24 @@ public static class BodyNavigationThumbnailCatalog
         if (objectName.StartsWith("Comet_"))
             return GetCometThumbnail(objectName);
 
+        if (objectName.StartsWith("Asteroid_"))
+            return GetAsteroidThumbnail();
+
         if (MaterialResourcePaths.TryGetValue(objectName, out string materialPath))
         {
             var material = Resources.Load<Material>(materialPath);
             if (material != null && material.mainTexture != null)
                 return material.mainTexture;
         }
+
+        return GetDefaultFallback();
+    }
+
+    static Texture GetAsteroidThumbnail()
+    {
+        Texture2D albedo = Resources.Load<Texture2D>("AsteroidMeshes/AsteroidBall/Asteroid_albedo");
+        if (albedo != null)
+            return albedo;
 
         return GetDefaultFallback();
     }

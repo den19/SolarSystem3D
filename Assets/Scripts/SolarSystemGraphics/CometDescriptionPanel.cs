@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Single dynamic overlay for comet encyclopedia text in the current language.
+/// Single dynamic overlay for comet / asteroid encyclopedia text in the current language.
 /// </summary>
 public class CometDescriptionPanel : MonoBehaviour
 {
@@ -15,7 +15,8 @@ public class CometDescriptionPanel : MonoBehaviour
     [SerializeField] ScrollRect bodyScroll;
     [SerializeField] Button closeButton;
 
-    CometInfo _currentInfo;
+    CometInfo _currentComet;
+    AsteroidInfo _currentAsteroid;
 
     void Awake()
     {
@@ -65,7 +66,7 @@ public class CometDescriptionPanel : MonoBehaviour
 
     void OnLanguageChanged()
     {
-        if (_currentInfo != null && panelRoot.activeSelf)
+        if ((_currentComet != null || _currentAsteroid != null) && panelRoot.activeSelf)
             RefreshText();
     }
 
@@ -74,14 +75,27 @@ public class CometDescriptionPanel : MonoBehaviour
         if (info == null)
             return;
 
-        _currentInfo = info;
+        _currentComet = info;
+        _currentAsteroid = null;
+        panelRoot.SetActive(true);
+        RefreshText();
+    }
+
+    public void Show(AsteroidInfo info)
+    {
+        if (info == null)
+            return;
+
+        _currentAsteroid = info;
+        _currentComet = null;
         panelRoot.SetActive(true);
         RefreshText();
     }
 
     public void Hide()
     {
-        _currentInfo = null;
+        _currentComet = null;
+        _currentAsteroid = null;
         HideImmediate();
     }
 
@@ -93,17 +107,30 @@ public class CometDescriptionPanel : MonoBehaviour
 
     void RefreshText()
     {
-        if (_currentInfo == null)
+        string title = null;
+        string body = null;
+        Language lang = LocalizationManager.CurrentLanguage;
+
+        if (_currentComet != null)
+        {
+            title = _currentComet.GetTitle();
+            body = _currentComet.GetDescription(lang);
+        }
+        else if (_currentAsteroid != null)
+        {
+            title = _currentAsteroid.GetTitle();
+            body = _currentAsteroid.GetDescription(lang);
+        }
+        else
+        {
             return;
+        }
 
         if (titleText != null)
-            titleText.text = _currentInfo.GetTitle();
+            titleText.text = title;
 
         if (bodyText != null)
-        {
-            Language lang = LocalizationManager.CurrentLanguage;
-            bodyText.text = _currentInfo.GetDescription(lang);
-        }
+            bodyText.text = body;
 
         if (bodyText != null && bodyScroll != null && bodyScroll.content != null)
         {
@@ -166,9 +193,10 @@ public class CometDescriptionPanel : MonoBehaviour
         titleRect.offsetMin = Vector2.zero;
         titleRect.offsetMax = Vector2.zero;
         panel.titleText = titleGo.AddComponent<TextMeshProUGUI>();
-        panel.titleText.fontSize = 22;
-        panel.titleText.fontSizeMin = 14;
-        panel.titleText.fontSizeMax = 22;
+        // Match planet encyclopedia panels (BodyDescription / *Header ≈ 40, *Content ≈ 28).
+        panel.titleText.fontSize = 40;
+        panel.titleText.fontSizeMin = 18;
+        panel.titleText.fontSizeMax = 40;
         panel.titleText.enableAutoSizing = true;
         panel.titleText.fontStyle = FontStyles.Bold;
         panel.titleText.color = new Color(0.85f, 0.92f, 1f, 1f);
@@ -196,7 +224,7 @@ public class CometDescriptionPanel : MonoBehaviour
         closeLabelRect.offsetMax = Vector2.zero;
         var closeLabel = closeLabelGo.AddComponent<TextMeshProUGUI>();
         closeLabel.text = "×";
-        closeLabel.fontSize = 28;
+        closeLabel.fontSize = 40;
         closeLabel.alignment = TextAlignmentOptions.Center;
         closeLabel.color = Color.white;
         closeLabel.raycastTarget = false;
@@ -258,7 +286,7 @@ public class CometDescriptionPanel : MonoBehaviour
         bodyLayout.flexibleWidth = 1f;
 
         panel.bodyText = bodyGo.AddComponent<TextMeshProUGUI>();
-        panel.bodyText.fontSize = 15;
+        panel.bodyText.fontSize = 28;
         panel.bodyText.color = new Color(0.9f, 0.92f, 0.95f, 1f);
         panel.bodyText.alignment = TextAlignmentOptions.TopLeft;
         panel.bodyText.textWrappingMode = TextWrappingModes.Normal;

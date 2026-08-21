@@ -9,6 +9,7 @@ public class TimeMachineController : MonoBehaviour
 {
     BodyOrbitSystemController _orbitSystem;
     CometSystemController _cometSystem;
+    AsteroidSystemController _asteroidSystem;
     TimeMachineDateHud _dateHud;
     bool _running;
     string _lastHudDate;
@@ -56,6 +57,7 @@ public class TimeMachineController : MonoBehaviour
     {
         _orbitSystem = GetComponent<BodyOrbitSystemController>();
         _cometSystem = GetComponent<CometSystemController>();
+        _asteroidSystem = GetComponent<AsteroidSystemController>();
 
         // Continue restores clock + motion first, then ResumeAfterSessionRestore().
         // Do not reset the calendar here or Kepler will wipe the saved session.
@@ -172,6 +174,8 @@ public class TimeMachineController : MonoBehaviour
             _orbitSystem = GetComponent<BodyOrbitSystemController>();
         if (_cometSystem == null)
             _cometSystem = GetComponent<CometSystemController>();
+        if (_asteroidSystem == null)
+            _asteroidSystem = GetComponent<AsteroidSystemController>();
 
         if (resetClock)
             SimulationClock.ResetToSweepStart();
@@ -199,6 +203,8 @@ public class TimeMachineController : MonoBehaviour
             _orbitSystem = GetComponent<BodyOrbitSystemController>();
         if (_cometSystem == null)
             _cometSystem = GetComponent<CometSystemController>();
+        if (_asteroidSystem == null)
+            _asteroidSystem = GetComponent<AsteroidSystemController>();
 
         SimulationClock.SetActive(true);
         SimulationTimeController.Apply();
@@ -231,6 +237,7 @@ public class TimeMachineController : MonoBehaviour
         double days = SimulationClock.DaysSinceJ2000;
         _orbitSystem?.ApplyKeplerPhases(days);
         _cometSystem?.ApplyKeplerAngles(days);
+        _asteroidSystem?.ApplyKeplerAngles(days);
         SunCoronalVfxController.SetActivityScale(SimulationClock.EvaluateSunActivityScale());
     }
 

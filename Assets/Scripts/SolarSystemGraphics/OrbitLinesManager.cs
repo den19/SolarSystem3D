@@ -105,6 +105,62 @@ public class OrbitLinesManager : MonoBehaviour
         ApplyVisibility(_visible);
     }
 
+    public void RegisterAsteroidEllipse(float semiMajorAxis, float eccentricity, float inclinationDeg, float phaseOffsetRad)
+    {
+        if (_sun == null)
+            return;
+
+        var lineGo = new GameObject("AsteroidOrbitLine");
+        lineGo.transform.SetParent(transform, false);
+        var line = lineGo.AddComponent<LineRenderer>();
+        ConfigureLine(line, lineWidth * 0.85f);
+        line.positionCount = ellipseSegments + 1;
+        line.SetPositions(OrbitLineUtility.BuildEllipse(
+            ellipseSegments,
+            semiMajorAxis,
+            eccentricity,
+            inclinationDeg,
+            _sun.position,
+            phaseOffsetRad));
+        _lines.Add(line);
+        line.enabled = _visible;
+    }
+
+    public void RegisterAsteroidCircle(float radius, float phaseOffsetRad)
+    {
+        if (_sun == null || radius <= 0.0001f)
+            return;
+
+        var lineGo = new GameObject("AsteroidOrbitLine");
+        lineGo.transform.SetParent(transform, false);
+        var line = lineGo.AddComponent<LineRenderer>();
+        ConfigureLine(line, lineWidth * 0.85f);
+        line.positionCount = circleSegments + 1;
+
+        Vector3[] points = OrbitLineUtility.BuildCircle(circleSegments, radius, _sun.position, Vector3.up);
+        if (Mathf.Abs(phaseOffsetRad) > 0.0001f)
+            RotateCirclePoints(points, _sun.position, phaseOffsetRad);
+
+        line.SetPositions(points);
+        _lines.Add(line);
+        line.enabled = _visible;
+    }
+
+    public void ClearAsteroidOrbitLines()
+    {
+        for (int i = _lines.Count - 1; i >= 0; i--)
+        {
+            if (_lines[i] == null)
+                continue;
+
+            if (_lines[i].gameObject.name == "AsteroidOrbitLine")
+            {
+                Destroy(_lines[i].gameObject);
+                _lines.RemoveAt(i);
+            }
+        }
+    }
+
     public void ClearCometOrbitLines()
     {
         for (int i = _lines.Count - 1; i >= 0; i--)

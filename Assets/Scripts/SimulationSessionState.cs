@@ -200,6 +200,20 @@ public static class SimulationSessionState
             });
         }
 
+        AsteroidOrbitController[] asteroidOrbits = UnityEngine.Object.FindObjectsByType<AsteroidOrbitController>(FindObjectsSortMode.None);
+        for (int i = 0; i < asteroidOrbits.Length; i++)
+        {
+            AsteroidOrbitController orbit = asteroidOrbits[i];
+            if (orbit == null)
+                continue;
+
+            cometSnapshots.Add(new CometMotionSnapshot
+            {
+                name = orbit.gameObject.name,
+                angle = orbit.OrbitAngle
+            });
+        }
+
         _motionSnapshot = new MotionSnapshot
         {
             bodies = bodySnapshots.ToArray(),
@@ -433,7 +447,8 @@ public static class SimulationSessionState
         }
 
         CometSystemController cometSystem = UnityEngine.Object.FindFirstObjectByType<CometSystemController>();
-        if (cometSystem != null && _motionSnapshot.comets != null)
+        AsteroidSystemController asteroidSystem = UnityEngine.Object.FindFirstObjectByType<AsteroidSystemController>();
+        if (_motionSnapshot.comets != null)
         {
             var angles = new Dictionary<string, float>();
             for (int i = 0; i < _motionSnapshot.comets.Length; i++)
@@ -442,7 +457,10 @@ public static class SimulationSessionState
                 angles[comet.name] = comet.angle;
             }
 
-            cometSystem.RestoreSavedAngles(angles);
+            if (cometSystem != null)
+                cometSystem.RestoreSavedAngles(angles);
+            if (asteroidSystem != null)
+                asteroidSystem.RestoreSavedAngles(angles);
         }
     }
 
@@ -468,10 +486,27 @@ public static class SimulationSessionState
             Debug.LogWarning($"[SimulationSessionState] Planet '{SelectedPlanetName}' not found; falling back to Earth.");
             SelectedPlanetName = "Earth";
             IsDetailCamera = false;
+            planetGo = GameObject.Find(SelectedPlanetName);
         }
 
         bool useDetailCamera = IsDetailCamera && SelectedPlanetName != "Sun";
-        lookAt.FocusPlanet(SelectedPlanetName, useDetailCamera, showDescription: false);
+
+        if (LookAtTarget.IsAsteroidObject(planetGo) ||
+            (planetGo != null && planetGo.name.StartsWith("Asteroid_", System.StringComparison.Ordinal)))
+        {
+            lookAt.FocusAsteroid(planetGo, showDescription: false);
+            useDetailCamera = false;
+        }
+        else if (LookAtTarget.IsCometObject(planetGo) ||
+                 (planetGo != null && planetGo.name.StartsWith("Comet_", System.StringComparison.Ordinal)))
+        {
+            lookAt.FocusComet(planetGo, showDescription: false);
+            useDetailCamera = false;
+        }
+        else
+        {
+            lookAt.FocusPlanet(SelectedPlanetName, useDetailCamera, showDescription: false);
+        }
 
         Transform observedTarget = lookAt.currentTarget != null
             ? lookAt.currentTarget.transform

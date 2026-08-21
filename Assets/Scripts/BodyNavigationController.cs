@@ -643,6 +643,8 @@ public class BodyNavigationController : MonoBehaviour
 
         if (entry.kind == BodyNavigationOrder.EntryKind.Comet)
             _lookAtTarget.FocusComet(entry.sceneObject, showDescription);
+        else if (entry.kind == BodyNavigationOrder.EntryKind.Asteroid)
+            _lookAtTarget.FocusAsteroid(entry.sceneObject, showDescription);
         else
             _lookAtTarget.FocusPlanet(entry.objectName, useDetailCamera: false, showDescription);
 

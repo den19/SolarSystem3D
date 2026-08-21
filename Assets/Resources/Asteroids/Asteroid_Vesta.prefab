@@ -1,0 +1,219 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &3194600515850396812
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2599326688249600390}
+  - component: {fileID: 7249494958614267866}
+  - component: {fileID: 5790914733758518944}
+  m_Layer: 0
+  m_Name: AsteroidMesh
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2599326688249600390
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3194600515850396812}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.38, y: 0.38, z: 0.38}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3725884208988701503}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &7249494958614267866
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3194600515850396812}
+  m_Mesh: {fileID: -2432090755550338912, guid: 2183d1df93ae456bad745eb866998e84, type: 3}
+--- !u!23 &5790914733758518944
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3194600515850396812}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 3fcc5a12e1753e14395b1b4db485ba8f, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &7657802715283931725
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3725884208988701503}
+  - component: {fileID: 5356400784399693327}
+  - component: {fileID: 6384796998542684317}
+  - component: {fileID: 2431238798397800696}
+  - component: {fileID: 5505440734885763364}
+  m_Layer: 0
+  m_Name: Asteroid_Vesta
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3725884208988701503
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7657802715283931725}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 2599326688249600390}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5356400784399693327
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7657802715283931725}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 626ec590095011349ad7d8c0af992510, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AsteroidInfo
+  asteroidId: Asteroid_Vesta
+  labelKey: AsteroidVestaLabel
+  descriptionEnglish: "Vesta is the second-most massive body in the asteroid belt.
+    Dawn revealed a differentiated interior, a giant southern impact basin (Rheasilvia),
+    and basaltic crust \u2014 a protoplanet that almost became a planet."
+  descriptionRussian: "\u0412\u0435\u0441\u0442\u0430 \u2014 \u0432\u0442\u043E\u0440\u043E\u0435
+    \u043F\u043E \u043C\u0430\u0441\u0441\u0435 \u0442\u0435\u043B\u043E \u043F\u043E\u044F\u0441\u0430
+    \u0430\u0441\u0442\u0435\u0440\u043E\u0438\u0434\u043E\u0432. Dawn \u043F\u043E\u043A\u0430\u0437\u0430\u043B
+    \u0434\u0438\u0444\u0444\u0435\u0440\u0435\u043D\u0446\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u043E\u0435
+    \u0441\u0442\u0440\u043E\u0435\u043D\u0438\u0435, \u0433\u0438\u0433\u0430\u043D\u0442\u0441\u043A\u0438\u0439
+    \u0431\u0430\u0441\u0441\u0435\u0439\u043D Rheasilvia \u0438 \u0431\u0430\u0437\u0430\u043B\u044C\u0442\u043E\u0432\u0443\u044E
+    \u043A\u043E\u0440\u0443 \u2014 \u043F\u0440\u043E\u0442\u043E\u043F\u043B\u0430\u043D\u0435\u0442\u0443,
+    \u043F\u043E\u0447\u0442\u0438 \u0441\u0442\u0430\u0432\u0448\u0443\u044E \u043F\u043B\u0430\u043D\u0435\u0442\u043E\u0439."
+  descriptionChinese: "\u7076\u795E\u661F\u662F\u5C0F\u884C\u661F\u5E26\u4E2D\u8D28\u91CF\u7B2C\u4E8C\u5927\u7684\u5929\u4F53\u3002\u9ECE\u660E\u53F7\u663E\u793A\u5176\u5DF2\u5206\u5316\uFF0C\u5357\u90E8\u6709\u5DE8\u5927\u649E\u51FB\u76C6\u5730\uFF0C\u7384\u6B66\u5CA9\u58F3\u2014\u2014\u51E0\u4E4E\u6210\u4E3A\u884C\u661F\u7684\u539F\u884C\u661F\u3002"
+  descriptionVietnamese: "Vesta l\xE0 thi\xEAn th\u1EC3 kh\u1ED1i l\u01B0\u1EE3ng
+    l\u1EDBn th\u1EE9 hai v\xE0nh \u0111ai. Dawn cho th\u1EA5y n\u1ED9i th\u1EA5t
+    ph\xE2n d\u1ECB, l\u01B0u v\u1EF1c Rheasilvia v\xE0 v\u1ECF bazan \u2014 m\u1ED9t
+    ti\u1EC1n h\xE0nh tinh."
+  descriptionUzbek: "Vesta \u2014 asteroid kamaragida massasi bo\u2018yicha ikkinchi
+    jism. Dawn differensiyalangan tuzilma va Rheasilvia havzasini ko\u2018rsatdi."
+  descriptionTatar: "\u0412\u0435\u0441\u0442\u0430 \u2014 \u0430\u0441\u0442\u0435\u0440\u043E\u0438\u0434\u043B\u0430\u0440
+    \u0431\u0438\u043B\u0431\u0430\u0432\u044B\u043D\u0434\u0430 \u043C\u0430\u0441\u0441\u0430
+    \u0431\u0443\u0435\u043D\u0447\u0430 \u0438\u043A\u0435\u043D\u0447\u0435 \u0497\u0438\u0441\u0435\u043C.
+    Dawn \u0434\u0438\u0444\u0444\u0435\u0440\u0435\u043D\u0446\u0438\u0430\u0446\u0438\u044F\u043B\u04D9\u043D\u0433\u04D9\u043D
+    \u0442\u04E9\u0437\u0435\u043B\u0435\u0448\u043D\u0435 \u043A\u04AF\u0440\u0441\u04D9\u0442\u0442\u0435."
+  descriptionBelarusian: "\u0412\u0435\u0441\u0442\u0430 \u2014 \u0434\u0440\u0443\u0433\u043E\u0435
+    \u043F\u0430 \u043C\u0430\u0441\u0435 \u0446\u0435\u043B\u0430 \u043F\u043E\u044F\u0441\u0430
+    \u0430\u0441\u0442\u044D\u0440\u043E\u0456\u0434\u0430\u045E. Dawn \u043F\u0430\u043A\u0430\u0437\u0430\u045E
+    \u0434\u044B\u0444\u0435\u0440\u044D\u043D\u0446\u044B\u044F\u0432\u0430\u043D\u0430\u0435
+    \u045E\u043D\u0443\u0442\u0440\u0430\u043D\u0430\u0435 \u0456 \u0431\u0430\u0441\u0435\u0439\u043D
+    Rheasilvia."
+--- !u!114 &6384796998542684317
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7657802715283931725}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dda149810c41d5c4d817524cdfb065a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AsteroidVisualController
+  meshRenderer: {fileID: 0}
+  semiMajorAxisAu: 2.5
+  eccentricity: 0.1
+--- !u!114 &2431238798397800696
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7657802715283931725}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a679c232b3ded524198b132bea13ef88, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AsteroidOrbitController
+--- !u!135 &5505440734885763364
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7657802715283931725}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 0.75
+  m_Center: {x: 0, y: 0, z: 0}

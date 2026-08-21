@@ -1,0 +1,10 @@
+Free Asteroid Ball
+Author: Lucas Patez (lukpatez) — https://sketchfab.com/lukpatez
+Source: https://sketchfab.com/3d-models/free-asteroid-ball-7cd9225dd6f841638f6fa747fecbe260
+License: Sketchfab Free Standard (https://sketchfab.com/licenses)
+NoAI: may not be used in generative AI training/datasets.
+
+Variants (identical mesh, different materials):
+  Asteroid_1 — cold rock (far from Sun)
+  Asteroid_2 — warm / lava cracks (intermediate)
+  Asteroid_3 — hot / strong emissive (near Sun)

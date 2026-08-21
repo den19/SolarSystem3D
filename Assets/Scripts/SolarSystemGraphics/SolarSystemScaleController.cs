@@ -54,6 +54,7 @@ public class SolarSystemScaleController : MonoBehaviour
     Light _sunLight;
     OrbitLinesManager _orbitLinesManager;
     CometSystemController _cometSystemController;
+    AsteroidSystemController _asteroidSystemController;
 
     void Awake()
     {
@@ -68,6 +69,7 @@ public class SolarSystemScaleController : MonoBehaviour
     {
         _orbitLinesManager = GetComponent<OrbitLinesManager>();
         _cometSystemController = GetComponent<CometSystemController>();
+        _asteroidSystemController = GetComponent<AsteroidSystemController>();
         ApplyAll();
     }
 
@@ -170,6 +172,7 @@ public class SolarSystemScaleController : MonoBehaviour
         ApplyColliderClamps();
         RebuildOrbitLines();
         RescaleComets();
+        RescaleAsteroids();
         UpdateMainCameraLimits();
         UpdateGridExtent();
         UpdateSunLightRange();
@@ -625,6 +628,17 @@ public class SolarSystemScaleController : MonoBehaviour
             _cometSystemController.RescaleCometOrbits(_auToUnity);
         else
             _cometSystemController.RescaleCometOrbitsToSimulation();
+    }
+
+    void RescaleAsteroids()
+    {
+        if (_asteroidSystemController == null)
+            return;
+
+        if (ScaleSettings.UseRealDistances)
+            _asteroidSystemController.RescaleAsteroidOrbits(_auToUnity);
+        else
+            _asteroidSystemController.RescaleAsteroidOrbitsToSimulation();
     }
 
     public void RefreshMainCameraLimits(bool resetDistance = false)
