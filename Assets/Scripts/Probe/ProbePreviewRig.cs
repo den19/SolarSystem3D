@@ -21,8 +21,8 @@ public class ProbePreviewRig : MonoBehaviour
     const float CompactPortraitHeight = 160f;
     const float TitleHeight = 32f;
     const float DescHeight = 96f;
-    const float DescNavHeight = 28f;
-    const float DescNavGap = 8f;
+    const float DescNavHeight = 32f;
+    const float DescNavGap = 16f;
     const float DescNavArrowWidth = 36f;
     const float Padding = 8f;
 
@@ -103,8 +103,12 @@ public class ProbePreviewRig : MonoBehaviour
 
     void EnsureUiBuilt()
     {
-        if (_portraitImage != null && _descNavRow != null)
+        if (_portraitImage != null && _descNavRow != null && _description != null)
+        {
+            // Keep runtime rects in sync with layout constants (Play Mode may keep old children).
+            ApplyCompactLayout(_compactMode);
             return;
+        }
 
         Transform root = _panel != null ? _panel : transform;
         for (int i = root.childCount - 1; i >= 0; i--)
@@ -159,6 +163,8 @@ public class ProbePreviewRig : MonoBehaviour
         titleRt.offsetMax = new Vector2(-Padding, -(Padding + PortraitImageHeight));
 
         _description = CreateText(frameGo.transform, "Description", 19f, TextAlignmentOptions.TopLeft, true);
+        _description.overflowMode = TextOverflowModes.Truncate;
+        _description.margin = new Vector4(0f, 0f, 0f, 2f);
         var descRt = _description.rectTransform;
         descRt.anchorMin = new Vector2(0f, 0f);
         descRt.anchorMax = new Vector2(1f, 1f);
@@ -343,10 +349,16 @@ public class ProbePreviewRig : MonoBehaviour
         var descRt = _description.rectTransform;
         descRt.offsetMin = new Vector2(Padding, Padding + DescNavHeight + DescNavGap);
         descRt.offsetMax = new Vector2(-Padding, -(Padding + portraitH + TitleHeight));
+        _description.overflowMode = TextOverflowModes.Truncate;
+        _description.margin = new Vector4(0f, 0f, 0f, 2f);
 
         _description.gameObject.SetActive(!compact);
         if (_descNavRow != null)
+        {
+            _descNavRow.offsetMin = new Vector2(Padding, Padding);
+            _descNavRow.offsetMax = new Vector2(-Padding, Padding + DescNavHeight);
             _descNavRow.gameObject.SetActive(!compact);
+        }
     }
 
     void RefreshTexts(ProbeModelKind model, bool compact)
