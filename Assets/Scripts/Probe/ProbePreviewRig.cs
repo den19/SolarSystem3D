@@ -23,6 +23,7 @@ public class ProbePreviewRig : MonoBehaviour
     const float Padding = 8f;
 
     RectTransform _panel;
+    HudPanelDrag _drag;
     Image _frameImage;
     Image _portraitImage;
     TextMeshProUGUI _title;
@@ -106,6 +107,9 @@ public class ProbePreviewRig : MonoBehaviour
         _panel.anchorMin = new Vector2(0f, 1f);
         _panel.anchorMax = new Vector2(0f, 1f);
         _panel.pivot = new Vector2(0f, 1f);
+        _drag = _panel.GetComponent<HudPanelDrag>();
+        if (_drag == null)
+            _drag = _panel.gameObject.AddComponent<HudPanelDrag>();
 
         var frameGo = new GameObject("Frame", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         frameGo.layer = gameObject.layer;
@@ -114,6 +118,7 @@ public class ProbePreviewRig : MonoBehaviour
         Stretch(frameRt);
         _frameImage = frameGo.GetComponent<Image>();
         _frameImage.color = new Color(0.12f, 0.16f, 0.24f, 0.94f);
+        _frameImage.raycastTarget = true;
         var outline = frameGo.AddComponent<Outline>();
         outline.effectColor = new Color(0.35f, 0.85f, 1f, 0.85f);
         outline.effectDistance = new Vector2(2f, -2f);
@@ -357,7 +362,10 @@ public class ProbePreviewRig : MonoBehaviour
         Canvas canvas = GetComponentInParent<Canvas>();
         SafeAreaInsets.GetCanvasInsets(canvas, out float left, out _, out float top, out _);
         float navBottom = top + SidePanelUiBootstrap.BarHeight + 8f;
-        _panel.anchoredPosition = new Vector2(left + 8f, -(navBottom + 8f));
+        if (_drag != null && _drag.HasUserOffset)
+            _drag.EnsureClamped();
+        else
+            _panel.anchoredPosition = new Vector2(left + 8f, -(navBottom + 8f));
 
         if (_compactMode != compact)
             RefreshContent();

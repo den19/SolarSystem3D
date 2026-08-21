@@ -40,7 +40,15 @@ License: Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0
 Subject: 1:1 museum replica of Venera-7 descent vehicle (VDNKh, Moscow).
 Attribution: Venera-7 descent vehicle replica photo © Stanislav Kozlovskiy, CC BY-SA 4.0
 
-Other probe portraits (Mars3, Change4, Tianwen1, Change5, Hayabusa2, Akatsuki, Chandrayaan3, Custom)
+Other probe portraits (Change4, Tianwen1, Change5, Hayabusa2, Akatsuki, Chandrayaan3, Custom)
 are original procedural artwork (no third-party license). Re-bake via Solar System → Bake Probe Portraits.
+
+Mars3.png
+---------
+Baked orthographic portrait from the in-app Mars 3 probe mesh
+(Assets/Resources/ProbeMeshes/Mars3 — converted/decimated from Sketchfab).
+Source model: Mars 3 spacecraft by Wieslaw Kruczala (CC BY 4.0)
+  https://sketchfab.com/3d-models/mars-3-spacecraft-5b7853d53cd84b6ca6c16fe68a92c98a
+Re-bake via Solar System → Bake Mars 3 Portrait after rebuilding Mars3Prefab.
 
 Remaining open-source photos can be fetched later with Tools/fetch_probe_portraits.ps1 (Wikimedia rate limits apply).

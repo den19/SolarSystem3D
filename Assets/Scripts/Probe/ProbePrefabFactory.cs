@@ -2,7 +2,7 @@ using SolarSystemApp;
 using UnityEngine;
 
 /// <summary>
-/// Probe meshes: Voyager 1 from Resources NASA mesh; other kinds are procedural primitives.
+/// Probe meshes: Voyager 1 / Mars 3 from Resources when available; other kinds are procedural primitives.
 /// </summary>
 public static class ProbePrefabFactory
 {
@@ -20,6 +20,15 @@ public static class ProbePrefabFactory
     static readonly Vector3 Voyager1AntennaLocal = new Vector3(-0.007f, 8.12f, 0.54f);
     static readonly Vector3 Voyager1VisualEuler = new Vector3(90f, 0f, 0f);
     static bool _voyagerMeshFallbackWarned;
+
+    /// <summary>Resources path for Mars 3 prefab (Editor-built) or imported OBJ root.</summary>
+    public const string Mars3PrefabResourcePath = "ProbeMeshes/Mars3/Mars3";
+    public const string Mars3PrefabAltResourcePath = "ProbeMeshes/Mars3/Mars3Prefab";
+    const float Mars3FitSize = 1.6f;
+    /// <summary>HGA tip in mesh-local space (Y-up); from Tools/_mars3_import mesh_info.json.</summary>
+    static readonly Vector3 Mars3AntennaLocal = new Vector3(0.01f, 0.699f, -0.097f);
+    static readonly Vector3 Mars3VisualEuler = new Vector3(0f, 0f, 0f);
+    static bool _mars3MeshFallbackWarned;
     static bool _blipCamerasConfigured;
 
     public static ProbeCraft Create(ProbeModelKind kind, bool highDetail)
@@ -476,23 +485,86 @@ public static class ProbePrefabFactory
 
     static void BuildMars3(Transform parent, Material bus, Material gold, Material dish, Material dark, bool highDetail)
     {
-        AddPrimitive(parent, PrimitiveType.Cube, bus, Vector3.zero, new Vector3(0.65f, 0.08f, 0.65f));
+        if (TryBuildMars3FromMesh(parent))
+            return;
+
+        if (!_mars3MeshFallbackWarned)
+        {
+            _mars3MeshFallbackWarned = true;
+            Debug.LogWarning(
+                "ProbePrefabFactory: Mars 3 mesh unavailable or empty; using primitive fallback. " +
+                $"Tried Resources '{Mars3PrefabAltResourcePath}' then '{Mars3PrefabResourcePath}'.");
+        }
+
+        // Enriched procedural: cylinder bus, 4 gold petals, spherical lander, HGA dish.
+        AddPrimitive(parent, PrimitiveType.Cylinder, bus, Vector3.zero, new Vector3(0.7f, 0.28f, 0.7f));
         for (int i = 0; i < 4; i++)
         {
             float yaw = 45f + i * 90f;
             var petal = AddPrimitive(parent, PrimitiveType.Cube, gold,
-                Quaternion.Euler(0f, yaw, 0f) * new Vector3(0f, 0.06f, 0.48f),
-                new Vector3(0.38f, 0.02f, 0.38f));
-            petal.localRotation = Quaternion.Euler(0f, yaw, 0f);
+                Quaternion.Euler(0f, yaw, 0f) * new Vector3(0f, 0.12f, 0.55f),
+                new Vector3(0.42f, 0.025f, 0.55f));
+            petal.localRotation = Quaternion.Euler(18f, yaw, 0f);
         }
 
-        craftAntenna = AddPrimitive(parent, PrimitiveType.Cylinder, dish, new Vector3(0f, 0.28f, 0f), new Vector3(0.12f, 0.35f, 0.12f));
-        AddPrimitive(parent, PrimitiveType.Cylinder, dark, new Vector3(0f, 0.14f, 0f), new Vector3(0.1f, 0.14f, 0.1f));
+        AddPrimitive(parent, PrimitiveType.Sphere, dark, new Vector3(0f, -0.42f, 0f), new Vector3(0.48f, 0.42f, 0.48f));
+        AddPrimitive(parent, PrimitiveType.Cylinder, dark, new Vector3(0f, 0.28f, 0f), new Vector3(0.08f, 0.28f, 0.08f));
+        Transform hga = AddPrimitive(parent, PrimitiveType.Cylinder, dish, new Vector3(0f, 0.58f, 0f), new Vector3(0.55f, 0.035f, 0.55f));
+        craftAntenna = hga;
         if (highDetail)
         {
-            AddPrimitive(parent, PrimitiveType.Sphere, dark, new Vector3(0f, -0.18f, 0f), new Vector3(0.32f, 0.22f, 0.32f));
-            AddPrimitive(parent, PrimitiveType.Cube, bus, new Vector3(0.22f, 0.06f, 0.22f), new Vector3(0.12f, 0.06f, 0.12f));
+            AddPrimitive(parent, PrimitiveType.Cube, bus, new Vector3(0.28f, 0.06f, 0.18f), new Vector3(0.14f, 0.1f, 0.12f));
+            AddPrimitive(parent, PrimitiveType.Cube, dark, new Vector3(-0.26f, 0.08f, -0.16f), new Vector3(0.12f, 0.08f, 0.12f));
         }
+    }
+
+    static bool TryBuildMars3FromMesh(Transform parent)
+    {
+        GameObject prefab = Resources.Load<GameObject>(Mars3PrefabAltResourcePath);
+        if (prefab == null)
+            prefab = Resources.Load<GameObject>(Mars3PrefabResourcePath);
+        if (prefab == null)
+            return false;
+
+        var wrap = new GameObject("Mars3Visual");
+        wrap.transform.SetParent(parent, false);
+        wrap.transform.localRotation = Quaternion.Euler(Mars3VisualEuler);
+
+        GameObject instance = Object.Instantiate(prefab, wrap.transform, false);
+        instance.name = "Mars3Mesh";
+        instance.transform.localPosition = Vector3.zero;
+        instance.transform.localRotation = Quaternion.identity;
+        instance.transform.localScale = Vector3.one;
+
+        if (!HasValidMeshFilters(instance))
+        {
+            Object.Destroy(wrap);
+            return false;
+        }
+
+        foreach (Collider col in instance.GetComponentsInChildren<Collider>(true))
+            Object.Destroy(col);
+
+        Transform antenna = FindNamedChild(instance.transform, "Antenna");
+        if (antenna == null)
+        {
+            var antennaGo = new GameObject("Antenna");
+            antennaGo.transform.SetParent(wrap.transform, false);
+            antennaGo.transform.localPosition = Mars3AntennaLocal;
+            antennaGo.transform.localRotation = Quaternion.identity;
+            antenna = antennaGo.transform;
+        }
+        else if (antenna.parent != wrap.transform)
+        {
+            Vector3 world = antenna.position;
+            antenna.SetParent(wrap.transform, true);
+            antenna.position = world;
+        }
+
+        craftAntenna = antenna;
+        ApplyProbeBodyMaterials(wrap.transform);
+        FitToBounds(wrap.transform, Mars3FitSize);
+        return true;
     }
 
     static void BuildChange4(Transform parent, Material bus, Material gold, Material dark, bool highDetail)

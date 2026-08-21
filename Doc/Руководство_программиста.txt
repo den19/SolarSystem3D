@@ -303,6 +303,8 @@ Editor vs APK: в Editor coach часто уже скрыт (SolarSystem_ProbeCo
 
 Портреты: 14 PNG в Assets/Resources/ProbePortraits/. Загрузка: ProbePortraitLibrary (Resources.Load<Sprite> + кэш). Часть — фото-источники (в т.ч. Voyager.png, NASA / public domain; ProbePortraits/ATTRIBUTION.txt); Bake Probe Portraits их не перезаписывает (SkipBakeKinds включает Voyager и ряд других). Остальные — процедурная отрисовка. Меню: Solar System → Bake Probe Portraits (ProbePortraitBaker). После grace 3 с карточка скрывается.
 
+Карточку и панель телеметрии можно перетащить мышью/пальцем (HudPanelDrag); позиция только на сеанс (без PlayerPrefs), после перезапуска — снова углы по умолчанию. Layout по-прежнему обновляет размер и safe-area; при user offset — только clamp в пределы ProbeHud.
+
 Панель управления и телеметрия
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

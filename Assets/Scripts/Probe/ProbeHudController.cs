@@ -39,6 +39,7 @@ public class ProbeHudController : MonoBehaviour
     RectTransform _root;
     RectTransform _bar;
     RectTransform _telemetry;
+    HudPanelDrag _telemetryDrag;
     RectTransform _forwardPip;
     RectTransform _rearLeftPip;
     RectTransform _rearRightPip;
@@ -182,6 +183,12 @@ public class ProbeHudController : MonoBehaviour
         });
 
         _telemetry = CreatePanel("ProbeTelemetry", new Color(0.02f, 0.05f, 0.1f, 0.78f));
+        var telemetryImage = _telemetry.GetComponent<Image>();
+        if (telemetryImage != null)
+            telemetryImage.raycastTarget = true;
+        _telemetryDrag = _telemetry.GetComponent<HudPanelDrag>();
+        if (_telemetryDrag == null)
+            _telemetryDrag = _telemetry.gameObject.AddComponent<HudPanelDrag>();
         BuildTelemetryHeader(_telemetry);
         _telemetryBody = CreateTelemetryBody(_telemetry);
         _telemetryText = CreateTmp(_telemetryBody, "ProbeTelemetryBody", TelemetryFontSize, TextAlignmentOptions.TopLeft);
@@ -218,6 +225,15 @@ public class ProbeHudController : MonoBehaviour
         if (_helpButton == null)
             _helpButton = CreateHelpButton(_root);
         EnsureModelScroller();
+        if (_telemetry != null && _telemetryDrag == null)
+        {
+            var telemetryImage = _telemetry.GetComponent<Image>();
+            if (telemetryImage != null)
+                telemetryImage.raycastTarget = true;
+            _telemetryDrag = _telemetry.GetComponent<HudPanelDrag>();
+            if (_telemetryDrag == null)
+                _telemetryDrag = _telemetry.gameObject.AddComponent<HudPanelDrag>();
+        }
         if (_telemetryHeader == null && _telemetry != null)
         {
             BuildTelemetryHeader(_telemetry);
@@ -783,7 +799,10 @@ public class ProbeHudController : MonoBehaviour
         _telemetry.anchorMax = new Vector2(1f, 1f);
         _telemetry.pivot = new Vector2(1f, 1f);
         _telemetry.sizeDelta = new Vector2(telemW, TelemetryHeight);
-        _telemetry.anchoredPosition = new Vector2(-(right + 10f), -(navBottom + pipH + 8f));
+        if (_telemetryDrag != null && _telemetryDrag.HasUserOffset)
+            _telemetryDrag.EnsureClamped();
+        else
+            _telemetry.anchoredPosition = new Vector2(-(right + 10f), -(navBottom + pipH + 8f));
 
         _forwardPip.anchorMin = new Vector2(0.5f, 1f);
         _forwardPip.anchorMax = new Vector2(0.5f, 1f);

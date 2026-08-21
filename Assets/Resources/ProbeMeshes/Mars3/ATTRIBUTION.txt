@@ -1,0 +1,11 @@
+Mars 3 spacecraft 3D model
+=============================
+
+Source model: Mars 3 spacecraft by Wieslaw Kruczala
+  https://sketchfab.com/3d-models/mars-3-spacecraft-5b7853d53cd84b6ca6c16fe68a92c98a
+  Author: Wieslaw Kruczala (@Wieslaw_Kruczala)
+  License: Creative Commons Attribution 4.0 (CC BY 4.0)
+  https://creativecommons.org/licenses/by/4.0/
+
+Converted/decimated to OBJ + PNG for Unity mobile (no runtime glTF dependency).
+Commercial use allowed with attribution.

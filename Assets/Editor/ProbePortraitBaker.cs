@@ -58,6 +58,36 @@ public static class ProbePortraitBaker
         Debug.Log($"Probe portraits baked to {OutputFolder} ({baked} files, {SkipBakeKinds.Length} photo portraits preserved).");
     }
 
+    /// <summary>Batch: -executeMethod ProbePortraitBaker.BakeMars3</summary>
+    [MenuItem("Solar System/Bake Mars 3 Portrait")]
+    public static void BakeMars3()
+    {
+        EnsureFolder();
+        var lightGo = CreateBakeLight();
+        var camGo = CreateBakeCamera(out Camera camera, out RenderTexture rt);
+
+        try
+        {
+            BakeOne(ProbeModelKind.Mars3, "ProbePortraits/Mars3", camera, rt);
+        }
+        finally
+        {
+            Object.DestroyImmediate(lightGo);
+            Object.DestroyImmediate(camGo);
+            rt.Release();
+            Object.DestroyImmediate(rt);
+        }
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        ConfigureAllImporters();
+        AssetDatabase.SaveAssets();
+        Debug.Log($"Mars 3 portrait baked to {OutputFolder}/Mars3.png");
+
+        if (Application.isBatchMode)
+            EditorApplication.Exit(0);
+    }
+
     [MenuItem("Solar System/Reimport Probe Portraits")]
     public static void ReimportAll()
     {
@@ -108,9 +138,12 @@ public static class ProbePortraitBaker
         camera.orthographic = true;
         camera.orthographicSize = 1.35f;
         camera.nearClipPlane = 0.1f;
-        camera.farClipPlane = 20f;
+        camera.farClipPlane = 40f;
         camera.cullingMask = 1 << PreviewLayer;
         camera.enabled = false;
+        // Frame craft placed at (0, -500, 0): look along +Z toward origin of craft from front-right.
+        go.transform.position = new Vector3(0f, -500f, -4.5f);
+        go.transform.rotation = Quaternion.identity;
 
         rt = new RenderTexture(Size, Size, 24, RenderTextureFormat.ARGB32);
         rt.antiAliasing = 4;
@@ -123,7 +156,24 @@ public static class ProbePortraitBaker
         ProbeCraft craft = ProbePrefabFactory.Create(kind, highDetail: true);
         craft.transform.position = new Vector3(0f, -500f, 0f);
         craft.transform.rotation = Quaternion.Euler(0f, 25f, 0f);
+
+        // Hide minimap blip so portraits show the craft mesh, not the cyan marker.
+        Transform blip = craft.transform.Find(ProbePrefabFactory.BlipName);
+        if (blip != null)
+            blip.gameObject.SetActive(false);
+
         SetLayerRecursively(craft.gameObject, PreviewLayer);
+
+        // Fit orthographic frustum to craft bounds so mesh/prefab silhouettes fill the card.
+        Bounds bounds = ComputeWorldBounds(craft.transform);
+        if (bounds.size.sqrMagnitude > 1e-6f)
+        {
+            Vector3 center = bounds.center;
+            float half = Mathf.Max(bounds.extents.x, bounds.extents.y, bounds.extents.z);
+            camera.orthographicSize = Mathf.Max(0.6f, half * 1.15f);
+            camera.transform.position = new Vector3(center.x, center.y, center.z - Mathf.Max(4.5f, half * 3f));
+            camera.transform.rotation = Quaternion.identity;
+        }
 
         camera.Render();
 
@@ -132,6 +182,29 @@ public static class ProbePortraitBaker
         SaveRenderTexture(rt, assetPath);
 
         Object.DestroyImmediate(craft.gameObject);
+    }
+
+    static Bounds ComputeWorldBounds(Transform root)
+    {
+        var renderers = root.GetComponentsInChildren<Renderer>(true);
+        bool has = false;
+        Bounds bounds = new Bounds(root.position, Vector3.zero);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            if (renderers[i] == null)
+                continue;
+            if (!has)
+            {
+                bounds = renderers[i].bounds;
+                has = true;
+            }
+            else
+            {
+                bounds.Encapsulate(renderers[i].bounds);
+            }
+        }
+
+        return bounds;
     }
 
     static void SaveRenderTexture(RenderTexture rt, string assetPath)
