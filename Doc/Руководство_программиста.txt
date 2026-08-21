@@ -236,9 +236,9 @@ Effective High включается только если Extra Graphics ON и:
 
 1. На боковой панели включить «Зонд (экспериментальный)» (SidePanelProbeLabel) → HUD прицеливания и (до первого запуска) coach-подсказки.
 2. Выбрать тело старта (фокус камеры на планете/комете).
-3. Выбрать модель, настроить Impulse / Heading, смотреть ghost-траекторию и превью слева.
-4. Launch → камера Chase, PIP-обзор, toast об успехе, coach больше не показывается.
-5. В полёте: телеметрия справа, опционально Burn / Postcard, переключение World / Chase / Cockpit.
+3. Выбрать модель, настроить Тяга / Курс (ProbeImpulseLabel / ProbeHeadingLabel), смотреть зелёную ghost-траекторию и превью слева.
+4. Запуск → камера Слежение (ProbeChaseLabel / Chase), PIP-обзор, toast об успехе, coach больше не показывается.
+5. В полёте: телеметрия справа, опционально Burn / Postcard, переключение Мир / Слежение / Кабина (World / Chase / Cockpit).
 
 Включение и жизненный цикл
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -258,11 +258,12 @@ Coach overlay (до первого Launch)
 Цель: провести нового пользователя через 4 шага без чтения документации. Overlay и кнопка ? на launch bar — только при включённом UseProbe (SolarSystem_UseProbe=1).
 
 №  |  Когда (авто)  |  Заголовок (ключ)  |  Смысл
+1  |  (устаревший — авто с 2 при UseProbe)  |  ProbeCoachStep1Title  |  Включить «Зонд (экспериментальный)»
 2  |  Зонд вкл., нет фокуса на теле  |  ProbeCoachStep2Title  |  Выбрать планету (удобно с Земли)
-3  |  Есть фокус, полёт не начат  |  ProbeCoachStep3Title  |  Модель, Impulse, Heading, ghost, телеметрия
-4  |  Финальный шаг  |  ProbeCoachStep4Title  |  Нажать «Запуск» на launch bar; камера → Chase
+3  |  Есть фокус, полёт не начат  |  ProbeCoachStep3Title  |  Модель, «Тяга»/«Курс», зелёная ghost-траектория, телеметрия
+4  |  Финальный шаг  |  ProbeCoachStep4Title  |  Нажать «Запуск»; камера → «Слежение» (не «Кабина»)
 
-Тексты: ProbeCoachStep{N}Body (N=1…4). Индикатор N/4 в карточке.
+Тексты: ProbeCoachStep{N}Body (N=1…4) — согласованы с подписями HUD (7 языков): траектория зелёная (не циановая); камера после Launch — ProbeChaseLabel; слайдеры — ProbeImpulseLabel / ProbeHeadingLabel. Индикатор N/4 в карточке.
 
 Поведение overlay:
 
@@ -279,9 +280,9 @@ Reset  |  Coach снова с шага 1
 
 Критерии приёмки: overlay при первом входе; шаги 1→4 по состоянию UI; Skip не блокирует Launch; первый Launch навсегда отключает coach; Reset возвращает coach.
 
-Touch / raycast: затемнение (dim) НЕ перехватывает touch (Image.raycastTarget=false, узел Dim в ProbeCoachOverlay); launch bar, слайдеры Impulse/Heading и телеметрия HUD кликабельны под overlay. Карточка coach и её кнопки (raycastTarget=true) принимают touch только в своей области; подписи TMP на кнопках — raycastTarget=false.
+Touch / raycast: затемнение (dim) НЕ перехватывает touch (Image.raycastTarget=false, узел Dim в ProbeCoachOverlay); launch bar, слайдеры Тяга/Курс и телеметрия HUD кликабельны под overlay. Карточка coach и её кнопки (raycastTarget=true) принимают touch только в своей области; подписи TMP на кнопках — raycastTarget=false.
 
-Editor vs APK: в Editor coach часто уже скрыт (SolarSystem_ProbeCoachLaunchCompleted=1 после первого Launch); сохранённый ProbeCameraMode=0 (World) тоже может маскировать баг Chase. На свежем APK coach активен до первого Launch при UseProbe — проверять: (1) dim не блокирует launch bar; (2) Launch на launch bar запускает полёт; (3) камера сразу Chase, зонд виден. Для повторной проверки — Reset или удалить prefs.
+Editor vs APK: в Editor coach часто уже скрыт (SolarSystem_ProbeCoachLaunchCompleted=1 после первого Launch); сохранённый ProbeCameraMode=0 (World) тоже может маскировать баг Chase. На свежем APK coach активен до первого Launch при UseProbe — проверять: (1) dim не блокирует launch bar; (2) Launch на launch bar запускает полёт; (3) камера сразу Слежение (Chase), зонд виден. Для повторной проверки — Reset или удалить prefs.
 
 Визуал: затемнение ~55 %, карточка по центру (до 760 px), шрифты title 30, body 28, кнопки 26.
 
@@ -296,7 +297,7 @@ Editor vs APK: в Editor coach часто уже скрыт (SolarSystem_ProbeCo
 Размер (grace 3 с)  |  240×268 portrait / 220×248 landscape — компактная (портрет + имя)
 Портрет  |  PNG 256×256 из Resources/ProbePortraits/ (~192 px, preserveAspect)
 Заголовок  |  ProbeModel* + страна в скобках (ProbeOrigin*); Custom — A · E · S
-Описание  |  ProbeDesc* (2–3 строки); Custom + части A/E/S
+Описание  |  Страницы ProbeDesc* / ProbeDesc*2… через ◀/▶ (DescNav); Truncate + DescNavGap над рядом нав; Custom + части A/E/S
 Полёт (3D)  |  ProbePrefabFactory, highDetail: true на Launch; модель 0 / Voyager 1 — NASA VTAD mesh
 
 Рамка: тёмный фон + cyan outline (как у выбранной кнопки модели). RenderTexture и вращение 3D-превью убраны — экономия CPU/GPU на телефоне.
@@ -332,9 +333,9 @@ Launch bar  |  Низ по центру, над time bar
 
 Выбор модели: горизонтальный ScrollRect с кнопками ◀ / ▶ по краям (ProbeModelRow, 70 px); видно 2–3 модели (portrait ~148 px, landscape ~120 px). Подписи: имя + страна в скобках (ResolveModelLabel). Порядок — ProbeModelCatalog: NASA → SU/RU → CN → JP → IN → Custom последним. Активная кнопка — светлее + cyan outline 2 px. При выборе модели — авто-прокрутка к кнопке.
 
-Toast при Launch: ProbeLaunchSuccessMessage, 5 с («Зонд запущен. Камера: Кузов…»).
+Toast при Launch: ProbeLaunchSuccessMessage, 5 с («Зонд запущен. Камера: Слежение…» / Camera: Chase… — та же подпись, что ProbeChaseLabel; не «Кузов» и не «Кабина»).
 
-Состав launch bar: модели → (Custom: части) → Impulse / Heading → Launch / Abort / Burn / Postcard → World / Chase / Cockpit / Views.
+Состав launch bar: модели → (Custom: части) → Тяга / Курс → Запуск / Abort / Burn / Postcard → Мир / Слежение / Кабина / Обзор зонда.
 
 Видимость зонда на APK
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -349,7 +350,7 @@ Shader fallback  |  Корпус: mobile/tier≠High → URP Unlit → Mobile/Un
 MinimapBlip  |  Cyan unlit-сфера, local scale ×1.5; слой 8 (MinimapBlip). При создании craft: Main Camera исключает слой 8, Minimap Camera включает — сфера не видна в Chase / main view, только на minimap
 ProbeWorldMarker  |  Billboard-кольцо ~4 AU в режиме World, когда зонд далеко от центра кадра
 
-Ghost-траектория (циан) — при aiming и в полёте.
+Ghost-траектория — зелёная линия (RGB ≈ 0.47, 0.91, 0.35, не циановая) — при aiming и в полёте. В coach / локализации цвет называется «зелёная» / green.
 
 Модели зонда
 ~~~~~~~~~~~~
@@ -409,10 +410,10 @@ Toast: ProbePhysicsCappedMessage, ProbeImpactMessage, ProbeOverheatMessage.
 Камера
 ~~~~~~
 
-Режим  |  Ключ  |  UX
-World  |  ProbeWorldLabel  |  Orbit-камера; marker-кольцо
-Chase  |  ProbeChaseLabel  |  Сзади по скорости (~4.5+1.4 AU); default после Launch; в полёте — Lerp (exp −8)
-Cockpit  |  ProbeCockpitLabel  |  Изнутри; pick тел подавлен
+Режим  |  Ключ  |  Подпись (RU)  |  UX
+World  |  ProbeWorldLabel  |  Мир  |  Orbit-камера; marker-кольцо
+Chase  |  ProbeChaseLabel  |  Слежение  |  Сзади по скорости (~4.5+1.4 AU); default после Launch; в полёте — Lerp (exp −8)
+Cockpit  |  ProbeCockpitLabel  |  Кабина  |  Изнутри; pick тел подавлен
 
 SnapChase: жёсткий snap при Launch (без Lerp) — craft − velocity×4.5 + up×1.4, look-at на craft; MobileOrbitCamera.SetExternalOrbitControl(true).
 Порядок кадра: ProbeSystemController [DefaultExecutionOrder(100)]; ProbeCameraController [DefaultExecutionOrder(250)]. Launch создаёт craft; SnapChase ставит камеру сразу; LateUpdate Tick — сглаживание. Без SnapChase на APK камера могла остаться в World до следующего кадра.
@@ -657,7 +658,7 @@ Mars  |  —  |  Phobos/Deimos уже есть
 6.2. Геймификация
 ~~~~~~~~~~~~~~~~~
 
-1. Gravity slingshot — реализовано; полная спецификация §2.8. Кратко: тумблер «Зонд» (default off), restricted N-body, 14 моделей (ScrollRect ◀/▶), PNG-портреты в карточке модели, Chase/Cockpit, PIP auto на Launch, телеметрия, циановая проекция. Дальнейшее: миссии / очки.  
+1. Gravity slingshot — реализовано; полная спецификация §2.8. Кратко: тумблер «Зонд (экспериментальный)» (default off), restricted N-body, 14 моделей (ScrollRect ◀/▶), PNG-портреты и страницы описания в карточке, Chase/Cockpit, PIP auto на Launch, телеметрия, зелёная ghost-траектория, циановая проекция зонда на сетку. Дальнейшее: миссии / очки.  
 2. Квиз по астрономии — вопросы у тела («какая планета ближе к Солнцу?»), очки в GameState.score.  
 3. Миссии наблюдения — «найди комету», «сфокусируйся на Энцеладе», таймер на обычной скорости.  
 4. Unlockables — открытие описаний/скинов после правильных ответов.  
