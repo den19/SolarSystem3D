@@ -26,6 +26,8 @@ public class ProbeCoachOverlay : MonoBehaviour
     TextMeshProUGUI _forwardLabel;
     const int FirstCoachStep = 2;
     int _manualStep = -1;
+    int _lastRenderedStep = int.MinValue;
+    float _lastCardWidth = -1f;
     LookAtTarget _lookAt;
 
     public static ProbeCoachOverlay EnsureOnHud(Transform hudRoot)
@@ -73,7 +75,8 @@ public class ProbeCoachOverlay : MonoBehaviour
         if (!ShouldShow())
             return;
 
-        RefreshStep();
+        RefreshStep(forceLayout: false);
+        LayoutCardIfNeeded();
     }
 
     void Build()
@@ -88,7 +91,7 @@ public class ProbeCoachOverlay : MonoBehaviour
         dimGo.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.55f);
         dimGo.GetComponent<Image>().raycastTarget = false;
 
-        var cardGo = new GameObject("Card", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(VerticalLayoutGroup));
+        var cardGo = new GameObject("Card", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
         cardGo.layer = gameObject.layer;
         cardGo.transform.SetParent(_root, false);
         _card = cardGo.GetComponent<RectTransform>();
@@ -108,12 +111,16 @@ public class ProbeCoachOverlay : MonoBehaviour
         layout.childForceExpandHeight = false;
         layout.childForceExpandWidth = true;
 
+        var cardFitter = cardGo.GetComponent<ContentSizeFitter>();
+        cardFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+        cardFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
         _stepLabel = CreateTmp(cardGo.transform, "ProbeCoachStepIndicator", StepFontSize, TextAlignmentOptions.TopLeft);
         _title = CreateTmp(cardGo.transform, "ProbeCoachTitle", TitleFontSize, TextAlignmentOptions.TopLeft);
         _title.fontStyle = FontStyles.Bold;
         _body = CreateTmp(cardGo.transform, "ProbeCoachBody", BodyFontSize, TextAlignmentOptions.TopLeft);
 
-        var buttonRow = new GameObject("Buttons", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+        var buttonRow = new GameObject("Buttons", typeof(RectTransform), typeof(HorizontalLayoutGroup), typeof(LayoutElement));
         buttonRow.layer = gameObject.layer;
         buttonRow.transform.SetParent(cardGo.transform, false);
         var rowLayout = buttonRow.GetComponent<HorizontalLayoutGroup>();
@@ -121,7 +128,11 @@ public class ProbeCoachOverlay : MonoBehaviour
         rowLayout.childAlignment = TextAnchor.MiddleCenter;
         rowLayout.childControlHeight = true;
         rowLayout.childControlWidth = true;
+        rowLayout.childForceExpandHeight = true;
         rowLayout.childForceExpandWidth = true;
+        var rowLe = buttonRow.GetComponent<LayoutElement>();
+        rowLe.minHeight = 56f;
+        rowLe.preferredHeight = 56f;
 
         _backButton = CreateCoachButton(buttonRow.transform, "ProbeCoachBack", out _backLabel);
         _skipButton = CreateCoachButton(buttonRow.transform, "ProbeCoachSkip", out _skipLabel);
@@ -161,7 +172,7 @@ public class ProbeCoachOverlay : MonoBehaviour
             return;
 
         _manualStep = step - 1;
-        RefreshStep();
+        RefreshStep(forceLayout: true);
     }
 
     void ForwardCoach()
@@ -174,7 +185,7 @@ public class ProbeCoachOverlay : MonoBehaviour
         }
 
         _manualStep = step + 1;
-        RefreshStep();
+        RefreshStep(forceLayout: true);
     }
 
     int CurrentStep() => _manualStep >= 0 ? _manualStep : ResolveAutoStep();
@@ -189,11 +200,11 @@ public class ProbeCoachOverlay : MonoBehaviour
         if (!show)
             return;
 
-        LayoutCard();
-        RefreshStep();
+        LayoutCardIfNeeded(force: true);
+        RefreshStep(forceLayout: true);
     }
 
-    void LayoutCard()
+    void LayoutCardIfNeeded(bool force = false)
     {
         if (_card == null)
             return;
@@ -201,8 +212,23 @@ public class ProbeCoachOverlay : MonoBehaviour
         Canvas canvas = GetComponentInParent<Canvas>();
         float scale = canvas != null && canvas.scaleFactor > 0.01f ? canvas.scaleFactor : 1f;
         float canvasWidth = Screen.width / scale;
-        float width = Mathf.Max(320f, canvasWidth * 0.9f);
-        _card.sizeDelta = new Vector2(Mathf.Min(width, 760f), 0f);
+        float width = Mathf.Min(Mathf.Max(320f, canvasWidth * 0.9f), 760f);
+        if (!force && Mathf.Abs(width - _lastCardWidth) < 0.5f)
+            return;
+
+        _lastCardWidth = width;
+        _card.sizeDelta = new Vector2(width, _card.sizeDelta.y);
+        SyncTextPreferredHeights();
+        RebuildCardLayout();
+    }
+
+    void RebuildCardLayout()
+    {
+        if (_card == null)
+            return;
+
+        Canvas.ForceUpdateCanvases();
+        LayoutRebuilder.ForceRebuildLayoutImmediate(_card);
     }
 
     bool ShouldShow()
@@ -220,21 +246,54 @@ public class ProbeCoachOverlay : MonoBehaviour
         return true;
     }
 
-    void RefreshStep()
+    void RefreshStep(bool forceLayout = true)
     {
         if (!ShouldShow() || _title == null)
             return;
 
         int step = CurrentStep();
+        bool stepChanged = step != _lastRenderedStep;
+        if (!forceLayout && !stepChanged)
+            return;
+
+        _lastRenderedStep = step;
         _stepLabel.text = string.Format("{0}/4", step);
 
         string titleKey = "ProbeCoachStep" + step + "Title";
         string bodyKey = "ProbeCoachStep" + step + "Body";
         _title.text = T(titleKey, titleKey);
         _body.text = T(bodyKey, bodyKey);
+        SyncTextPreferredHeights();
 
         if (_backButton != null)
             _backButton.interactable = step > FirstCoachStep;
+
+        RebuildCardLayout();
+    }
+
+    void SyncTextPreferredHeights()
+    {
+        SyncTmpPreferredHeight(_stepLabel);
+        SyncTmpPreferredHeight(_title);
+        SyncTmpPreferredHeight(_body);
+    }
+
+    static void SyncTmpPreferredHeight(TextMeshProUGUI tmp)
+    {
+        if (tmp == null)
+            return;
+
+        var le = tmp.GetComponent<LayoutElement>();
+        if (le == null)
+            return;
+
+        float width = tmp.rectTransform.rect.width;
+        if (width < 1f && tmp.rectTransform.parent is RectTransform parent)
+            width = Mathf.Max(1f, parent.rect.width - 48f);
+
+        Vector2 preferred = tmp.GetPreferredValues(tmp.text, width > 1f ? width : 680f, float.PositiveInfinity);
+        le.minHeight = preferred.y;
+        le.preferredHeight = preferred.y;
     }
 
     int ResolveAutoStep()
@@ -268,7 +327,8 @@ public class ProbeCoachOverlay : MonoBehaviour
             _skipLabel.text = T("ProbeCoachSkip", "Skip");
         if (_forwardLabel != null)
             _forwardLabel.text = T("ProbeCoachForward", "Forward");
-        RefreshStep();
+        _lastRenderedStep = int.MinValue;
+        RefreshStep(forceLayout: true);
     }
 
     static Button CreateCoachButton(Transform parent, string key, out TextMeshProUGUI label)
@@ -295,11 +355,13 @@ public class ProbeCoachOverlay : MonoBehaviour
         go.transform.SetParent(parent, false);
         var le = go.GetComponent<LayoutElement>();
         le.minHeight = size + 8f;
+        le.preferredHeight = size + 8f;
         var tmp = go.GetComponent<TextMeshProUGUI>();
         tmp.fontSize = size;
         tmp.alignment = align;
         tmp.color = new Color(0.92f, 0.95f, 1f, 1f);
         tmp.enableWordWrapping = true;
+        tmp.overflowMode = TextOverflowModes.Overflow;
         tmp.raycastTarget = false;
         var font = LocalizationFontHelper.GetFontForLanguage(LocalizationManager.CurrentLanguage);
         if (font != null)
