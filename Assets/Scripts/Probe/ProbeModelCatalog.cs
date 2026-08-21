@@ -61,6 +61,16 @@ namespace SolarSystemApp
             return "ProbeDescVoyager";
         }
 
+        /// <summary>
+        /// Localization keys for description pages: base, base+"2", base+"3".
+        /// Empty/missing translations are filtered by the caller.
+        /// </summary>
+        public static string[] GetDescriptionPageKeys(ProbeModelKind kind)
+        {
+            string baseKey = GetDescriptionKey(kind);
+            return new[] { baseKey, baseKey + "2", baseKey + "3" };
+        }
+
         public static string GetOriginKey(ProbeModelKind kind)
         {
             for (int i = 0; i < DisplayOrder.Length; i++)

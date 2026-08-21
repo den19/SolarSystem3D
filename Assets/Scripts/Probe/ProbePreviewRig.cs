@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using SolarSystemApp;
 using TMPro;
 using UnityEngine;
@@ -20,6 +21,9 @@ public class ProbePreviewRig : MonoBehaviour
     const float CompactPortraitHeight = 160f;
     const float TitleHeight = 32f;
     const float DescHeight = 96f;
+    const float DescNavHeight = 28f;
+    const float DescNavGap = 8f;
+    const float DescNavArrowWidth = 36f;
     const float Padding = 8f;
 
     RectTransform _panel;
@@ -28,6 +32,14 @@ public class ProbePreviewRig : MonoBehaviour
     Image _portraitImage;
     TextMeshProUGUI _title;
     TextMeshProUGUI _description;
+    RectTransform _descNavRow;
+    Button _descPrevBtn;
+    Button _descNextBtn;
+    TextMeshProUGUI _descPageIndicator;
+    readonly List<string> _descPages = new List<string>(3);
+    int _descPageIndex;
+    ProbeModelKind _pagedModel = (ProbeModelKind)(-1);
+    Language _pagedLanguage;
     ProbeModelKind _shownModel = (ProbeModelKind)(-1);
     bool _customAntenna;
     bool _customEngine;
@@ -91,7 +103,7 @@ public class ProbePreviewRig : MonoBehaviour
 
     void EnsureUiBuilt()
     {
-        if (_portraitImage != null)
+        if (_portraitImage != null && _descNavRow != null)
             return;
 
         Transform root = _panel != null ? _panel : transform;
@@ -150,10 +162,64 @@ public class ProbePreviewRig : MonoBehaviour
         var descRt = _description.rectTransform;
         descRt.anchorMin = new Vector2(0f, 0f);
         descRt.anchorMax = new Vector2(1f, 1f);
-        descRt.offsetMin = new Vector2(Padding, Padding);
+        descRt.offsetMin = new Vector2(Padding, Padding + DescNavHeight + DescNavGap);
         descRt.offsetMax = new Vector2(-Padding, -(Padding + PortraitImageHeight + TitleHeight));
 
+        BuildDescNavRow(frameGo.transform);
+
         _panel.gameObject.SetActive(false);
+    }
+
+    void BuildDescNavRow(Transform parent)
+    {
+        var rowGo = new GameObject("DescNav", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+        rowGo.layer = gameObject.layer;
+        rowGo.transform.SetParent(parent, false);
+        _descNavRow = rowGo.GetComponent<RectTransform>();
+        _descNavRow.anchorMin = new Vector2(0f, 0f);
+        _descNavRow.anchorMax = new Vector2(1f, 0f);
+        _descNavRow.pivot = new Vector2(0.5f, 0f);
+        _descNavRow.offsetMin = new Vector2(Padding, Padding);
+        _descNavRow.offsetMax = new Vector2(-Padding, Padding + DescNavHeight);
+
+        var layout = rowGo.GetComponent<HorizontalLayoutGroup>();
+        layout.spacing = 4f;
+        layout.childAlignment = TextAnchor.MiddleCenter;
+        layout.childControlHeight = true;
+        layout.childControlWidth = true;
+        layout.childForceExpandHeight = true;
+        layout.childForceExpandWidth = false;
+
+        _descPrevBtn = CreateDescNavArrow(rowGo.transform, "DescPrev", "◀", ShowPrevDescPage);
+        _descPageIndicator = CreateText(rowGo.transform, "DescPage", 16f, TextAlignmentOptions.Center, false);
+        var indicatorLe = _descPageIndicator.gameObject.AddComponent<LayoutElement>();
+        indicatorLe.flexibleWidth = 1f;
+        indicatorLe.minHeight = DescNavHeight;
+        indicatorLe.preferredHeight = DescNavHeight;
+        _descNextBtn = CreateDescNavArrow(rowGo.transform, "DescNext", "▶", ShowNextDescPage);
+    }
+
+    Button CreateDescNavArrow(Transform parent, string name, string glyph, UnityEngine.Events.UnityAction action)
+    {
+        var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button), typeof(LayoutElement));
+        go.layer = gameObject.layer;
+        go.transform.SetParent(parent, false);
+        go.GetComponent<Image>().color = new Color(0.14f, 0.18f, 0.28f, 1f);
+        var le = go.GetComponent<LayoutElement>();
+        le.minWidth = DescNavArrowWidth;
+        le.preferredWidth = DescNavArrowWidth;
+        le.minHeight = DescNavHeight;
+        le.preferredHeight = DescNavHeight;
+        le.flexibleWidth = 0f;
+
+        var label = CreateText(go.transform, name + "_Text", 18f, TextAlignmentOptions.Center, false);
+        label.text = glyph;
+        label.fontStyle = FontStyles.Bold;
+        Stretch(label.rectTransform);
+
+        var button = go.GetComponent<Button>();
+        button.onClick.AddListener(action);
+        return button;
     }
 
     static TextMeshProUGUI CreateText(Transform parent, string name, float fontSize, TextAlignmentOptions align, bool wrap)
@@ -220,6 +286,8 @@ public class ProbePreviewRig : MonoBehaviour
             _title.font = font;
         if (_description != null)
             _description.font = font;
+        if (_descPageIndicator != null)
+            _descPageIndicator.font = font;
     }
 
     ProbeModelKind ResolveDisplayModel()
@@ -272,7 +340,13 @@ public class ProbePreviewRig : MonoBehaviour
         titleRt.offsetMin = new Vector2(Padding, -(Padding + portraitH + TitleHeight));
         titleRt.offsetMax = new Vector2(-Padding, -(Padding + portraitH));
 
+        var descRt = _description.rectTransform;
+        descRt.offsetMin = new Vector2(Padding, Padding + DescNavHeight + DescNavGap);
+        descRt.offsetMax = new Vector2(-Padding, -(Padding + portraitH + TitleHeight));
+
         _description.gameObject.SetActive(!compact);
+        if (_descNavRow != null)
+            _descNavRow.gameObject.SetActive(!compact);
     }
 
     void RefreshTexts(ProbeModelKind model, bool compact)
@@ -296,15 +370,92 @@ public class ProbePreviewRig : MonoBehaviour
         if (_description == null || compact)
             return;
 
-        string descKey = ProbeModelCatalog.GetDescriptionKey(model);
-        _description.text = T(descKey, string.Empty);
+        RebuildDescPagesIfNeeded(model);
+        ApplyCurrentDescPage();
+    }
 
-        if (model == ProbeModelKind.Custom)
+    void RebuildDescPagesIfNeeded(ProbeModelKind model)
+    {
+        Language language = LocalizationManager.CurrentLanguage;
+        bool resetPage = _pagedModel != model || _pagedLanguage != language;
+        _pagedModel = model;
+        _pagedLanguage = language;
+        if (resetPage)
+            _descPageIndex = 0;
+
+        _descPages.Clear();
+        string[] keys = ProbeModelCatalog.GetDescriptionPageKeys(model);
+        for (int i = 0; i < keys.Length; i++)
         {
-            string parts = BuildCustomPartsLine();
-            if (!string.IsNullOrEmpty(parts))
-                _description.text = _description.text + "\n" + parts;
+            string text = T(keys[i], string.Empty);
+            if (string.IsNullOrEmpty(text))
+                continue;
+
+            if (i == 0 && model == ProbeModelKind.Custom)
+            {
+                string parts = BuildCustomPartsLine();
+                if (!string.IsNullOrEmpty(parts))
+                    text = text + "\n" + parts;
+            }
+
+            _descPages.Add(text);
         }
+
+        if (_descPages.Count == 0)
+            _descPages.Add(string.Empty);
+
+        if (_descPageIndex >= _descPages.Count)
+            _descPageIndex = 0;
+    }
+
+    void ApplyCurrentDescPage()
+    {
+        if (_description == null)
+            return;
+
+        if (_descPages.Count == 0)
+        {
+            _description.text = string.Empty;
+            RefreshDescNav();
+            return;
+        }
+
+        _descPageIndex = Mathf.Clamp(_descPageIndex, 0, _descPages.Count - 1);
+        _description.text = _descPages[_descPageIndex];
+        RefreshDescNav();
+    }
+
+    void RefreshDescNav()
+    {
+        int pageCount = Mathf.Max(1, _descPages.Count);
+        int pageNumber = _descPageIndex + 1;
+        string format = T("ProbeDescPageFormat", "{0}/{1}");
+        if (_descPageIndicator != null)
+            _descPageIndicator.text = string.Format(format, pageNumber, pageCount);
+
+        bool multi = _descPages.Count > 1;
+        if (_descPrevBtn != null)
+            _descPrevBtn.interactable = multi && _descPageIndex > 0;
+        if (_descNextBtn != null)
+            _descNextBtn.interactable = multi && _descPageIndex < _descPages.Count - 1;
+        if (_descNavRow != null && !_compactMode)
+            _descNavRow.gameObject.SetActive(true);
+    }
+
+    void ShowPrevDescPage()
+    {
+        if (_descPageIndex <= 0)
+            return;
+        _descPageIndex--;
+        ApplyCurrentDescPage();
+    }
+
+    void ShowNextDescPage()
+    {
+        if (_descPageIndex >= _descPages.Count - 1)
+            return;
+        _descPageIndex++;
+        ApplyCurrentDescPage();
     }
 
     static string BuildCustomPartsLine()

@@ -12,8 +12,10 @@ public class ProbeHudController : MonoBehaviour
 
     const float UpdateInterval = 0.1f;
     const float RowHeight = 56f;
-    const float ModelRowHeight = 70f;
+    const float ModelRowHeight = 96f;
     const float ButtonFontSize = 26f;
+    const float ModelLabelFontSizeMin = 18f;
+    const float ModelLabelFontSizeMax = 26f;
     const float TelemetryFontSize = 26f;
     const float TelemetryHeaderFontSize = 27f;
     const float TelemetryStatusFontSize = 22f;
@@ -24,8 +26,8 @@ public class ProbeHudController : MonoBehaviour
     const float TelemetryHeight = 392f;
     const float TelemetryHeaderHeight = 52f;
     const float BarWidthLandscape = 720f;
-    const float BarHeightStandard = 394f;
-    const float BarHeightCustom = 440f;
+    const float BarHeightStandard = 420f;
+    const float BarHeightCustom = 466f;
     const float PipWidthLandscape = 320f;
     const float PipHeightLandscape = 180f;
     const float PipWidthPortrait = 280f;
@@ -541,6 +543,9 @@ public class ProbeHudController : MonoBehaviour
         if (label != null)
         {
             label.enableWordWrapping = true;
+            label.enableAutoSizing = true;
+            label.fontSizeMin = ModelLabelFontSizeMin;
+            label.fontSizeMax = ModelLabelFontSizeMax;
             label.text = ResolveModelLabel(kind);
         }
     }
@@ -896,7 +901,15 @@ public class ProbeHudController : MonoBehaviour
 
         var labels = root.GetComponentsInChildren<TextMeshProUGUI>(true);
         for (int i = 0; i < labels.Length; i++)
+        {
+            if (labels[i].enableAutoSizing)
+            {
+                labels[i].fontSizeMax = size;
+                continue;
+            }
+
             labels[i].fontSize = size;
+        }
     }
 
     void RefreshState()
