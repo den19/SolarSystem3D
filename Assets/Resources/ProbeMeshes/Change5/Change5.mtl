@@ -1,0 +1,49 @@
+newmtl mat_Lander
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Lander_albedo.png
+
+newmtl mat_PanelL
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd PanelL_albedo.png
+
+newmtl mat_PanelR
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd PanelR_albedo.png
+
+newmtl mat_Ascent
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Ascent_albedo.png
+
+newmtl mat_Mast
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Mast_albedo.png
+
+newmtl mat_Drill
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Drill_albedo.png
+
+newmtl mat_Engine
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Engine_albedo.png
+

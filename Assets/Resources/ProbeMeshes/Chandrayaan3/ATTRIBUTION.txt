@@ -1,0 +1,7 @@
+Chandrayaan-3 spacecraft 3D model
+=================================
+
+Intended source: CC-licensed Sketchfab downloadable mesh when available
+(e.g. Vikram/Pragyan CC BY community models).
+Place Chandrayaan3-source.glb under Tools/_probe_mesh_import/ and re-run conversion if replacing
+the procedural approximation.

@@ -1,0 +1,42 @@
+newmtl mat_Bus
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Bus_albedo.png
+
+newmtl mat_PanelL
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd PanelL_albedo.png
+
+newmtl mat_PanelR
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd PanelR_albedo.png
+
+newmtl mat_HgaBoom
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd HgaBoom_albedo.png
+
+newmtl mat_Prop
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Prop_albedo.png
+
+newmtl mat_Camera
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Camera_albedo.png
+

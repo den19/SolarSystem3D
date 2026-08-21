@@ -1,0 +1,3 @@
+Place Tianwen1-source.glb here (or set SKETCHFAB_TOKEN) then re-run:
+  python Tools/_probe_mesh_import/fetch_probe_meshes.py --only Tianwen1
+Page: https://sketchfab.com/search?q=tianwen&type=models&features=downloadable

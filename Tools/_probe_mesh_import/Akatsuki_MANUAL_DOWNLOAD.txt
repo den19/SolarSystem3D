@@ -1,0 +1,3 @@
+Place Akatsuki-source.glb here (or set SKETCHFAB_TOKEN) then re-run:
+  python Tools/_probe_mesh_import/fetch_probe_meshes.py --only Akatsuki
+Page: https://sketchfab.com/search?q=akatsuki+venus&type=models&features=downloadable

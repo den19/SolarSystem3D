@@ -1,0 +1,6 @@
+Akatsuki (Venus Climate Orbiter) 3D model
+========================================
+
+Intended source: CC-licensed Sketchfab / JAXA-derived downloadable mesh when available.
+Place Akatsuki-source.glb under Tools/_probe_mesh_import/ and re-run conversion if replacing
+the procedural approximation.

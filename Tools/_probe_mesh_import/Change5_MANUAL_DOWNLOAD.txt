@@ -1,0 +1,3 @@
+Place Change5-source.glb here (or set SKETCHFAB_TOKEN) then re-run:
+  python Tools/_probe_mesh_import/fetch_probe_meshes.py --only Change5
+Page: https://sketchfab.com/search?q=change+5+lander&type=models&features=downloadable

@@ -1,0 +1,35 @@
+{
+  "bounds_min": [
+    -0.9,
+    -0.35,
+    -0.425
+  ],
+  "bounds_max": [
+    0.9,
+    0.73,
+    0.425
+  ],
+  "extents": [
+    1.8,
+    1.08,
+    0.85
+  ],
+  "center": [
+    0.010107183383150552,
+    0.13671102289009615,
+    0.013289065757425816
+  ],
+  "antenna_local": [
+    0.010107183383150552,
+    0.6759999999999999,
+    0.013289065757425816
+  ],
+  "suggested_visual_euler_xyz": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "source": "Procedural Chang'e 5 approximation (Sketchfab GLB unavailable)",
+  "faces": 420,
+  "verts": 224
+}

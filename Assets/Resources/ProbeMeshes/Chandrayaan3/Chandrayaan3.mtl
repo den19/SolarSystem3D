@@ -1,0 +1,56 @@
+newmtl mat_Deck
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Deck_albedo.png
+
+newmtl mat_Panel0
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Panel0_albedo.png
+
+newmtl mat_Panel1
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Panel1_albedo.png
+
+newmtl mat_Panel2
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Panel2_albedo.png
+
+newmtl mat_Mast
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Mast_albedo.png
+
+newmtl mat_Camera
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Camera_albedo.png
+
+newmtl mat_Thruster
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Thruster_albedo.png
+
+newmtl mat_Belly
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Belly_albedo.png
+

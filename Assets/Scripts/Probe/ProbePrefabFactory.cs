@@ -2,8 +2,8 @@ using SolarSystemApp;
 using UnityEngine;
 
 /// <summary>
-/// Probe meshes: Voyager 1 / Mars 3 / New Horizons / Juno / Venera 7 / Luna 1 / Hayabusa2 / Chang'e 4
-/// from Resources when available; other kinds are procedural primitives.
+/// Probe meshes: imported OBJ/prefab packs under Resources/ProbeMeshes when available;
+/// Custom and missing packs fall back to procedural primitives.
 /// </summary>
 public static class ProbePrefabFactory
 {
@@ -60,6 +60,31 @@ public static class ProbePrefabFactory
     public const string Change4PrefabAltResourcePath = "ProbeMeshes/Change4/Change4Prefab";
     static readonly Vector3 Change4AntennaLocal = new Vector3(-0.001f, 0.307f, 0.011f);
     static bool _change4MeshFallbackWarned;
+
+    public const string Luna16PrefabResourcePath = "ProbeMeshes/Luna16/Luna16";
+    public const string Luna16PrefabAltResourcePath = "ProbeMeshes/Luna16/Luna16Prefab";
+    static readonly Vector3 Luna16AntennaLocal = new Vector3(0.018f, 0.66f, 0.014f);
+    static bool _luna16MeshFallbackWarned;
+
+    public const string Tianwen1PrefabResourcePath = "ProbeMeshes/Tianwen1/Tianwen1";
+    public const string Tianwen1PrefabAltResourcePath = "ProbeMeshes/Tianwen1/Tianwen1Prefab";
+    static readonly Vector3 Tianwen1AntennaLocal = new Vector3(0.007f, 0.572f, -0.203f);
+    static bool _tianwen1MeshFallbackWarned;
+
+    public const string Change5PrefabResourcePath = "ProbeMeshes/Change5/Change5";
+    public const string Change5PrefabAltResourcePath = "ProbeMeshes/Change5/Change5Prefab";
+    static readonly Vector3 Change5AntennaLocal = new Vector3(0.01f, 0.676f, 0.013f);
+    static bool _change5MeshFallbackWarned;
+
+    public const string AkatsukiPrefabResourcePath = "ProbeMeshes/Akatsuki/Akatsuki";
+    public const string AkatsukiPrefabAltResourcePath = "ProbeMeshes/Akatsuki/AkatsukiPrefab";
+    static readonly Vector3 AkatsukiAntennaLocal = new Vector3(0.046f, 0.298f, 0.006f);
+    static bool _akatsukiMeshFallbackWarned;
+
+    public const string Chandrayaan3PrefabResourcePath = "ProbeMeshes/Chandrayaan3/Chandrayaan3";
+    public const string Chandrayaan3PrefabAltResourcePath = "ProbeMeshes/Chandrayaan3/Chandrayaan3Prefab";
+    static readonly Vector3 Chandrayaan3AntennaLocal = new Vector3(0.002f, 0.377f, 0.007f);
+    static bool _chandrayaan3MeshFallbackWarned;
 
     public static ProbeCraft Create(ProbeModelKind kind, bool highDetail)
     {
@@ -641,6 +666,18 @@ public static class ProbePrefabFactory
 
     static void BuildLuna16(Transform parent, Material bus, Material gold, Material dark, bool highDetail)
     {
+        if (TryBuildImportedMesh(
+                parent,
+                "Luna16Visual",
+                "Luna16Mesh",
+                Luna16PrefabAltResourcePath,
+                Luna16PrefabResourcePath,
+                Luna16AntennaLocal,
+                Vector3.zero))
+            return;
+
+        WarnMeshFallbackOnce(ref _luna16MeshFallbackWarned, "Luna 16", Luna16PrefabAltResourcePath, Luna16PrefabResourcePath);
+
         AddPrimitive(parent, PrimitiveType.Cylinder, bus, Vector3.zero, new Vector3(0.62f, 0.38f, 0.62f));
         craftAntenna = AddPrimitive(parent, PrimitiveType.Cylinder, gold, new Vector3(0.38f, 0.12f, 0f), new Vector3(0.08f, 0.45f, 0.08f));
         AddPrimitive(parent, PrimitiveType.Cube, dark, new Vector3(0f, 0.22f, 0.28f), new Vector3(0.22f, 0.12f, 0.18f));
@@ -760,6 +797,18 @@ public static class ProbePrefabFactory
 
     static void BuildTianwen1(Transform parent, Material bus, Material gold, Material dish, Material dark, bool highDetail)
     {
+        if (TryBuildImportedMesh(
+                parent,
+                "Tianwen1Visual",
+                "Tianwen1Mesh",
+                Tianwen1PrefabAltResourcePath,
+                Tianwen1PrefabResourcePath,
+                Tianwen1AntennaLocal,
+                Vector3.zero))
+            return;
+
+        WarnMeshFallbackOnce(ref _tianwen1MeshFallbackWarned, "Tianwen-1", Tianwen1PrefabAltResourcePath, Tianwen1PrefabResourcePath);
+
         AddPrimitive(parent, PrimitiveType.Cube, bus, Vector3.zero, new Vector3(0.48f, 0.32f, 0.48f));
         Transform hga = AddPrimitive(parent, PrimitiveType.Cylinder, dish, new Vector3(0f, 0.08f, -0.52f), new Vector3(1.05f, 0.035f, 1.05f));
         hga.localRotation = Quaternion.Euler(90f, 0f, 0f);
@@ -775,6 +824,18 @@ public static class ProbePrefabFactory
 
     static void BuildChange5(Transform parent, Material bus, Material gold, Material dark, bool highDetail)
     {
+        if (TryBuildImportedMesh(
+                parent,
+                "Change5Visual",
+                "Change5Mesh",
+                Change5PrefabAltResourcePath,
+                Change5PrefabResourcePath,
+                Change5AntennaLocal,
+                Vector3.zero))
+            return;
+
+        WarnMeshFallbackOnce(ref _change5MeshFallbackWarned, "Chang'e 5", Change5PrefabAltResourcePath, Change5PrefabResourcePath);
+
         AddPrimitive(parent, PrimitiveType.Cylinder, bus, Vector3.zero, new Vector3(0.42f, 0.55f, 0.42f));
         AddPrimitive(parent, PrimitiveType.Cube, gold, new Vector3(-0.55f, 0.15f, 0f), new Vector3(0.42f, 0.02f, 0.32f));
         AddPrimitive(parent, PrimitiveType.Cube, gold, new Vector3(0.55f, 0.15f, 0f), new Vector3(0.42f, 0.02f, 0.32f));
@@ -813,6 +874,18 @@ public static class ProbePrefabFactory
 
     static void BuildAkatsuki(Transform parent, Material bus, Material gold, Material dish, bool highDetail)
     {
+        if (TryBuildImportedMesh(
+                parent,
+                "AkatsukiVisual",
+                "AkatsukiMesh",
+                AkatsukiPrefabAltResourcePath,
+                AkatsukiPrefabResourcePath,
+                AkatsukiAntennaLocal,
+                Vector3.zero))
+            return;
+
+        WarnMeshFallbackOnce(ref _akatsukiMeshFallbackWarned, "Akatsuki", AkatsukiPrefabAltResourcePath, AkatsukiPrefabResourcePath);
+
         AddPrimitive(parent, PrimitiveType.Cube, bus, Vector3.zero, new Vector3(0.52f, 0.42f, 0.52f));
         craftAntenna = AddPrimitive(parent, PrimitiveType.Cylinder, dish, new Vector3(0.55f, 0.18f, 0f), new Vector3(0.04f, 0.95f, 0.04f));
         craftAntenna.localRotation = Quaternion.Euler(0f, 0f, 75f);
@@ -824,6 +897,18 @@ public static class ProbePrefabFactory
 
     static void BuildChandrayaan3(Transform parent, Material bus, Material gold, Material dark, bool highDetail)
     {
+        if (TryBuildImportedMesh(
+                parent,
+                "Chandrayaan3Visual",
+                "Chandrayaan3Mesh",
+                Chandrayaan3PrefabAltResourcePath,
+                Chandrayaan3PrefabResourcePath,
+                Chandrayaan3AntennaLocal,
+                Vector3.zero))
+            return;
+
+        WarnMeshFallbackOnce(ref _chandrayaan3MeshFallbackWarned, "Chandrayaan-3", Chandrayaan3PrefabAltResourcePath, Chandrayaan3PrefabResourcePath);
+
         AddPrimitive(parent, PrimitiveType.Cube, bus, Vector3.zero, new Vector3(0.55f, 0.22f, 0.55f));
         for (int i = 0; i < 3; i++)
         {

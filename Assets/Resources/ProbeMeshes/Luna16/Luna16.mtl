@@ -1,0 +1,42 @@
+newmtl mat_Bus
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Bus_albedo.png
+
+newmtl mat_Ascent
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Ascent_albedo.png
+
+newmtl mat_Antenna
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Antenna_albedo.png
+
+newmtl mat_Drill
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Drill_albedo.png
+
+newmtl mat_TankL
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd TankL_albedo.png
+
+newmtl mat_TankR
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd TankR_albedo.png
+

@@ -1,0 +1,35 @@
+{
+  "bounds_min": [
+    -0.48,
+    -0.48,
+    -0.35
+  ],
+  "bounds_max": [
+    0.48,
+    0.72,
+    0.39
+  ],
+  "extents": [
+    0.96,
+    1.2,
+    0.74
+  ],
+  "center": [
+    0.018454591316941125,
+    0.09845982747594777,
+    0.014035901790202523
+  ],
+  "antenna_local": [
+    0.018454591316941125,
+    0.6599999999999999,
+    0.014035901790202523
+  ],
+  "suggested_visual_euler_xyz": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "source": "Procedural Luna 16 approximation (Sketchfab GLB unavailable)",
+  "faces": 324,
+  "verts": 174
+}

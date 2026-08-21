@@ -1,0 +1,6 @@
+Chang'e 5 spacecraft 3D model
+=============================
+
+Intended source: CC-licensed Sketchfab downloadable mesh when available.
+Place Change5-source.glb under Tools/_probe_mesh_import/ and re-run conversion if replacing
+the procedural approximation.

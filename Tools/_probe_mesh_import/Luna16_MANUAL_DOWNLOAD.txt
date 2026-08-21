@@ -1,0 +1,3 @@
+Place Luna16-source.glb here (or set SKETCHFAB_TOKEN) then re-run:
+  python Tools/_probe_mesh_import/fetch_probe_meshes.py --only Luna16
+Page: https://sketchfab.com/search?q=luna+16&type=models&features=downloadable

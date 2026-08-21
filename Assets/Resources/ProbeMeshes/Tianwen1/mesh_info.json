@@ -1,0 +1,35 @@
+{
+  "bounds_min": [
+    -0.625,
+    -0.54,
+    -0.64
+  ],
+  "bounds_max": [
+    0.5599999999999999,
+    0.63,
+    0.47
+  ],
+  "extents": [
+    1.185,
+    1.17,
+    1.1099999999999999
+  ],
+  "center": [
+    0.006987971693839128,
+    0.006843728045542545,
+    -0.20290061413891303
+  ],
+  "antenna_local": [
+    0.006987971693839128,
+    0.5715,
+    -0.20290061413891303
+  ],
+  "suggested_visual_euler_xyz": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "source": "Procedural Tianwen-1 approximation (Sketchfab GLB unavailable)",
+  "faces": 548,
+  "verts": 286
+}

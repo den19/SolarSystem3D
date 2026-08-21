@@ -81,6 +81,46 @@ PROBES = [
         "procedural": "Change4",
         "page": "https://sketchfab.com/3d-models/change-3-d04a86f43d4549328a19a30da3e7509f",
     },
+    {
+        "name": "Luna16",
+        "kind": "sketchfab",
+        "uid": None,
+        "glb": "Luna16-source.glb",
+        "procedural": "Luna16",
+        "page": "https://sketchfab.com/search?q=luna+16&type=models&features=downloadable",
+    },
+    {
+        "name": "Tianwen1",
+        "kind": "sketchfab",
+        "uid": None,
+        "glb": "Tianwen1-source.glb",
+        "procedural": "Tianwen1",
+        "page": "https://sketchfab.com/search?q=tianwen&type=models&features=downloadable",
+    },
+    {
+        "name": "Change5",
+        "kind": "sketchfab",
+        "uid": None,
+        "glb": "Change5-source.glb",
+        "procedural": "Change5",
+        "page": "https://sketchfab.com/search?q=change+5+lander&type=models&features=downloadable",
+    },
+    {
+        "name": "Akatsuki",
+        "kind": "sketchfab",
+        "uid": None,
+        "glb": "Akatsuki-source.glb",
+        "procedural": "Akatsuki",
+        "page": "https://sketchfab.com/search?q=akatsuki+venus&type=models&features=downloadable",
+    },
+    {
+        "name": "Chandrayaan3",
+        "kind": "sketchfab",
+        "uid": None,
+        "glb": "Chandrayaan3-source.glb",
+        "procedural": "Chandrayaan3",
+        "page": "https://sketchfab.com/search?q=chandrayaan&type=models&features=downloadable",
+    },
 ]
 
 BACKOFF_SECONDS = [60, 120, 300, 600]

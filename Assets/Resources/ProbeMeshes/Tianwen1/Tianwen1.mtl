@@ -1,0 +1,42 @@
+newmtl mat_Bus
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Bus_albedo.png
+
+newmtl mat_HgaDish
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd HgaDish_albedo.png
+
+newmtl mat_Rtg
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Rtg_albedo.png
+
+newmtl mat_Solar
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Solar_albedo.png
+
+newmtl mat_Entry
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Entry_albedo.png
+
+newmtl mat_Instrument
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Instrument_albedo.png
+

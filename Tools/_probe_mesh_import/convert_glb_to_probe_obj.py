@@ -577,6 +577,70 @@ def build_procedural(kind: str) -> tuple[list[tuple[str, trimesh.Trimesh, tuple[
         ]
         return parts, "Procedural Chang'e 4 approximation (Sketchfab GLB unavailable)"
 
+    if k == "luna16":
+        parts = [
+            _cyl("Bus", 0.48, 0.7, [0, 0, 0], bus),
+            _cyl("Ascent", 0.22, 0.45, [0, 0.5, 0], gold),
+            _cyl("Antenna", 0.05, 0.7, [0.42, 0.15, 0], gold),
+            _box("Drill", [0.18, 0.22, 0.14], [0, 0.28, 0.32], dark),
+            _box("TankL", [0.16, 0.28, 0.16], [-0.32, -0.05, 0.18], gold),
+            _box("TankR", [0.16, 0.28, 0.16], [0.32, -0.05, -0.12], bus),
+        ]
+        return parts, "Procedural Luna 16 approximation (Sketchfab GLB unavailable)"
+
+    if k in ("tianwen1", "tianwen"):
+        parts = [
+            _box("Bus", [0.65, 0.4, 0.65], [0, 0, 0], bus),
+            _cyl("HgaDish", 0.55, 0.04, [0, 0.08, -0.62], dish),
+            _cyl("Rtg", 0.08, 0.35, [0.48, 0, 0.12], dark),
+            _box("Solar", [0.35, 0.03, 0.28], [-0.45, 0.22, 0.1], gold),
+            _sphere("Entry", 0.22, [0, -0.32, 0.25], dark, 2),
+            _box("Instrument", [0.14, 0.12, 0.14], [0.35, 0.12, 0.25], gold),
+        ]
+        return parts, "Procedural Tianwen-1 approximation (Sketchfab GLB unavailable)"
+
+    if k in ("change5", "chang5", "change_5"):
+        parts = [
+            _cyl("Lander", 0.35, 0.85, [0, 0, 0], bus),
+            _box("PanelL", [0.5, 0.03, 0.38], [-0.65, 0.2, 0], gold),
+            _box("PanelR", [0.5, 0.03, 0.38], [0.65, 0.2, 0], gold),
+            _cyl("Ascent", 0.18, 0.4, [0, 0.55, 0], dark),
+            _cyl("Mast", 0.05, 0.4, [0, 0.55, 0.18], dark),
+            _box("Drill", [0.16, 0.2, 0.14], [0, -0.25, 0.22], gold),
+            _cyl("Engine", 0.1, 0.2, [0.25, 0.35, 0], gold),
+        ]
+        return parts, "Procedural Chang'e 5 approximation (Sketchfab GLB unavailable)"
+
+    if k == "akatsuki":
+        parts = [
+            _box("Bus", [0.7, 0.55, 0.7], [0, 0, 0], bus),
+            _box("PanelL", [0.35, 0.03, 0.5], [-0.55, 0.1, 0], gold),
+            _box("PanelR", [0.35, 0.03, 0.5], [0.55, 0.1, 0], gold),
+            _cyl("HgaBoom", 0.035, 1.1, [0.7, 0.2, 0], dish),
+            _cyl("Prop", 0.22, 0.18, [0, -0.28, 0], bus),
+            _box("Camera", [0.12, 0.12, 0.12], [0.2, 0.28, 0.28], dark),
+        ]
+        return parts, "Procedural Akatsuki approximation (Sketchfab GLB unavailable)"
+
+    if k in ("chandrayaan3", "chandrayaan"):
+        parts = [
+            _box("Deck", [0.7, 0.28, 0.7], [0, 0, 0], bus),
+        ]
+        for i in range(3):
+            yaw = i * 120.0
+            rad = math.radians(yaw)
+            x, z = 0.65 * math.sin(rad), 0.65 * math.cos(rad)
+            parts.append(_box(f"Panel{i}", [0.38, 0.03, 0.45], [x, 0.15, z], gold, yaw=yaw))
+        parts.extend(
+            [
+                _cyl("Mast", 0.06, 0.35, [0, 0.35, 0], dark),
+                _box("Camera", [0.16, 0.14, 0.14], [0.35, 0.18, 0.25], dark),
+                _cyl("Thruster", 0.1, 0.14, [-0.25, -0.15, 0.2], gold),
+                _box("Belly", [0.28, 0.12, 0.22], [0, -0.2, -0.15], bus),
+            ]
+        )
+        return parts, "Procedural Chandrayaan-3 approximation (Sketchfab GLB unavailable)"
+
     raise SystemExit(f"Unknown procedural kind: {kind}")
 
 
@@ -635,6 +699,42 @@ the procedural approximation.
 
 Intended source: CC-licensed Sketchfab downloadable mesh when available.
 Place Change4-source.glb under Tools/_probe_mesh_import/ and re-run conversion if replacing
+the procedural approximation.
+""",
+    "Luna16": """Luna 16 spacecraft 3D model
+===========================
+
+Intended source: CC-licensed Sketchfab downloadable mesh when available.
+Place Luna16-source.glb under Tools/_probe_mesh_import/ and re-run conversion if replacing
+the procedural approximation.
+""",
+    "Tianwen1": """Tianwen-1 spacecraft 3D model
+=============================
+
+Intended source: CC-licensed Sketchfab downloadable mesh when available.
+Place Tianwen1-source.glb under Tools/_probe_mesh_import/ and re-run conversion if replacing
+the procedural approximation.
+""",
+    "Change5": """Chang'e 5 spacecraft 3D model
+=============================
+
+Intended source: CC-licensed Sketchfab downloadable mesh when available.
+Place Change5-source.glb under Tools/_probe_mesh_import/ and re-run conversion if replacing
+the procedural approximation.
+""",
+    "Akatsuki": """Akatsuki (Venus Climate Orbiter) 3D model
+========================================
+
+Intended source: CC-licensed Sketchfab / JAXA-derived downloadable mesh when available.
+Place Akatsuki-source.glb under Tools/_probe_mesh_import/ and re-run conversion if replacing
+the procedural approximation.
+""",
+    "Chandrayaan3": """Chandrayaan-3 spacecraft 3D model
+=================================
+
+Intended source: CC-licensed Sketchfab downloadable mesh when available
+(e.g. Vikram/Pragyan CC BY community models).
+Place Chandrayaan3-source.glb under Tools/_probe_mesh_import/ and re-run conversion if replacing
 the procedural approximation.
 """,
 }
@@ -722,7 +822,10 @@ def main() -> int:
     parser.add_argument("--src", type=Path, help="Source .glb")
     parser.add_argument("--out-name", required=True, help="Folder/name under ProbeMeshes")
     parser.add_argument("--target-faces", type=int, default=DEFAULT_TARGET_FACES)
-    parser.add_argument("--procedural", help="Procedural kind if no GLB: Venera7|Luna1|Hayabusa2|Change4")
+    parser.add_argument(
+        "--procedural",
+        help="Procedural kind if no GLB: Venera7|Luna1|Hayabusa2|Change4|Luna16|Tianwen1|Change5|Akatsuki|Chandrayaan3",
+    )
     parser.add_argument("--attribution-key", help="Key in ATTRIBUTIONS dict")
     parser.add_argument("--source-note", help="mesh_info source string")
     args = parser.parse_args()

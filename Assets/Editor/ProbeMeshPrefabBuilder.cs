@@ -27,6 +27,11 @@ public static class ProbeMeshPrefabBuilder
         new Spec { FolderName = "Luna1", MenuLabel = "Luna 1", AntennaLocal = new Vector3(0f, 1.144f, 0f) },
         new Spec { FolderName = "Hayabusa2", MenuLabel = "Hayabusa2", AntennaLocal = new Vector3(0f, 0.385f, 0.013f) },
         new Spec { FolderName = "Change4", MenuLabel = "Chang'e 4", AntennaLocal = new Vector3(-0.001f, 0.307f, 0.011f) },
+        new Spec { FolderName = "Luna16", MenuLabel = "Luna 16", AntennaLocal = new Vector3(0.018f, 0.66f, 0.014f) },
+        new Spec { FolderName = "Tianwen1", MenuLabel = "Tianwen-1", AntennaLocal = new Vector3(0.007f, 0.572f, -0.203f) },
+        new Spec { FolderName = "Change5", MenuLabel = "Chang'e 5", AntennaLocal = new Vector3(0.01f, 0.676f, 0.013f) },
+        new Spec { FolderName = "Akatsuki", MenuLabel = "Akatsuki", AntennaLocal = new Vector3(0.046f, 0.298f, 0.006f) },
+        new Spec { FolderName = "Chandrayaan3", MenuLabel = "Chandrayaan-3", AntennaLocal = new Vector3(0.002f, 0.377f, 0.007f) },
     };
 
     [MenuItem("Solar System/Build Probe Mesh Prefabs")]
@@ -69,6 +74,21 @@ public static class ProbeMeshPrefabBuilder
 
     [MenuItem("Solar System/Build Chang'e 4 Prefab")]
     public static void BuildChange4() => BuildOneByName("Change4");
+
+    [MenuItem("Solar System/Build Luna 16 Prefab")]
+    public static void BuildLuna16() => BuildOneByName("Luna16");
+
+    [MenuItem("Solar System/Build Tianwen-1 Prefab")]
+    public static void BuildTianwen1() => BuildOneByName("Tianwen1");
+
+    [MenuItem("Solar System/Build Chang'e 5 Prefab")]
+    public static void BuildChange5() => BuildOneByName("Change5");
+
+    [MenuItem("Solar System/Build Akatsuki Prefab")]
+    public static void BuildAkatsuki() => BuildOneByName("Akatsuki");
+
+    [MenuItem("Solar System/Build Chandrayaan-3 Prefab")]
+    public static void BuildChandrayaan3() => BuildOneByName("Chandrayaan3");
 
     static void BuildOneByName(string folder)
     {

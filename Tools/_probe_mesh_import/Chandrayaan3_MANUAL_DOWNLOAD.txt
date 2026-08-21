@@ -1,0 +1,3 @@
+Place Chandrayaan3-source.glb here (or set SKETCHFAB_TOKEN) then re-run:
+  python Tools/_probe_mesh_import/fetch_probe_meshes.py --only Chandrayaan3
+Page: https://sketchfab.com/search?q=chandrayaan&type=models&features=downloadable
