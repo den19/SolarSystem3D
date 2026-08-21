@@ -546,7 +546,7 @@ public class ProbeSystemController : MonoBehaviour
         _ghostLine.positionCount = 0;
         _ghostLine.useWorldSpace = true;
         _ghostLine.loop = false;
-        _ghostLine.widthMultiplier = 0.12f;
+        _ghostLine.widthMultiplier = 0.08f;
         _ghostLine.numCapVertices = 2;
         _ghostLine.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         _ghostLine.receiveShadows = false;
@@ -554,7 +554,7 @@ public class ProbeSystemController : MonoBehaviour
         if (shader == null)
             shader = Shader.Find("Universal Render Pipeline/Unlit");
         var mat = new Material(shader);
-        mat.color = new Color(0.35f, 0.9f, 1f, 0.7f);
+        mat.color = new Color(0.47f, 0.91f, 0.35f, 0.78f);
         _ghostLine.sharedMaterial = mat;
         _ghostLine.enabled = false;
     }
