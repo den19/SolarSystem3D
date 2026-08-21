@@ -1,0 +1,14 @@
+Voyager 1 spacecraft 3D model
+================================
+
+Source model: NASA Visualization Technology Applications and Development (VTAD)
+  https://science.nasa.gov/resource/voyager-3d-model/
+  File: Voyager.glb (~3 MB)
+
+Primary candidate (not used in-repo): NASA Science 3D Resources — Voyager Probe (B)
+  https://science.nasa.gov/3d-resources/voyager-probe-b/
+  Voyager Probe (B).glb uses KHR_draco_mesh_compression; conversion tools here could not
+  decode mesh positions, so VTAD glTF was used as specified fallback.
+
+License: U.S. government work / public domain (NASA).
+Converted to OBJ + PNG for Unity (no runtime glTF / glTFast dependency).

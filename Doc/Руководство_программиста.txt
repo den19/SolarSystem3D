@@ -6,7 +6,7 @@
 Версия приложения: 8.2.17 (Android bundleVersionCode 35)  
 Сцены сборки: Assets/_Scenes/MainMenu.unity, Assets/_Scenes/Level1.unity  
 Скрипты: Assets/Scripts/ (~119 файлов)  
-Версия документа: 2026-08-19  
+Версия документа: 2026-08-21  
 
 Документ описывает архитектуру симуляции, режимы работы, особенности, известные недостатки и направления развития. Предназначен для разработчиков, поддерживающих и расширяющих приложение.
 
@@ -297,11 +297,11 @@ Editor vs APK: в Editor coach часто уже скрыт (SolarSystem_ProbeCo
 Портрет  |  PNG 256×256 из Resources/ProbePortraits/ (~192 px, preserveAspect)
 Заголовок  |  ProbeModel* + страна в скобках (ProbeOrigin*); Custom — A · E · S
 Описание  |  ProbeDesc* (2–3 строки); Custom + части A/E/S
-Полёт (3D)  |  ProbePrefabFactory, highDetail: true на Launch
+Полёт (3D)  |  ProbePrefabFactory, highDetail: true на Launch; модель 0 / Voyager 1 — NASA VTAD mesh
 
 Рамка: тёмный фон + cyan outline (как у выбранной кнопки модели). RenderTexture и вращение 3D-превью убраны — экономия CPU/GPU на телефоне.
 
-Портреты: 14 PNG в Assets/Resources/ProbePortraits/ (по одной на запись ProbeModelCatalog, включая Custom). Загрузка: ProbePortraitLibrary (Resources.Load<Sprite> + кэш). Пересборка после правки мешей: Solar System → Bake Probe Portraits (ProbePortraitBaker). После grace 3 с карточка скрывается.
+Портреты: 14 PNG в Assets/Resources/ProbePortraits/. Загрузка: ProbePortraitLibrary (Resources.Load<Sprite> + кэш). Часть — фото-источники (в т.ч. Voyager.png, NASA / public domain; ProbePortraits/ATTRIBUTION.txt); Bake Probe Portraits их не перезаписывает (SkipBakeKinds включает Voyager и ряд других). Остальные — процедурная отрисовка. Меню: Solar System → Bake Probe Portraits (ProbePortraitBaker). После grace 3 с карточка скрывается.
 
 Панель управления и телеметрия
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -320,7 +320,7 @@ Launch bar  |  Низ по центру, над time bar
 Заголовок телеметрии:
 
 Часть  |  Ключ  |  Пример (RU)
-Имя  |  ProbeTelemetryTitle  |  «Зонд · Voyager (USA)»
+Имя  |  ProbeTelemetryTitle  |  «Зонд · Voyager 1 (USA)»
 Прицел  |  ProbeTelemetryAiming  |  «(прицел)»
 Полёт  |  ProbeTelemetryFlying  |  «(полёт)»
 
@@ -344,7 +344,7 @@ Auto-Chase в полёте  |  ProbeCameraController.Tick — сглаживан
 Масштаб craft  |  Clamp(r_якоря×1.2, 2.0, 6) — пол 2.0 AU
 Слой mesh  |  SetLayerRecursively(root, 0) — Default layer; иначе mesh может не рендериться на APK
 Shader fallback  |  Корпус: mobile/tier≠High → URP Unlit → Mobile/Unlit → Sprites/Default → URP Lit → Standard; blip: URP Unlit → Mobile/Unlit → Sprites/Default; при отсутствии — Debug.LogWarning (один раз)
-MinimapBlip  |  Cyan unlit-сфера, local scale ×1.5
+MinimapBlip  |  Cyan unlit-сфера, local scale ×1.5; слой 8 (MinimapBlip). При создании craft: Main Camera исключает слой 8, Minimap Camera включает — сфера не видна в Chase / main view, только на minimap
 ProbeWorldMarker  |  Billboard-кольцо ~4 AU в режиме World, когда зонд далеко от центра кадра
 
 Ghost-траектория (циан) — при aiming и в полёте.
@@ -352,25 +352,30 @@ Ghost-траектория (циан) — при aiming и в полёте.
 Модели зонда
 ~~~~~~~~~~~~
 
-14 моделей (13 пресетов + Custom). Enum/pref SolarSystem_ProbeModel: 0–13. Значение 3 = Custom (совместимость prefs); региональные пресеты — 4–13.
+14 моделей (13 пресетов + Custom). Enum ProbeModelKind / pref SolarSystem_ProbeModel: 0–13. UI-имя модели 0 — Voyager 1 (ProbeModelVoyager); enum по-прежнему Voyager = 0. Значение 3 = Custom (совместимость prefs); региональные пресеты — 4–13.
 
-Pref  |  Модель  |  Ключ  |  Регион
-0  |  Voyager  |  ProbeModelVoyager  |  NASA — открытка
-1  |  New Horizons  |  ProbeModelNewHorizons  |  NASA — старт ~35 % быстрее
-2  |  Juno  |  ProbeModelJuno  |  NASA
-3  |  Custom  |  ProbeModelCustom  |  Antenna / Engine / Shield
-4  |  Luna 1  |  ProbeModelLuna1  |  SU/RU
-5  |  Venera 7  |  ProbeModelVenera7  |  SU/RU
-6  |  Luna 16  |  ProbeModelLuna16  |  SU/RU
-7  |  Mars 3  |  ProbeModelMars3  |  SU/RU
-8  |  Chang'e 4  |  ProbeModelChange4  |  CN
-9  |  Tianwen-1  |  ProbeModelTianwen1  |  CN
-10  |  Chang'e 5  |  ProbeModelChange5  |  CN
-11  |  Hayabusa2  |  ProbeModelHayabusa2  |  JP
-12  |  Akatsuki  |  ProbeModelAkatsuki  |  JP
-13  |  Chandrayaan-3  |  ProbeModelChandrayaan3  |  IN
+Pref  |  Модель (UI)  |  Enum  |  Ключ  |  Регион
+0  |  Voyager 1  |  Voyager  |  ProbeModelVoyager  |  NASA VTAD mesh (ProbeMeshes/Voyager1) — открытка
+1  |  New Horizons  |  NewHorizons  |  ProbeModelNewHorizons  |  NASA — старт ~35 % быстрее
+2  |  Juno  |  Juno  |  ProbeModelJuno  |  NASA
+3  |  Custom  |  Custom  |  ProbeModelCustom  |  Antenna / Engine / Shield
+4  |  Luna 1  |  Luna1  |  ProbeModelLuna1  |  SU/RU
+5  |  Venera 7  |  Venera7  |  ProbeModelVenera7  |  SU/RU
+6  |  Luna 16  |  Luna16  |  ProbeModelLuna16  |  SU/RU
+7  |  Mars 3  |  Mars3  |  ProbeModelMars3  |  SU/RU
+8  |  Chang'e 4  |  Change4  |  ProbeModelChange4  |  CN
+9  |  Tianwen-1  |  Tianwen1  |  ProbeModelTianwen1  |  CN
+10  |  Chang'e 5  |  Change5  |  ProbeModelChange5  |  CN
+11  |  Hayabusa2  |  Hayabusa2  |  ProbeModelHayabusa2  |  JP
+12  |  Akatsuki  |  Akatsuki  |  ProbeModelAkatsuki  |  JP
+13  |  Chandrayaan-3  |  Chandrayaan3  |  ProbeModelChandrayaan3  |  IN
 
-Burn ~35 % Impulse. Части Custom: ProbePartAntenna / Engine / Shield. Меши — ProbePrefabFactory (процедурные силуэты, highDetail на Launch).
+Burn ~35 % Impulse. Части Custom: ProbePartAntenna / Engine / Shield.
+
+Меши craft:
+- Модели 1–13 — процедурные силуэты (примитивы) в ProbePrefabFactory (highDetail на Launch).
+- Модель 0 (Voyager 1 / Voyager) — не только процедурная: NASA VTAD под Assets/Resources/ProbeMeshes/Voyager1/ (prefab Voyager1Prefab, иначе OBJ Voyager1; без runtime glTFast). Атрибуция / public domain NASA: ATTRIBUTION.txt в этой папке.
+- TryBuildVoyagerFromMesh: грузит prefab → OBJ; проверяет MeshFilter с sharedMesh; при отсутствии/пустом меше — fallback на примитивы + однократный Debug.LogWarning. Editor: Solar System → Build Voyager 1 Prefab (Voyager1PrefabBuilder).
 
 Запуск (Launch)
 ~~~~~~~~~~~~~~~
@@ -467,15 +472,17 @@ Coach: ProbeCoachStep1Title…4Title, Step1Body…4Body, ProbeCoachBack, Skip, F
 2. ? до Launch открывает coach; после — toast «Подсказки уже пройдены».
 3. Превью при aiming; после Launch ~3 с, затем скрывается.
 4. Телеметрия «Зонд · {модель}» + «(прицел)»/«(полёт)».
-5. Launch: SnapChase — камера мгновенно Chase; toast 5 с; PIP; mesh виден (layer 0, unlit fallback, scale ≥ 2.0); cyan blip.
-6. World: marker-кольцо; Chase/Cockpit без потери полёта.
-7. Portrait + landscape: без перекрытий time bar / safe area.
-8. Custom+Shield у Солнца без abort; без щита — ProbeOverheatMessage.
+5. Launch: SnapChase — камера мгновенно Chase; toast 5 с; PIP; mesh виден (layer 0, unlit fallback, scale ≥ 2.0); cyan MinimapBlip только на minimap (слой 8, не в main Chase).
+6. Voyager 1: craft — NASA mesh (Voyager1Prefab / OBJ), не примитивы; портрет Voyager.png не перезаписывается Bake.
+7. World: marker-кольцо; Chase/Cockpit без потери полёта.
+8. Portrait + landscape: без перекрытий time bar / safe area.
+9. Custom+Shield у Солнца без abort; без щита — ProbeOverheatMessage.
 
 Где в коде
 ~~~~~~~~~~
 
 Assets/Scripts/Probe/ (ProbeSystemController, ProbeCameraController, ProbeHudController, ProbeModelCatalog, ProbePortraitLibrary, ProbeCoachOverlay, ProbePrefabFactory, ProbePreviewRig, ProbeWorldMarker, ProbeSettings, …).
+Mesh Voyager 1: Assets/Resources/ProbeMeshes/Voyager1/ + Editor Voyager1PrefabBuilder.
 Bootstrap: SimulationViewBootstrap → EnsureOnHost. Legacy Spawner/Projectile не используются.
 
 
@@ -578,7 +585,8 @@ GraphicsTier (Graphics quality) — объект сцены MainMenu под Extr
 - Assets/Scripts/ScaleBarController.cs  
 - Assets/Scripts/SimulationViewBootstrap.cs  
 - Assets/Scripts/Probe/ (ProbeSystemController, ProbeHudController, …)  
-- Assets/Editor/SidePanelSceneSetup.cs, TimeControlSceneSetup.cs, ProbePortraitBaker.cs  
+- Assets/Editor/SidePanelSceneSetup.cs, TimeControlSceneSetup.cs, ProbePortraitBaker.cs, Voyager1PrefabBuilder.cs  
+- Assets/Resources/ProbeMeshes/Voyager1/ (Voyager1Prefab, OBJ, ATTRIBUTION.txt)  
 
 ---
 
@@ -727,9 +735,10 @@ Solar System/Setup SidePanel UI  |  Навбар + боковая панель �
 Solar System/Setup Body Navigation Picker  |  Список тел
 Solar System/Setup Time Control UI  |  Панель паузы/скорости
 Solar System/Setup Graphics Tier UI  |  Переключатель Graphics quality на MainMenu
-Solar System/Bake Probe Portraits  |  Пересборка 14 PNG (256×256) в Resources/ProbePortraits/ из процедурных мешей (ProbePortraitBaker)
+Solar System/Bake Probe Portraits  |  Пересборка процедурных портретов (256×256) в Resources/ProbePortraits/; фото-портреты (в т.ч. Voyager.png) пропускаются (ProbePortraitBaker)
+Solar System/Build Voyager 1 Prefab  |  Сборка Voyager1Prefab из OBJ + URP-материалы в Resources/ProbeMeshes/Voyager1/ (Voyager1PrefabBuilder)
 
-При открытии Level1 часть setup может вызываться автоматически (InitializeOnLoad / sceneOpened). После правки мешей в ProbePrefabFactory — выполнить Bake Probe Portraits и закоммитить PNG.
+При открытии Level1 часть setup может вызываться автоматически (InitializeOnLoad / sceneOpened). После правки процедурных мешей в ProbePrefabFactory — Bake Probe Portraits (фото-портреты не трогать). После смены OBJ/albedo Voyager 1 — Build Voyager 1 Prefab.
 
 ---
 

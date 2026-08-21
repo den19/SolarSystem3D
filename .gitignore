@@ -116,3 +116,9 @@ InitTestScene*.unity*
 # Build-time stamp written by BuildInfoGenerator (IPreprocessBuildWithReport)
 /[Aa]ssets/[Rr]esources/[Bb]uild[Ii]nfo.json
 /[Aa]ssets/[Rr]esources/[Bb]uild[Ii]nfo.json.meta
+
+# Voyager GLB download / conversion scratch (keep Python converters)
+Tools/_voyager_import/*.glb
+Tools/_voyager_import/*.zip
+Tools/_voyager_import/*.log
+Tools/_voyager_import/printable/

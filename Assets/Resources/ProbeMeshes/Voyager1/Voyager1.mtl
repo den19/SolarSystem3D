@@ -1,0 +1,35 @@
+newmtl mat_BODY.040
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd BODY.040_albedo.png
+
+newmtl mat_BODY.040_1
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd BODY.040_1_albedo.png
+
+newmtl mat_BODY.000
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd BODY.000_albedo.png
+
+newmtl mat_BODY.002
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd BODY.002_albedo.png
+
+newmtl mat_Cube.004
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.1 0.1 0.1
+d 1.0
+map_Kd Cube.004_albedo.png
+

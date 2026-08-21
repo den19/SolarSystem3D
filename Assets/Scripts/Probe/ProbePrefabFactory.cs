@@ -2,12 +2,25 @@ using SolarSystemApp;
 using UnityEngine;
 
 /// <summary>
-/// Procedural stylized probe meshes (no FBX).
+/// Probe meshes: Voyager 1 from Resources NASA mesh; other kinds are procedural primitives.
 /// </summary>
 public static class ProbePrefabFactory
 {
     public const string RootName = "SlingshotProbe";
     public const string BlipName = "MinimapBlip";
+    /// <summary>User layer for minimap-only blip spheres (must match TagManager).</summary>
+    public const int MinimapBlipLayer = 8;
+    public const string MinimapBlipLayerName = "MinimapBlip";
+
+    /// <summary>Resources path for Voyager 1 prefab (Editor-built) or imported OBJ root.</summary>
+    public const string Voyager1PrefabResourcePath = "ProbeMeshes/Voyager1/Voyager1";
+    public const string Voyager1PrefabAltResourcePath = "ProbeMeshes/Voyager1/Voyager1Prefab";
+    const float Voyager1FitSize = 1.6f;
+    /// <summary>VTAD model HGA tip in mesh-local space (Y-up dish); Visual wrapper rotates to craft frame.</summary>
+    static readonly Vector3 Voyager1AntennaLocal = new Vector3(-0.007f, 8.12f, 0.54f);
+    static readonly Vector3 Voyager1VisualEuler = new Vector3(90f, 0f, 0f);
+    static bool _voyagerMeshFallbackWarned;
+    static bool _blipCamerasConfigured;
 
     public static ProbeCraft Create(ProbeModelKind kind, bool highDetail)
     {
@@ -80,6 +93,8 @@ public static class ProbePrefabFactory
         sphere.radius = 0.45f;
         sphere.isTrigger = true;
         SetLayerRecursively(root, 0);
+        blip.layer = ResolveMinimapBlipLayer();
+        EnsureMinimapBlipCameraCulling();
 
         craft.Antenna = craftAntenna;
         craftAntenna = null;
@@ -88,6 +103,17 @@ public static class ProbePrefabFactory
 
     static void BuildVoyager(Transform parent, Material bus, Material gold, Material dish, Material dark, bool highDetail)
     {
+        if (TryBuildVoyagerFromMesh(parent))
+            return;
+
+        if (!_voyagerMeshFallbackWarned)
+        {
+            _voyagerMeshFallbackWarned = true;
+            Debug.LogWarning(
+                "ProbePrefabFactory: Voyager 1 mesh unavailable or empty; using primitive fallback. " +
+                $"Tried Resources '{Voyager1PrefabAltResourcePath}' then '{Voyager1PrefabResourcePath}'.");
+        }
+
         AddPrimitive(parent, PrimitiveType.Cube, bus, Vector3.zero, new Vector3(0.55f, 0.35f, 0.55f));
         Transform hga = AddPrimitive(parent, PrimitiveType.Cylinder, dish, new Vector3(0f, 0.12f, -0.55f), new Vector3(1.1f, 0.04f, 1.1f));
         hga.localRotation = Quaternion.Euler(90f, 0f, 0f);
@@ -100,6 +126,236 @@ public static class ProbePrefabFactory
             boom.localRotation = Quaternion.Euler(0f, 0f, 90f);
             AddPrimitive(parent, PrimitiveType.Cube, dark, new Vector3(0f, 0.22f, 0.18f), new Vector3(0.18f, 0.06f, 0.12f));
             AddPrimitive(parent, PrimitiveType.Cylinder, gold, new Vector3(-1.05f, 0f, 0f), new Vector3(0.03f, 0.85f, 0.03f)).localRotation = Quaternion.Euler(0f, 0f, 90f);
+        }
+    }
+
+    static bool TryBuildVoyagerFromMesh(Transform parent)
+    {
+        // Prefer Editor-built flat prefab, then fall back to imported OBJ root.
+        GameObject prefab = Resources.Load<GameObject>(Voyager1PrefabAltResourcePath);
+        if (prefab == null)
+            prefab = Resources.Load<GameObject>(Voyager1PrefabResourcePath);
+        if (prefab == null)
+            return false;
+
+        var wrap = new GameObject("Voyager1Visual");
+        wrap.transform.SetParent(parent, false);
+        wrap.transform.localRotation = Quaternion.Euler(Voyager1VisualEuler);
+
+        GameObject instance = Object.Instantiate(prefab, wrap.transform, false);
+        instance.name = "Voyager1Mesh";
+        instance.transform.localPosition = Vector3.zero;
+        instance.transform.localRotation = Quaternion.identity;
+        instance.transform.localScale = Vector3.one;
+
+        if (!HasValidMeshFilters(instance))
+        {
+            Object.Destroy(wrap);
+            return false;
+        }
+
+        foreach (Collider col in instance.GetComponentsInChildren<Collider>(true))
+            Object.Destroy(col);
+
+        Transform antenna = FindNamedChild(instance.transform, "Antenna");
+        if (antenna == null)
+        {
+            var antennaGo = new GameObject("Antenna");
+            antennaGo.transform.SetParent(wrap.transform, false);
+            antennaGo.transform.localPosition = Voyager1AntennaLocal;
+            antennaGo.transform.localRotation = Quaternion.identity;
+            antenna = antennaGo.transform;
+        }
+        else if (antenna.parent != wrap.transform)
+        {
+            // Keep dish pivot under the rotated visual root so PointAntennaAt tracks Earth.
+            Vector3 world = antenna.position;
+            antenna.SetParent(wrap.transform, true);
+            antenna.position = world;
+        }
+
+        craftAntenna = antenna;
+        ApplyProbeBodyMaterials(wrap.transform);
+        FitToBounds(wrap.transform, Voyager1FitSize);
+        return true;
+    }
+
+    static bool HasValidMeshFilters(GameObject root)
+    {
+        MeshFilter[] filters = root.GetComponentsInChildren<MeshFilter>(true);
+        for (int i = 0; i < filters.Length; i++)
+        {
+            if (filters[i] != null && filters[i].sharedMesh != null)
+                return true;
+        }
+
+        return false;
+    }
+
+    static Transform FindNamedChild(Transform root, string name)
+    {
+        if (root.name == name)
+            return root;
+        for (int i = 0; i < root.childCount; i++)
+        {
+            Transform found = FindNamedChild(root.GetChild(i), name);
+            if (found != null)
+                return found;
+        }
+
+        return null;
+    }
+
+    static void FitToBounds(Transform root, float targetSize)
+    {
+        MeshFilter[] filters = root.GetComponentsInChildren<MeshFilter>(true);
+        if (filters == null || filters.Length == 0)
+            return;
+
+        bool hasBounds = false;
+        Bounds bounds = new Bounds(Vector3.zero, Vector3.zero);
+        for (int i = 0; i < filters.Length; i++)
+        {
+            MeshFilter filter = filters[i];
+            if (filter == null || filter.sharedMesh == null)
+                continue;
+
+            Bounds meshBounds = filter.sharedMesh.bounds;
+            Vector3 c = meshBounds.center;
+            Vector3 e = meshBounds.extents;
+            for (int x = -1; x <= 1; x += 2)
+            for (int y = -1; y <= 1; y += 2)
+            for (int z = -1; z <= 1; z += 2)
+            {
+                Vector3 localCorner = c + new Vector3(e.x * x, e.y * y, e.z * z);
+                Vector3 worldCorner = filter.transform.TransformPoint(localCorner);
+                Vector3 rootLocal = root.InverseTransformPoint(worldCorner);
+                if (!hasBounds)
+                {
+                    bounds = new Bounds(rootLocal, Vector3.zero);
+                    hasBounds = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(rootLocal);
+                }
+            }
+        }
+
+        if (!hasBounds)
+            return;
+
+        float maxExtent = Mathf.Max(bounds.size.x, Mathf.Max(bounds.size.y, bounds.size.z));
+        if (maxExtent < 1e-5f)
+            return;
+
+        float scale = targetSize / maxExtent;
+        root.localScale *= scale;
+    }
+
+    static void ApplyProbeBodyMaterials(Transform root)
+    {
+        Shader shader = ResolveBodyShader();
+        if (shader == null)
+            return;
+
+        MeshRenderer[] renderers = root.GetComponentsInChildren<MeshRenderer>(true);
+        for (int r = 0; r < renderers.Length; r++)
+        {
+            MeshRenderer renderer = renderers[r];
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+
+            Material[] source = renderer.sharedMaterials;
+            if (source == null || source.Length == 0)
+                continue;
+
+            var rebuilt = new Material[source.Length];
+            for (int i = 0; i < source.Length; i++)
+            {
+                Material src = source[i];
+                var mat = new Material(shader);
+                Texture albedo = null;
+                Color color = new Color(0.78f, 0.76f, 0.7f, 1f);
+                if (src != null)
+                {
+                    mat.name = src.name + "_Probe";
+                    if (src.HasProperty("_BaseMap"))
+                        albedo = src.GetTexture("_BaseMap");
+                    if (albedo == null && src.HasProperty("_MainTex"))
+                        albedo = src.GetTexture("_MainTex");
+                    if (src.HasProperty("_BaseColor"))
+                        color = src.GetColor("_BaseColor");
+                    else if (src.HasProperty("_Color"))
+                        color = src.GetColor("_Color");
+                }
+                else
+                {
+                    mat.name = "ProbeBody";
+                }
+
+                color.a = 1f;
+
+                if (albedo != null)
+                {
+                    if (mat.HasProperty("_BaseMap"))
+                        mat.SetTexture("_BaseMap", albedo);
+                    if (mat.HasProperty("_MainTex"))
+                        mat.SetTexture("_MainTex", albedo);
+                    if (shader.name.IndexOf("Unlit", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                        mat.EnableKeyword("_BASEMAP");
+                }
+
+                if (mat.HasProperty("_BaseColor"))
+                    mat.SetColor("_BaseColor", color);
+                if (mat.HasProperty("_Color"))
+                    mat.SetColor("_Color", color);
+                if (mat.HasProperty("_Metallic"))
+                    mat.SetFloat("_Metallic", 0.25f);
+                if (mat.HasProperty("_Smoothness"))
+                    mat.SetFloat("_Smoothness", 0.35f);
+
+                rebuilt[i] = mat;
+            }
+
+            renderer.sharedMaterials = rebuilt;
+        }
+    }
+
+    static int ResolveMinimapBlipLayer()
+    {
+        int named = LayerMask.NameToLayer(MinimapBlipLayerName);
+        if (named >= 0)
+            return named;
+        return MinimapBlipLayer;
+    }
+
+    static void EnsureMinimapBlipCameraCulling()
+    {
+        if (_blipCamerasConfigured)
+            return;
+        _blipCamerasConfigured = true;
+
+        int layer = ResolveMinimapBlipLayer();
+        int bit = 1 << layer;
+
+        Camera main = Camera.main;
+        if (main == null)
+        {
+            GameObject mainGo = GameObject.Find("Main Camera");
+            if (mainGo != null)
+                main = mainGo.GetComponent<Camera>();
+        }
+
+        if (main != null)
+            main.cullingMask &= ~bit;
+
+        GameObject minimapGo = GameObject.Find("Minimap Camera");
+        if (minimapGo != null)
+        {
+            Camera minimap = minimapGo.GetComponent<Camera>();
+            if (minimap != null)
+                minimap.cullingMask |= bit;
         }
     }
 
