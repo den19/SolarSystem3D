@@ -24,7 +24,7 @@ public static class ProbeMeshPrefabBuilder
         new Spec { FolderName = "NewHorizons", MenuLabel = "New Horizons", AntennaLocal = new Vector3(-0.018f, 1.516f, -0.029f) },
         new Spec { FolderName = "Juno", MenuLabel = "Juno", AntennaLocal = new Vector3(-0.075f, 1.681f, 0.043f) },
         new Spec { FolderName = "Venera7", MenuLabel = "Venera 7", AntennaLocal = new Vector3(0.004f, 0.827f, 0.003f) },
-        new Spec { FolderName = "Luna1", MenuLabel = "Luna 1", AntennaLocal = new Vector3(0f, 1.144f, 0f) },
+        new Spec { FolderName = "Luna1", MenuLabel = "Luna 1", AntennaLocal = new Vector3(-0.183f, 0.772f, 0.020f) },
         new Spec { FolderName = "Hayabusa2", MenuLabel = "Hayabusa2", AntennaLocal = new Vector3(0f, 0.385f, 0.013f) },
         new Spec { FolderName = "Change4", MenuLabel = "Chang'e 4", AntennaLocal = new Vector3(-0.001f, 0.307f, 0.011f) },
         new Spec { FolderName = "Luna16", MenuLabel = "Luna 16", AntennaLocal = new Vector3(0.018f, 0.66f, 0.014f) },
@@ -235,8 +235,8 @@ public static class ProbeMeshPrefabBuilder
     {
         foreach (MeshRenderer renderer in meshRoot.GetComponentsInChildren<MeshRenderer>(true))
         {
-            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            renderer.receiveShadows = false;
+            ProbePrefabFactory.ConfigureProbeMeshRenderer(renderer);
+            DisableSmallMeshCulling(renderer);
 
             Material[] source = renderer.sharedMaterials;
             if (source == null || source.Length == 0)
@@ -402,6 +402,20 @@ public static class ProbeMeshPrefabBuilder
         if (unlit != null)
             return unlit;
         return Shader.Find("Standard");
+    }
+
+    static void DisableSmallMeshCulling(MeshRenderer renderer)
+    {
+        if (renderer == null)
+            return;
+
+        var so = new SerializedObject(renderer);
+        SerializedProperty prop = so.FindProperty("m_SmallMeshCulling");
+        if (prop == null)
+            return;
+
+        prop.boolValue = false;
+        so.ApplyModifiedPropertiesWithoutUndo();
     }
 
     static void EnsureFolder(string assetFolder)

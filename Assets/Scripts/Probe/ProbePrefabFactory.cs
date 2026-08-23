@@ -1,5 +1,8 @@
 using SolarSystemApp;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 /// <summary>
 /// Probe meshes: imported OBJ/prefab packs under Resources/ProbeMeshes when available;
@@ -48,7 +51,7 @@ public static class ProbePrefabFactory
 
     public const string Luna1PrefabResourcePath = "ProbeMeshes/Luna1/Luna1";
     public const string Luna1PrefabAltResourcePath = "ProbeMeshes/Luna1/Luna1Prefab";
-    static readonly Vector3 Luna1AntennaLocal = new Vector3(0f, 1.144f, 0f);
+    static readonly Vector3 Luna1AntennaLocal = new Vector3(-0.183f, 0.772f, 0.020f);
     static bool _luna1MeshFallbackWarned;
 
     public const string Hayabusa2PrefabResourcePath = "ProbeMeshes/Hayabusa2/Hayabusa2";
@@ -156,8 +159,7 @@ public static class ProbePrefabFactory
         var sphere = root.AddComponent<SphereCollider>();
         sphere.radius = 0.45f;
         sphere.isTrigger = true;
-        SetLayerRecursively(root, 0);
-        blip.layer = ResolveMinimapBlipLayer();
+        AssignProbeLayers(root);
         EnsureMinimapBlipCameraCulling();
 
         craft.Antenna = craftAntenna;
@@ -239,7 +241,7 @@ public static class ProbePrefabFactory
         }
 
         craftAntenna = antenna;
-        ApplyProbeBodyMaterials(wrap.transform);
+        ApplyImportedMeshMaterials(wrap.transform);
         FitToBounds(wrap.transform, DefaultMeshFitSize);
         return true;
     }
@@ -295,7 +297,7 @@ public static class ProbePrefabFactory
         }
 
         craftAntenna = antenna;
-        ApplyProbeBodyMaterials(wrap.transform);
+        ApplyImportedMeshMaterials(wrap.transform);
         FitToBounds(wrap.transform, DefaultMeshFitSize);
         return true;
     }
@@ -393,8 +395,7 @@ public static class ProbePrefabFactory
         for (int r = 0; r < renderers.Length; r++)
         {
             MeshRenderer renderer = renderers[r];
-            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            renderer.receiveShadows = false;
+            ConfigureProbeMeshRenderer(renderer);
 
             Material[] source = renderer.sharedMaterials;
             if (source == null || source.Length == 0)
@@ -445,11 +446,99 @@ public static class ProbePrefabFactory
                 if (mat.HasProperty("_Smoothness"))
                     mat.SetFloat("_Smoothness", 0.35f);
 
+                ConfigureOpaqueProbeMaterial(mat);
                 rebuilt[i] = mat;
             }
 
             renderer.sharedMaterials = rebuilt;
         }
+    }
+
+    /// <summary>
+    /// Keep Editor-baked URP materials from prefab (clone instances). Replacing the shader at runtime
+    /// breaks deferred lighting on dense meshes such as Luna 1 and looks semi-transparent / hollow.
+    /// </summary>
+    static void ApplyImportedMeshMaterials(Transform root)
+    {
+        MeshRenderer[] renderers = root.GetComponentsInChildren<MeshRenderer>(true);
+        for (int r = 0; r < renderers.Length; r++)
+        {
+            MeshRenderer renderer = renderers[r];
+            ConfigureProbeMeshRenderer(renderer);
+
+            Material[] source = renderer.sharedMaterials;
+            if (source == null || source.Length == 0)
+                continue;
+
+            var rebuilt = new Material[source.Length];
+            for (int i = 0; i < source.Length; i++)
+            {
+                Material src = source[i];
+                rebuilt[i] = src != null ? new Material(src) : new Material(ResolveBodyShader());
+                ConfigureOpaqueProbeMaterial(rebuilt[i], doubleSided: true);
+            }
+
+            renderer.sharedMaterials = rebuilt;
+        }
+    }
+
+    /// <summary>
+    /// Dense imported meshes (e.g. Luna 1) must not use Small Mesh Culling — on phone the craft is
+    /// sub-pixel and Unity strips most triangles, leaving a hollow dotted shell.
+    /// Disable via prefab (m_SmallMeshCulling: 0) and Editor bake; no public runtime API in 6000.4.
+    /// </summary>
+    public static void ConfigureProbeMeshRenderer(MeshRenderer renderer)
+    {
+        if (renderer == null)
+            return;
+
+        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        renderer.receiveShadows = false;
+        TryDisableSmallMeshCulling(renderer);
+    }
+
+#if UNITY_EDITOR
+    static void TryDisableSmallMeshCulling(MeshRenderer renderer)
+    {
+        if (renderer == null)
+            return;
+
+        SerializedObject so = new SerializedObject(renderer);
+        SerializedProperty prop = so.FindProperty("m_SmallMeshCulling");
+        if (prop == null)
+            return;
+
+        prop.boolValue = false;
+        so.ApplyModifiedPropertiesWithoutUndo();
+    }
+#else
+    static void TryDisableSmallMeshCulling(MeshRenderer renderer) { }
+#endif
+
+    static void ConfigureOpaqueProbeMaterial(Material mat, bool doubleSided = false)
+    {
+        if (mat == null)
+            return;
+
+        mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Geometry;
+        if (mat.HasProperty("_Surface"))
+            mat.SetFloat("_Surface", 0f);
+        if (mat.HasProperty("_Blend"))
+            mat.SetFloat("_Blend", 0f);
+        if (mat.HasProperty("_ZWrite"))
+            mat.SetFloat("_ZWrite", 1f);
+        if (mat.HasProperty("_SrcBlend"))
+            mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
+        if (mat.HasProperty("_DstBlend"))
+            mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.Zero);
+        if (mat.HasProperty("_AlphaClip"))
+            mat.SetFloat("_AlphaClip", 0f);
+        if (mat.HasProperty("_Cull"))
+            mat.SetFloat("_Cull", (float)(doubleSided ? UnityEngine.Rendering.CullMode.Off : UnityEngine.Rendering.CullMode.Back));
+
+        mat.DisableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+        mat.DisableKeyword("_ALPHATEST_ON");
     }
 
     public static int ResolveMinimapBlipLayer()
@@ -767,7 +856,7 @@ public static class ProbePrefabFactory
         }
 
         craftAntenna = antenna;
-        ApplyProbeBodyMaterials(wrap.transform);
+        ApplyImportedMeshMaterials(wrap.transform);
         FitToBounds(wrap.transform, DefaultMeshFitSize);
         return true;
     }
@@ -1009,6 +1098,22 @@ public static class ProbePrefabFactory
         if (material.HasProperty("_Color"))
             material.SetColor("_Color", color);
         return material;
+    }
+
+    static void AssignProbeLayers(GameObject root)
+    {
+        root.layer = 0;
+        int probeSelfLayer = ProbeCameraOffsets.ResolveProbeSelfLayer();
+        int blipLayer = ResolveMinimapBlipLayer();
+        Transform rootTransform = root.transform;
+        for (int i = 0; i < rootTransform.childCount; i++)
+        {
+            Transform child = rootTransform.GetChild(i);
+            if (child.name == BlipName)
+                SetLayerRecursively(child.gameObject, blipLayer);
+            else
+                SetLayerRecursively(child.gameObject, probeSelfLayer);
+        }
     }
 
     static void SetLayerRecursively(GameObject go, int layer)

@@ -1,3 +1,10 @@
-Place Luna1-source.glb here (or set SKETCHFAB_TOKEN) then re-run:
-  python Tools/_probe_mesh_import/fetch_probe_meshes.py --only Luna1
-Page: https://sketchfab.com/3d-models/soviet-space-satellite-moon-1-1b7feef6a0614837b21790e219e68ab2
+Option A — manual Sketchfab GLB (best quality):
+  1. Download GLB from https://sketchfab.com/3d-models/soviet-space-satellite-moon-1-1b7feef6a0614837b21790e219e68ab2
+  2. Save as Luna1-source.glb in this folder
+  3. python Tools/_probe_mesh_import/fetch_probe_meshes.py --only Luna1
+
+Option B — automated (no API token, avoids HTTP 429):
+  python Tools/_probe_mesh_import/build_luna1_source_glb.py
+  python Tools/_probe_mesh_import/convert_glb_to_probe_obj.py --src Tools/_probe_mesh_import/Luna1-source.glb --out-name Luna1
+
+Then Unity: Solar System → Build Luna 1 Prefab

@@ -1,8 +1,6 @@
-Luna 1 spacecraft 3D model
-==========================
+Luna1 spacecraft 3D model
+===========================
 
-Intended source (CC BY when available): Sketchfab Soviet Moon-1 / Luna
-  https://sketchfab.com/3d-models/soviet-space-satellite-moon-1-1b7feef6a0614837b21790e219e68ab2
-
-If this folder contains a procedural approximation, place Luna1-source.glb under
-Tools/_probe_mesh_import/ and re-run convert_glb_to_probe_obj.py, then Build Probe Mesh Prefabs.
+Imported from local GLB: c:\git\SolarSystemV7_01082025_07_00\Tools\_probe_mesh_import\Luna1-source.glb
+Converted/decimated to OBJ + PNG for Unity mobile.
+Verify and keep creator attribution (CC BY) as required.

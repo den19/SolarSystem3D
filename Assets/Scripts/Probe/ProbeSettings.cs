@@ -148,8 +148,8 @@ namespace SolarSystemApp
         static ProbeModelKind ClampModel(int raw)
         {
             if (raw < 0 || raw > (int)ProbeModelKind.Chandrayaan3)
-                return ProbeModelKind.Voyager;
-            return (ProbeModelKind)raw;
+                return ProbeModelCatalog.GetDefaultPickerModel();
+            return ProbeModelCatalog.ClampToPicker((ProbeModelKind)raw);
         }
 
         static ProbeCameraMode ClampCamera(int raw)
@@ -174,6 +174,7 @@ namespace SolarSystemApp
         public static void SetModel(ProbeModelKind kind)
         {
             EnsureInitialized();
+            kind = ProbeModelCatalog.ClampToPicker(kind);
             if (model == kind)
                 return;
 

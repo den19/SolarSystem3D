@@ -29,6 +29,15 @@ def new_guid() -> str:
     return uuid.uuid4().hex
 
 
+def read_existing_guid(meta_path: Path) -> str | None:
+    if not meta_path.is_file():
+        return None
+    for line in meta_path.read_text(encoding="utf-8").splitlines():
+        if line.startswith("guid: "):
+            return line.split("guid: ", 1)[1].strip()
+    return None
+
+
 def write_texture_meta(path: Path, guid: str) -> None:
     path.write_text(
         f"""fileFormatVersion: 2
@@ -308,9 +317,10 @@ def decimate_mesh(mesh: trimesh.Trimesh, target_faces: int) -> trimesh.Trimesh:
         if isinstance(simplified, trimesh.Trimesh) and len(simplified.faces) > 0:
             return simplified
     except Exception as exc:  # noqa: BLE001
-        print("decimate failed:", exc)
-    idx = np.linspace(0, len(mesh.faces) - 1, num=target_faces, dtype=int)
-    return mesh.submesh([idx], append=True)
+        raise RuntimeError(
+            "Mesh decimation failed. Install fast_simplification: pip install fast_simplification"
+        ) from exc
+    raise RuntimeError("Mesh decimation returned an empty mesh.")
 
 
 def export_obj_manual(meshes: list[tuple[str, trimesh.Trimesh, str]], out_obj: Path) -> None:
@@ -782,7 +792,8 @@ def convert(
 
     obj_path = out / f"{out_name}.obj"
     export_obj_manual(packaged, obj_path)
-    write_model_meta(out / f"{out_name}.obj.meta", new_guid())
+    obj_meta = out / f"{out_name}.obj.meta"
+    write_model_meta(obj_meta, read_existing_guid(obj_meta) or new_guid())
     write_default_meta(out / f"{out_name}.mtl.meta", new_guid())
 
     attr_key = attribution_key or out_name

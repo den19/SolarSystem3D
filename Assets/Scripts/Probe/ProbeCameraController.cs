@@ -31,6 +31,8 @@ public class ProbeCameraController : MonoBehaviour
     bool _chaseLimitsApplied;
     float _savedMinDistance;
     float _savedMaxDistance;
+    bool _probeSelfHiddenFromMain;
+    int _savedMainCullingMask;
 
     public static ProbeCameraController EnsureOnHost(GameObject host)
     {
@@ -116,12 +118,14 @@ public class ProbeCameraController : MonoBehaviour
         if (mode == ProbeCameraMode.Cockpit)
         {
             ClearChaseOrbitState();
-            _main.transform.position = craft.transform.position + velocity * 0.55f;
-            _main.transform.rotation = Quaternion.LookRotation(velocity, Vector3.up);
+            ApplyMainProbeSelfCulling(true);
+            _main.transform.position = ProbeCameraOffsets.CockpitWorldPosition(craft, velocity);
+            _main.transform.rotation = ProbeCameraOffsets.CockpitWorldRotation(craft, velocity);
             _orbit?.SetExternalOrbitControl(true);
             return;
         }
 
+        ApplyMainProbeSelfCulling(false);
         ApplyChaseOrbitSetup(craft);
         TickChase(craft, velocity);
     }
@@ -325,6 +329,7 @@ public class ProbeCameraController : MonoBehaviour
             return;
 
         _overrideActive = false;
+        ApplyMainProbeSelfCulling(false);
         ClearChaseOrbitState();
         _orbit?.SetExternalOrbitControl(false);
 
@@ -348,5 +353,29 @@ public class ProbeCameraController : MonoBehaviour
             if (_main != null)
                 _orbit = _main.GetComponent<MobileOrbitCamera>();
         }
+    }
+
+    void ApplyMainProbeSelfCulling(bool hide)
+    {
+        EnsureMainCamera();
+        if (_main == null)
+            return;
+
+        if (hide)
+        {
+            if (_probeSelfHiddenFromMain)
+                return;
+
+            _savedMainCullingMask = _main.cullingMask;
+            _main.cullingMask &= ~ProbeCameraOffsets.ProbeSelfLayerBit;
+            _probeSelfHiddenFromMain = true;
+            return;
+        }
+
+        if (!_probeSelfHiddenFromMain)
+            return;
+
+        _main.cullingMask = _savedMainCullingMask;
+        _probeSelfHiddenFromMain = false;
     }
 }

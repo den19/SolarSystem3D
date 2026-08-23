@@ -87,22 +87,21 @@ public class ProbeViewRig : MonoBehaviour
         if (craft == null)
             return;
 
-        Vector3 forward = craft.Velocity.sqrMagnitude > 1e-5f ? craft.Velocity.normalized : craft.transform.forward;
-        Vector3 up = Vector3.up;
-        if (Mathf.Abs(Vector3.Dot(forward, up)) > 0.95f)
-            up = craft.transform.up;
+        Vector3 forward = ProbeCameraOffsets.ResolveForward(craft, craft.Velocity);
+        Vector3 up = ProbeCameraOffsets.ResolveUp(craft, forward);
 
-        Vector3 pos = craft.transform.position;
-        _forward.transform.position = pos + forward * 0.7f;
+        _forward.transform.position = ProbeCameraOffsets.PipWorldPosition(craft, forward);
         _forward.transform.rotation = Quaternion.LookRotation(forward, up);
 
         Vector3 back = -forward;
         Quaternion yawL = Quaternion.AngleAxis(-35f, up);
         Quaternion yawR = Quaternion.AngleAxis(35f, up);
-        _rearLeft.transform.position = pos + yawL * back * 0.7f;
-        _rearLeft.transform.rotation = Quaternion.LookRotation(yawL * back, up);
-        _rearRight.transform.position = pos + yawR * back * 0.7f;
-        _rearRight.transform.rotation = Quaternion.LookRotation(yawR * back, up);
+        Vector3 rearLeftDir = (yawL * back).normalized;
+        Vector3 rearRightDir = (yawR * back).normalized;
+        _rearLeft.transform.position = ProbeCameraOffsets.PipWorldPosition(craft, rearLeftDir);
+        _rearLeft.transform.rotation = Quaternion.LookRotation(rearLeftDir, up);
+        _rearRight.transform.position = ProbeCameraOffsets.PipWorldPosition(craft, rearRightDir);
+        _rearRight.transform.rotation = Quaternion.LookRotation(rearRightDir, up);
     }
 
     void EnsureCameras()
@@ -143,7 +142,7 @@ public class ProbeViewRig : MonoBehaviour
         cam.depth = -20f;
         // UI (5) + MinimapBlip — иначе PIP сидит внутри cyan-сферы и «зеркала» залиты синим.
         int blipLayer = ProbePrefabFactory.ResolveMinimapBlipLayer();
-        cam.cullingMask = ~((1 << 5) | (1 << blipLayer));
+        cam.cullingMask = ~((1 << 5) | (1 << blipLayer) | ProbeCameraOffsets.ProbeSelfLayerBit);
         cam.targetTexture = rt;
         cam.enabled = false;
         cam.allowHDR = false;

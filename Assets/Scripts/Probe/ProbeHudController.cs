@@ -345,7 +345,7 @@ public class ProbeHudController : MonoBehaviour
         BuildModelScrollViewport(row);
         _modelNextBtn = CreateScrollArrow(row, "ProbeModelNext", "▶", ScrollModelsNext);
 
-        var entries = ProbeModelCatalog.Entries;
+        var entries = ProbeModelCatalog.PickerEntries;
         for (int i = 0; i < entries.Count; i++)
         {
             var entry = entries[i];
