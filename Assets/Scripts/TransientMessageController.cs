@@ -18,6 +18,7 @@ public class TransientMessageController : MonoBehaviour
     Coroutine _hideRoutine;
     string _currentKey;
     string _currentFallback;
+    object[] _currentFormatArgs;
 
     void Awake()
     {
@@ -58,11 +59,39 @@ public class TransientMessageController : MonoBehaviour
         Instance.ShowInternal(key, fallback, duration);
     }
 
+    public static void ShowLocalizedFormat(string key, string fallback, float duration, params object[] args)
+    {
+        if (Instance == null)
+        {
+            Debug.LogWarning("TransientMessageController: " + FormatMessage(key, fallback, args));
+            return;
+        }
+
+        Instance.ShowFormattedInternal(key, fallback, duration, args);
+    }
+
     void ShowInternal(string key, string fallback, float duration)
     {
         _currentKey = key;
         _currentFallback = fallback;
+        _currentFormatArgs = null;
         ApplyText(key, fallback);
+
+        if (_panelRect != null)
+            _panelRect.gameObject.SetActive(true);
+
+        if (_hideRoutine != null)
+            StopCoroutine(_hideRoutine);
+
+        _hideRoutine = StartCoroutine(HideAfterDelay(duration));
+    }
+
+    void ShowFormattedInternal(string key, string fallback, float duration, object[] args)
+    {
+        _currentKey = key;
+        _currentFallback = fallback;
+        _currentFormatArgs = args;
+        ApplyFormattedText(key, fallback, args);
 
         if (_panelRect != null)
             _panelRect.gameObject.SetActive(true);
@@ -87,7 +116,40 @@ public class TransientMessageController : MonoBehaviour
         if (_panelRect == null || !_panelRect.gameObject.activeSelf)
             return;
 
-        ApplyText(_currentKey, _currentFallback);
+        if (_currentFormatArgs != null && _currentFormatArgs.Length > 0)
+            ApplyFormattedText(_currentKey, _currentFallback, _currentFormatArgs);
+        else
+            ApplyText(_currentKey, _currentFallback);
+    }
+
+    void ApplyFormattedText(string key, string fallback, object[] args)
+    {
+        if (_label == null)
+            return;
+
+        _label.text = FormatMessage(key, fallback, args);
+
+        var lang = LocalizationManager.CurrentLanguage;
+        _label.font = LocalizationFontHelper.GetFontForLanguage(lang);
+        var overlay = LocalizationFontHelper.GetOverlayMaterialForLanguage(lang);
+        if (overlay != null)
+            _label.fontSharedMaterial = overlay;
+    }
+
+    static string FormatMessage(string key, string fallback, object[] args)
+    {
+        string template = Translate(key, fallback);
+        if (args == null || args.Length == 0)
+            return template;
+
+        try
+        {
+            return string.Format(template, args);
+        }
+        catch (System.FormatException)
+        {
+            return fallback;
+        }
     }
 
     void ApplyText(string key, string fallback)

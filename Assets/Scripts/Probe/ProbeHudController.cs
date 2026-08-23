@@ -1175,6 +1175,8 @@ public class ProbeHudController : MonoBehaviour
         return auPerSec.ToString("0.000") + " AU/s";
     }
 
+    public static string ResolveBodyLabel(string objectName) => BodyLabel(objectName);
+
     static string BodyLabel(string objectName)
     {
         if (string.IsNullOrEmpty(objectName) || objectName == "—")

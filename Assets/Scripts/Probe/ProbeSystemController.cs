@@ -40,6 +40,8 @@ public class ProbeSystemController : MonoBehaviour
     ProbeViewRig _viewRig;
     ProbeGridProjection _gridProjection;
     LookAtTarget _lookAt;
+    SpacetimeGridController _spacetimeGrid;
+    bool _probeInsideGrid = true;
 
     public static ProbeSystemController EnsureOnHost(GameObject host)
     {
@@ -181,6 +183,8 @@ public class ProbeSystemController : MonoBehaviour
         if (CheckImpact(pos) || CheckOverheat(pos))
             return;
 
+        CheckGridExit(pos);
+
         int n = ProbeTrajectoryPredictor.Predict(pos, vel, _attractors, _attractorCount, _ghostPoints);
         DrawGhost(n);
         UpdateTelemetry();
@@ -197,9 +201,14 @@ public class ProbeSystemController : MonoBehaviour
             if ((pos - _attractors[i].position).sqrMagnitude <= hit * hit)
             {
                 Craft.Impacted = true;
-                TransientMessageController.ShowLocalized(
+                string probeName = ProbeHudController.ResolveModelLabel(Craft.Model);
+                string bodyName = ProbeHudController.ResolveBodyLabel(_attractors[i].name);
+                TransientMessageController.ShowLocalizedFormat(
                     "ProbeImpactMessage",
-                    "Probe impacted " + _attractors[i].name + ".");
+                    "Probe {0} collided with celestial body {1}.",
+                    4f,
+                    probeName,
+                    bodyName);
                 AbortInternal(restoreCamera: true, toastKey: null, toastFallback: null);
                 return true;
             }
@@ -228,6 +237,34 @@ public class ProbeSystemController : MonoBehaviour
             return true;
         }
 
+        return false;
+    }
+
+    bool CheckGridExit(Vector3 pos)
+    {
+        if (!GravityGridSettings.UseGravityGrid)
+        {
+            _probeInsideGrid = true;
+            return false;
+        }
+
+        if (_spacetimeGrid == null)
+            _spacetimeGrid = FindFirstObjectByType<SpacetimeGridController>();
+        if (_spacetimeGrid == null)
+            return false;
+
+        bool inside = _spacetimeGrid.ContainsWorldXZ(pos.x, pos.z);
+        if (_probeInsideGrid && !inside)
+        {
+            string probeName = ProbeHudController.ResolveModelLabel(Craft.Model);
+            TransientMessageController.ShowLocalizedFormat(
+                "ProbeGridExitMessage",
+                "Probe {0} left the gravity grid display area.",
+                4f,
+                probeName);
+        }
+
+        _probeInsideGrid = inside;
         return false;
     }
 
@@ -272,6 +309,11 @@ public class ProbeSystemController : MonoBehaviour
         Craft.AlignToVelocity();
         Craft.gameObject.AddComponent<ProbeWorldMarker>();
         _cappedToastShown = false;
+        _probeInsideGrid = true;
+        if (_spacetimeGrid == null)
+            _spacetimeGrid = FindFirstObjectByType<SpacetimeGridController>();
+        if (_spacetimeGrid != null)
+            _probeInsideGrid = _spacetimeGrid.ContainsWorldXZ(position.x, position.z);
         ProbeSettings.SetShowProbeViews(true);
         ProbeSettings.SetCameraMode(ProbeCameraMode.Chase, force: true);
         ProbeCoachSettings.MarkLaunchCompleted();
@@ -322,6 +364,7 @@ public class ProbeSystemController : MonoBehaviour
         _viewRig?.SetActive(false);
         SetGhostVisible(false);
         _cappedToastShown = false;
+        _probeInsideGrid = true;
 
         if (!string.IsNullOrEmpty(toastKey))
             TransientMessageController.ShowLocalized(toastKey, toastFallback);
