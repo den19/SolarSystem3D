@@ -20,10 +20,10 @@ public class ProbePreviewRig : MonoBehaviour
     const float PortraitImageHeight = 192f;
     const float CompactPortraitHeight = 160f;
     const float TitleHeight = 32f;
-    const float DescHeight = 96f;
     const float DescNavHeight = 32f;
     const float DescNavGap = 16f;
     const float DescNavArrowWidth = 36f;
+    const float CloseButtonSize = 32f;
     const float Padding = 8f;
 
     RectTransform _panel;
@@ -36,6 +36,9 @@ public class ProbePreviewRig : MonoBehaviour
     Button _descPrevBtn;
     Button _descNextBtn;
     TextMeshProUGUI _descPageIndicator;
+    Button _closeBtn;
+    bool _userDismissed;
+    ProbeModelKind _dismissedForModel;
     readonly List<string> _descPages = new List<string>(3);
     int _descPageIndex;
     ProbeModelKind _pagedModel = (ProbeModelKind)(-1);
@@ -72,7 +75,8 @@ public class ProbePreviewRig : MonoBehaviour
     void OnEnable()
     {
         EnsureUiBuilt();
-        ProbeSettings.LoadoutChanged += RefreshContent;
+        ProbeSettings.LoadoutChanged += OnLoadoutChanged;
+        ProbeSettings.UseProbeChanged += OnUseProbeChanged;
         ProbeSettings.UseProbeChanged += RefreshVisibility;
         if (ProbeSystemController.Instance != null)
             ProbeSystemController.Instance.StateChanged += OnStateChanged;
@@ -83,7 +87,8 @@ public class ProbePreviewRig : MonoBehaviour
 
     void OnDisable()
     {
-        ProbeSettings.LoadoutChanged -= RefreshContent;
+        ProbeSettings.LoadoutChanged -= OnLoadoutChanged;
+        ProbeSettings.UseProbeChanged -= OnUseProbeChanged;
         ProbeSettings.UseProbeChanged -= RefreshVisibility;
         if (ProbeSystemController.Instance != null)
             ProbeSystemController.Instance.StateChanged -= OnStateChanged;
@@ -101,9 +106,33 @@ public class ProbePreviewRig : MonoBehaviour
         LayoutPanel();
     }
 
+    void OnLoadoutChanged()
+    {
+        if (_userDismissed && ProbeSettings.Model != _dismissedForModel)
+            _userDismissed = false;
+        RefreshContent();
+        RefreshVisibility(ProbeSettings.UseProbe);
+    }
+
+    void OnUseProbeChanged(bool enabled)
+    {
+        if (enabled)
+        {
+            _userDismissed = false;
+            RefreshVisibility(enabled);
+        }
+    }
+
+    void DismissPreview()
+    {
+        _userDismissed = true;
+        _dismissedForModel = ProbeSettings.Model;
+        RefreshVisibility(ProbeSettings.UseProbe);
+    }
+
     void EnsureUiBuilt()
     {
-        if (_portraitImage != null && _descNavRow != null && _description != null)
+        if (_portraitImage != null && _descNavRow != null && _description != null && _closeBtn != null)
         {
             // Keep runtime rects in sync with layout constants (Play Mode may keep old children).
             ApplyCompactLayout(_compactMode);
@@ -172,8 +201,35 @@ public class ProbePreviewRig : MonoBehaviour
         descRt.offsetMax = new Vector2(-Padding, -(Padding + PortraitImageHeight + TitleHeight));
 
         BuildDescNavRow(frameGo.transform);
+        BuildCloseButton(frameGo.transform);
 
         _panel.gameObject.SetActive(false);
+    }
+
+    void BuildCloseButton(Transform parent)
+    {
+        var go = new GameObject("CloseButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+        go.layer = gameObject.layer;
+        go.transform.SetParent(parent, false);
+        var rt = go.GetComponent<RectTransform>();
+        rt.anchorMin = new Vector2(1f, 1f);
+        rt.anchorMax = new Vector2(1f, 1f);
+        rt.pivot = new Vector2(1f, 1f);
+        rt.anchoredPosition = new Vector2(-Padding, -Padding);
+        rt.sizeDelta = new Vector2(CloseButtonSize, CloseButtonSize);
+
+        var image = go.GetComponent<Image>();
+        image.color = new Color(0.25f, 0.3f, 0.4f, 0.95f);
+        image.raycastTarget = true;
+
+        var label = CreateText(go.transform, "Label", 26f, TextAlignmentOptions.Center, false);
+        label.text = "×";
+        label.fontStyle = FontStyles.Bold;
+        label.color = Color.white;
+        Stretch(label.rectTransform);
+
+        _closeBtn = go.GetComponent<Button>();
+        _closeBtn.onClick.AddListener(DismissPreview);
     }
 
     void BuildDescNavRow(Transform parent)
@@ -487,7 +543,7 @@ public class ProbePreviewRig : MonoBehaviour
 
     bool ShouldShowPreview(bool useProbe)
     {
-        if (!useProbe)
+        if (!useProbe || _userDismissed)
             return false;
 
         var system = ProbeSystemController.Instance;
