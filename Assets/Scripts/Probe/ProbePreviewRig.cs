@@ -43,6 +43,8 @@ public class ProbePreviewRig : MonoBehaviour
     int _descPageIndex;
     ProbeModelKind _pagedModel = (ProbeModelKind)(-1);
     Language _pagedLanguage;
+    float _lastPaginateWidth = -1f;
+    float _lastPaginateHeight = -1f;
     ProbeModelKind _shownModel = (ProbeModelKind)(-1);
     bool _customAntenna;
     bool _customEngine;
@@ -192,7 +194,7 @@ public class ProbePreviewRig : MonoBehaviour
         titleRt.offsetMax = new Vector2(-Padding, -(Padding + PortraitImageHeight));
 
         _description = CreateText(frameGo.transform, "Description", 19f, TextAlignmentOptions.TopLeft, true);
-        _description.overflowMode = TextOverflowModes.Truncate;
+        _description.overflowMode = TextOverflowModes.Overflow;
         _description.margin = new Vector4(0f, 0f, 0f, 2f);
         var descRt = _description.rectTransform;
         descRt.anchorMin = new Vector2(0f, 0f);
@@ -405,7 +407,7 @@ public class ProbePreviewRig : MonoBehaviour
         var descRt = _description.rectTransform;
         descRt.offsetMin = new Vector2(Padding, Padding + DescNavHeight + DescNavGap);
         descRt.offsetMax = new Vector2(-Padding, -(Padding + portraitH + TitleHeight));
-        _description.overflowMode = TextOverflowModes.Truncate;
+        _description.overflowMode = TextOverflowModes.Overflow;
         _description.margin = new Vector4(0f, 0f, 0f, 2f);
 
         _description.gameObject.SetActive(!compact);
@@ -451,7 +453,153 @@ public class ProbePreviewRig : MonoBehaviour
         if (resetPage)
             _descPageIndex = 0;
 
+        PaginateRawPages(BuildRawPagesForCurrentModel(model));
+
+        if (_descPageIndex >= _descPages.Count)
+            _descPageIndex = 0;
+    }
+
+    void PaginateRawPages(List<string> rawPages)
+    {
         _descPages.Clear();
+        GetDescViewportSize(out float width, out float height);
+
+        for (int i = 0; i < rawPages.Count; i++)
+            AppendSplitPages(rawPages[i], width, height);
+
+        if (_descPages.Count == 0)
+            _descPages.Add(string.Empty);
+
+        _lastPaginateWidth = width;
+        _lastPaginateHeight = height;
+    }
+
+    void AppendSplitPages(string text, float width, float maxHeight)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return;
+
+        int start = 0;
+        while (start < text.Length)
+        {
+            while (start < text.Length && char.IsWhiteSpace(text[start]))
+                start++;
+            if (start >= text.Length)
+                break;
+
+            int fit = MeasureFitLength(text, start, width, maxHeight);
+            fit = RefinePageBreak(text, start, fit);
+            _descPages.Add(text.Substring(start, fit).Trim());
+            start += fit;
+        }
+    }
+
+    int MeasureFitLength(string text, int start, float width, float maxHeight)
+    {
+        int remaining = text.Length - start;
+        if (remaining <= 0)
+            return 0;
+
+        int lo = 1;
+        int hi = remaining;
+        int best = 1;
+        while (lo <= hi)
+        {
+            int mid = (lo + hi) >> 1;
+            if (TextFits(text.Substring(start, mid), width, maxHeight))
+            {
+                best = mid;
+                lo = mid + 1;
+            }
+            else
+            {
+                hi = mid - 1;
+            }
+        }
+
+        return Mathf.Max(1, best);
+    }
+
+    bool TextFits(string slice, float width, float maxHeight)
+    {
+        if (_description == null || string.IsNullOrEmpty(slice))
+            return true;
+
+        Vector2 size = _description.GetPreferredValues(slice, width, 0f);
+        return size.y <= maxHeight + 0.5f;
+    }
+
+    static int RefinePageBreak(string text, int start, int maxLen)
+    {
+        if (maxLen <= 0)
+            return 1;
+
+        int remaining = text.Length - start;
+        if (maxLen >= remaining)
+            return remaining;
+
+        int searchFrom = start + Mathf.Max(1, maxLen - 48);
+        int end = start + maxLen;
+        for (int i = end - 1; i >= searchFrom; i--)
+        {
+            char c = text[i];
+            if (char.IsWhiteSpace(c) || c == '-' || c == '—' || c == '.' || c == ',' || c == ';' || c == ':')
+                return i - start + 1;
+        }
+
+        return maxLen;
+    }
+
+    void GetDescViewportSize(out float width, out float height)
+    {
+        bool landscape = Screen.width > Screen.height;
+        bool compact = IsCompactMode();
+        float panelW = compact
+            ? (landscape ? CompactWidthLandscape : CompactWidthPortrait)
+            : (landscape ? PanelWidthLandscape : PanelWidthPortrait);
+        float panelH = compact
+            ? (landscape ? CompactHeightLandscape : CompactHeightPortrait)
+            : (landscape ? PanelHeightLandscape : PanelHeightPortrait);
+        float portraitH = compact ? CompactPortraitHeight : PortraitImageHeight;
+
+        width = panelW - Padding * 2f;
+        height = panelH - portraitH - TitleHeight - DescNavHeight - DescNavGap - Padding * 2f;
+
+        if (_description != null)
+        {
+            Canvas.ForceUpdateCanvases();
+            Rect rect = _description.rectTransform.rect;
+            if (rect.width > 1f)
+                width = rect.width;
+            if (rect.height > 1f)
+                height = rect.height;
+        }
+
+        width = Mathf.Max(80f, width);
+        height = Mathf.Max(48f, height);
+    }
+
+    void RepaginateIfViewportChanged()
+    {
+        if (_description == null || _compactMode || !_panel.gameObject.activeSelf)
+            return;
+
+        GetDescViewportSize(out float width, out float height);
+        if (Mathf.Approximately(width, _lastPaginateWidth)
+            && Mathf.Approximately(height, _lastPaginateHeight))
+        {
+            return;
+        }
+
+        int savedIndex = _descPageIndex;
+        PaginateRawPages(BuildRawPagesForCurrentModel(_pagedModel));
+        _descPageIndex = Mathf.Clamp(savedIndex, 0, Mathf.Max(0, _descPages.Count - 1));
+        ApplyCurrentDescPage();
+    }
+
+    List<string> BuildRawPagesForCurrentModel(ProbeModelKind model)
+    {
+        var rawPages = new List<string>(3);
         string[] keys = ProbeModelCatalog.GetDescriptionPageKeys(model);
         for (int i = 0; i < keys.Length; i++)
         {
@@ -466,14 +614,12 @@ public class ProbePreviewRig : MonoBehaviour
                     text = text + "\n" + parts;
             }
 
-            _descPages.Add(text);
+            rawPages.Add(text);
         }
 
-        if (_descPages.Count == 0)
-            _descPages.Add(string.Empty);
-
-        if (_descPageIndex >= _descPages.Count)
-            _descPageIndex = 0;
+        if (rawPages.Count == 0)
+            rawPages.Add(string.Empty);
+        return rawPages;
     }
 
     void ApplyCurrentDescPage()
@@ -588,6 +734,8 @@ public class ProbePreviewRig : MonoBehaviour
 
         if (_compactMode != compact)
             RefreshContent();
+        else
+            RepaginateIfViewportChanged();
     }
 
     static void Stretch(RectTransform rect)
