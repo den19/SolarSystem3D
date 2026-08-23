@@ -297,8 +297,9 @@ Editor vs APK: в Editor coach часто уже скрыт (SolarSystem_ProbeCo
 Размер (grace 3 с)  |  240×268 portrait / 220×248 landscape — компактная (портрет + имя)
 Портрет  |  PNG 256×256 из Resources/ProbePortraits/ (~192 px, preserveAspect)
 Заголовок  |  ProbeModel* + страна в скобках (ProbeOrigin*); Custom — A · E · S
-Описание  |  Страницы ProbeDesc* / ProbeDesc*2… через ◀/▶ (DescNav); Truncate + DescNavGap над рядом нав; Custom + части A/E/S
-Полёт (3D)  |  ProbePrefabFactory, highDetail: true на Launch; модель 0 / Voyager 1 — NASA VTAD mesh
+Описание  |  ProbeDesc* / *2 / *3 автоматически дробятся по высоте viewport (TMP); ◀/▶ DescNav, ProbeDescPageFormat 1/N; Custom + части A/E/S
+Закрытие  |  Кнопка × (правый верх); скрывает карточку до смены модели или повторного вкл. «Зонд»
+Полёт (3D)  |  ProbePrefabFactory, highDetail: true; импорт — ApplyImportedMeshMaterials (baked URP mat)
 
 Рамка: тёмный фон + cyan outline (как у выбранной кнопки модели). RenderTexture и вращение 3D-превью убраны — экономия CPU/GPU на телефоне.
 
@@ -331,7 +332,7 @@ Launch bar  |  Низ по центру, над time bar
 
 Тело телеметрии (~10 Hz): ProbeTelemetrySunSpeed, RelSpeed, Radius, Lon, Z, ProbeNearestLabel (3 тела).
 
-Выбор модели: горизонтальный ScrollRect с кнопками ◀ / ▶ по краям (ProbeModelRow, 70 px); видно 2–3 модели (portrait ~148 px, landscape ~120 px). Подписи: имя + страна в скобках (ResolveModelLabel). Порядок — ProbeModelCatalog: NASA → SU/RU → CN → JP → IN → Custom последним. Активная кнопка — светлее + cyan outline 2 px. При выборе модели — авто-прокрутка к кнопке.
+Выбор модели: горизонтальный ScrollRect с кнопками ◀ / ▶ по краям (ProbeModelRow, 70 px); видно 2–3 модели (portrait ~148 px, landscape ~120 px). Подписи: имя + страна в скобках (ResolveModelLabel). Порядок picker (ProbeModelCatalog.PickerEntries): Luna 1 → Mars 3 → Voyager 1 → New Horizons → Juno. Дефолт и Reset: Luna 1. Активная кнопка — светлее + cyan outline 2 px. При выборе модели — авто-прокрутка к кнопке.
 
 Toast при Launch: ProbeLaunchSuccessMessage, 5 с («Зонд запущен. Камера: Слежение…» / Camera: Chase… — та же подпись, что ProbeChaseLabel; не «Кузов» и не «Кабина»).
 
@@ -355,17 +356,17 @@ Ghost-траектория — зелёная линия (RGB ≈ 0.47, 0.91, 0.
 Модели зонда
 ~~~~~~~~~~~~
 
-14 моделей в enum ProbeModelKind / pref SolarSystem_ProbeModel (0–13). В picker временно 5 качественных mesh-pack (ShowInPicker в ProbeModelCatalog): Voyager 1, New Horizons, Juno, Mars 3, Luna 1. Custom и 8 procedural stand-in скрыты; enum/assets сохранены. Pref на скрытую модель → remap Voyager 1.
+14 моделей в enum ProbeModelKind / pref SolarSystem_ProbeModel (0–13). В picker 5 mesh-pack (ShowInPicker): Luna 1, Mars 3, Voyager 1, New Horizons, Juno — в этом порядке. Custom и 8 procedural stand-in скрыты. Pref на скрытую модель → remap Luna 1. Дефолт pref / Reset: 4 (Luna 1).
 
 Pref  |  Модель  |  Enum  |  Picker  |  Mesh / примечание
-0  |  Voyager 1  |  Voyager  |  да  |  NASA VTAD (ProbeMeshes/Voyager1)
-1  |  New Horizons  |  NewHorizons  |  да  |  NASA VTAD; старт ~35 % быстрее
-2  |  Juno  |  Juno  |  да  |  NASA VTAD
+4  |  Luna 1  |  Luna1  |  1  |  Sketchfab GLB (fast_simplification)
+7  |  Mars 3  |  Mars3  |  2  |  Sketchfab CC BY
+0  |  Voyager 1  |  Voyager  |  3  |  NASA VTAD (ProbeMeshes/Voyager1)
+1  |  New Horizons  |  NewHorizons  |  4  |  NASA VTAD; старт ~35 % быстрее
+2  |  Juno  |  Juno  |  5  |  NASA VTAD
 3  |  Custom  |  Custom  |  нет  |  procedural; временно скрыт
-4  |  Luna 1  |  Luna1  |  да  |  Sketchfab GLB
 5  |  Venera 7  |  Venera7  |  нет  |  procedural stand-in
 6  |  Luna 16  |  Luna16  |  нет  |  procedural stand-in
-7  |  Mars 3  |  Mars3  |  да  |  Sketchfab CC BY
 8  |  Chang'e 4  |  Change4  |  нет  |  procedural stand-in
 9  |  Tianwen-1  |  Tianwen1  |  нет  |  procedural stand-in
 10  |  Chang'e 5  |  Change5  |  нет  |  procedural stand-in
@@ -448,7 +449,7 @@ ProbePostcardLabel → SimulationShareController. Нужна антенна (Pro
 
 Ключ  |  Дефолт  |  Назначение
 SolarSystem_UseProbe  |  0  |  Тумблер
-SolarSystem_ProbeModel  |  0  |  0–13 (3=Custom, см. §2.8)
+SolarSystem_ProbeModel  |  4  |  0–13 (3=Custom); дефолт Luna 1
 SolarSystem_ProbeCustomAntenna  |  1  |  Custom: антенна
 SolarSystem_ProbeCustomEngine  |  0  |  Custom: Burn
 SolarSystem_ProbeCustomShield  |  0  |  Custom: щит
@@ -474,7 +475,7 @@ Coach: ProbeCoachStep1Title…4Title, Step1Body…4Body, ProbeCoachBack, Skip, F
 
 1. Coach (свежий APK): шаг 1; dim не блокирует launch bar; шаг 4 → Launch в карточке; Launch → coach навсегда; Reset → снова.
 2. ? до Launch открывает coach; после — toast «Подсказки уже пройдены».
-3. Превью при aiming; после Launch ~3 с, затем скрывается.
+3. Превью при aiming; × закрывает карточку; описание — все страницы через ◀/▶ (авто-разбивка); после Launch ~3 с, затем скрывается.
 4. Телеметрия «Зонд · {модель}» + «(прицел)»/«(полёт)».
 5. Launch: SnapChase — камера мгновенно Chase; toast 5 с; PIP; mesh виден (layer 0, unlit fallback, scale ≥ 2.0); cyan MinimapBlip только на minimap (слой 8, не в main Chase).
 6. Voyager 1: craft — NASA mesh (Voyager1Prefab / OBJ), не примитивы; портрет Voyager.png не перезаписывается Bake.
