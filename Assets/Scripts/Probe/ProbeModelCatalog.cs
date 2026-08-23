@@ -21,13 +21,13 @@ namespace SolarSystemApp
 
         static readonly Entry[] DisplayOrder =
         {
+            new Entry { Kind = ProbeModelKind.Luna1, LocalizationKey = "ProbeModelLuna1", DescriptionKey = "ProbeDescLuna1", PortraitResourcePath = "ProbePortraits/Luna1", OriginKey = "ProbeOriginRussia", ShowInPicker = true },
+            new Entry { Kind = ProbeModelKind.Mars3, LocalizationKey = "ProbeModelMars3", DescriptionKey = "ProbeDescMars3", PortraitResourcePath = "ProbePortraits/Mars3", OriginKey = "ProbeOriginRussia", ShowInPicker = true },
             new Entry { Kind = ProbeModelKind.Voyager, LocalizationKey = "ProbeModelVoyager", DescriptionKey = "ProbeDescVoyager", PortraitResourcePath = "ProbePortraits/Voyager", OriginKey = "ProbeOriginUSA", ShowInPicker = true },
             new Entry { Kind = ProbeModelKind.NewHorizons, LocalizationKey = "ProbeModelNewHorizons", DescriptionKey = "ProbeDescNewHorizons", PortraitResourcePath = "ProbePortraits/NewHorizons", OriginKey = "ProbeOriginUSA", ShowInPicker = true },
             new Entry { Kind = ProbeModelKind.Juno, LocalizationKey = "ProbeModelJuno", DescriptionKey = "ProbeDescJuno", PortraitResourcePath = "ProbePortraits/Juno", OriginKey = "ProbeOriginUSA", ShowInPicker = true },
-            new Entry { Kind = ProbeModelKind.Luna1, LocalizationKey = "ProbeModelLuna1", DescriptionKey = "ProbeDescLuna1", PortraitResourcePath = "ProbePortraits/Luna1", OriginKey = "ProbeOriginRussia", ShowInPicker = true },
             new Entry { Kind = ProbeModelKind.Venera7, LocalizationKey = "ProbeModelVenera7", DescriptionKey = "ProbeDescVenera7", PortraitResourcePath = "ProbePortraits/Venera7", OriginKey = "ProbeOriginRussia", ShowInPicker = false },
             new Entry { Kind = ProbeModelKind.Luna16, LocalizationKey = "ProbeModelLuna16", DescriptionKey = "ProbeDescLuna16", PortraitResourcePath = "ProbePortraits/Luna16", OriginKey = "ProbeOriginRussia", ShowInPicker = false },
-            new Entry { Kind = ProbeModelKind.Mars3, LocalizationKey = "ProbeModelMars3", DescriptionKey = "ProbeDescMars3", PortraitResourcePath = "ProbePortraits/Mars3", OriginKey = "ProbeOriginRussia", ShowInPicker = true },
             new Entry { Kind = ProbeModelKind.Change4, LocalizationKey = "ProbeModelChange4", DescriptionKey = "ProbeDescChange4", PortraitResourcePath = "ProbePortraits/Change4", OriginKey = "ProbeOriginChina", ShowInPicker = false },
             new Entry { Kind = ProbeModelKind.Tianwen1, LocalizationKey = "ProbeModelTianwen1", DescriptionKey = "ProbeDescTianwen1", PortraitResourcePath = "ProbePortraits/Tianwen1", OriginKey = "ProbeOriginChina", ShowInPicker = false },
             new Entry { Kind = ProbeModelKind.Change5, LocalizationKey = "ProbeModelChange5", DescriptionKey = "ProbeDescChange5", PortraitResourcePath = "ProbePortraits/Change5", OriginKey = "ProbeOriginChina", ShowInPicker = false },
@@ -57,7 +57,7 @@ namespace SolarSystemApp
 
         public static IReadOnlyList<Entry> PickerEntries => PickerList;
 
-        public static ProbeModelKind GetDefaultPickerModel() => ProbeModelKind.Voyager;
+        public static ProbeModelKind GetDefaultPickerModel() => ProbeModelKind.Luna1;
 
         public static bool IsVisibleInPicker(ProbeModelKind kind)
         {

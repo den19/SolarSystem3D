@@ -135,7 +135,7 @@ namespace SolarSystemApp
                 return;
 
             useProbe = PlayerPrefs.GetInt(KeyUse, 0) != 0;
-            model = ClampModel(PlayerPrefs.GetInt(KeyModel, 0));
+            model = ClampModel(PlayerPrefs.GetInt(KeyModel, (int)ProbeModelCatalog.GetDefaultPickerModel()));
             customAntenna = PlayerPrefs.GetInt(KeyAntenna, 1) != 0;
             customEngine = PlayerPrefs.GetInt(KeyEngine, 0) != 0;
             customShield = PlayerPrefs.GetInt(KeyShield, 0) != 0;
@@ -295,7 +295,7 @@ namespace SolarSystemApp
 
             initialized = true;
             useProbe = false;
-            model = ProbeModelKind.Voyager;
+            model = ProbeModelCatalog.GetDefaultPickerModel();
             customAntenna = true;
             customEngine = false;
             customShield = false;
