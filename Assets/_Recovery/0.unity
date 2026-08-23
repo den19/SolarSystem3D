@@ -4258,8 +4258,16 @@ MonoBehaviour:
   theJupiterGameObject: {fileID: 695859611153918621}
   theSaturnGameObject: {fileID: 6839546464132848132}
   theTitanGameObject: {fileID: 4167420902131862357}
+  theGanymedeGameObject: {fileID: 0}
+  theIoGameObject: {fileID: 0}
+  theEuropaGameObject: {fileID: 0}
+  theCallistoGameObject: {fileID: 0}
+  thePhobosGameObject: {fileID: 0}
+  theDeimosGameObject: {fileID: 0}
   theUranusGameObject: {fileID: 7570367992767524247}
   theNeptuneGameObject: {fileID: 1966759048}
+  theTritonGameObject: {fileID: 0}
+  thePlutoGameObject: {fileID: 0}
   mainCamera: {fileID: 1658091794}
   earthCamera: {fileID: 1295989641}
   marsCamera: {fileID: 332575165}
@@ -4271,6 +4279,14 @@ MonoBehaviour:
   mercuryCamera: {fileID: 1344180348}
   moonCamera: {fileID: 161038382}
   titanCamera: {fileID: 2100000010}
+  ganymedeCamera: {fileID: 0}
+  ioCamera: {fileID: 0}
+  europaCamera: {fileID: 0}
+  callistoCamera: {fileID: 0}
+  phobosCamera: {fileID: 0}
+  deimosCamera: {fileID: 0}
+  tritonCamera: {fileID: 0}
+  plutoCamera: {fileID: 0}
 --- !u!114 &1658091798
 MonoBehaviour:
   m_ObjectHideFlags: 0

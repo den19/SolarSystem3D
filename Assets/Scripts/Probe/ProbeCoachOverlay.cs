@@ -24,8 +24,9 @@ public class ProbeCoachOverlay : MonoBehaviour
     TextMeshProUGUI _backLabel;
     TextMeshProUGUI _skipLabel;
     TextMeshProUGUI _forwardLabel;
-    const int FirstCoachStep = 2;
+    const int FirstCoachStep = 1;
     int _manualStep = -1;
+    bool _step1Acknowledged;
     int _lastRenderedStep = int.MinValue;
     float _lastCardWidth = -1f;
     LookAtTarget _lookAt;
@@ -178,6 +179,14 @@ public class ProbeCoachOverlay : MonoBehaviour
     void ForwardCoach()
     {
         int step = CurrentStep();
+        if (step == 1)
+        {
+            _step1Acknowledged = true;
+            _manualStep = -1;
+            RefreshStep(forceLayout: true);
+            return;
+        }
+
         if (step >= 4)
         {
             ProbeSystemController.Instance?.Launch();
@@ -298,6 +307,9 @@ public class ProbeCoachOverlay : MonoBehaviour
 
     int ResolveAutoStep()
     {
+        if (!_step1Acknowledged)
+            return 1;
+
         if (!HasCatalogBodyFocused())
             return 2;
 
