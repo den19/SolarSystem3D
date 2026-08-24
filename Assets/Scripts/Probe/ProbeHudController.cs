@@ -1,3 +1,4 @@
+using System.Text;
 using SolarSystemApp;
 using TMPro;
 using UnityEngine;
@@ -91,6 +92,16 @@ public class ProbeHudController : MonoBehaviour
     bool _layoutPipsVisible;
     float _safeAreaLayoutReadyAt = -1f;
     Rect _pendingSafeArea;
+
+    // Telemetry hot-path scratch (avoids per-tick GC at ~10 Hz).
+    readonly ProbeGravityIntegrator.Attractor[] _findScratch =
+        new ProbeGravityIntegrator.Attractor[ProbeSystemController.MaxAttractors];
+    readonly float[] _findDist = new float[ProbeSystemController.MaxAttractors];
+    readonly string[] _findNames = new string[ProbeSystemController.MaxAttractors];
+    readonly StringBuilder _telemetrySb = new StringBuilder(256);
+    string _lastTelemetryBody;
+    string _lastTelemetryHeader;
+    string _lastTelemetryStatus;
 
     public static ProbeHudController EnsureOnCanvas(Transform canvasTransform)
     {
@@ -1200,12 +1211,15 @@ public class ProbeHudController : MonoBehaviour
 
         string modelLabel = ResolveModelLabel(model);
         string titleTemplate = T("ProbeTelemetryTitle", "Probe · {0}");
-        _telemetryHeader.text = string.Format(titleTemplate, modelLabel);
+        SetTmpTextIfChanged(_telemetryHeader, ref _lastTelemetryHeader, string.Format(titleTemplate, modelLabel));
 
         bool flying = system != null && system.IsFlying;
-        _telemetryStatus.text = flying
-            ? T("ProbeTelemetryFlying", "(in flight)")
-            : T("ProbeTelemetryAiming", "(aiming)");
+        SetTmpTextIfChanged(
+            _telemetryStatus,
+            ref _lastTelemetryStatus,
+            flying
+                ? T("ProbeTelemetryFlying", "(in flight)")
+                : T("ProbeTelemetryAiming", "(aiming)"));
     }
 
     public static string ResolveModelLabel(ProbeModelKind kind)
@@ -1308,36 +1322,32 @@ public class ProbeHudController : MonoBehaviour
             sunVel = sunA.velocity;
         float vSun = (vel - sunVel).magnitude / auToUnity;
 
-        string n1 = system.FindNearestName(pos, out float d1);
-        string n2 = "—";
-        string n3 = "—";
-        float d2 = 0f;
-        float d3 = 0f;
-        FindTopThree(system, pos, out n1, out d1, out n2, out d2, out n3, out d3);
+        FindTopThree(system, pos, out string n1, out float d1, out string n2, out float d2, out string n3, out float d3);
 
         float vRel = 0f;
-        GameObject nearestGo = GameObject.Find(n1);
-        if (nearestGo != null && system.TryGetAttractor(n1, out ProbeGravityIntegrator.Attractor nearA))
+        // Attractors already carry velocity; no GameObject.Find on this ~10 Hz path.
+        if (system.TryGetAttractor(n1, out ProbeGravityIntegrator.Attractor nearA))
             vRel = (vel - nearA.velocity).magnitude / auToUnity;
 
-        string vSunText = FormatSpeed(vSun, rAu);
-        string vRelText = FormatSpeed(vRel, d1 / auToUnity);
-        string rText = FormatDistance(rAu);
-        string zText = FormatDistance(Mathf.Abs(zAu));
+        _telemetrySb.Clear();
+        _telemetrySb.Append(T("ProbeTelemetrySunSpeed", "v☉")).Append("  ").Append(FormatSpeed(vSun, rAu)).Append('\n');
+        _telemetrySb.Append(T("ProbeTelemetryRelSpeed", "v rel")).Append("  ").Append(FormatSpeed(vRel, d1 / auToUnity)).Append('\n');
+        _telemetrySb.Append(T("ProbeTelemetryRadius", "r")).Append("  ").Append(FormatDistance(rAu)).Append('\n');
+        _telemetrySb.Append(T("ProbeTelemetryLon", "λ")).Append("  ").Append(lon.ToString("0.0")).Append("°\n");
+        _telemetrySb.Append(T("ProbeTelemetryZ", "z")).Append("  ").Append(FormatDistance(Mathf.Abs(zAu))).Append('\n');
+        _telemetrySb.Append(T("ProbeNearestLabel", "Near")).Append('\n');
+        _telemetrySb.Append("1. ").Append(BodyLabel(n1)).Append("  ").Append(FormatDistance(d1 / auToUnity)).Append('\n');
+        _telemetrySb.Append("2. ").Append(BodyLabel(n2)).Append("  ").Append(FormatDistance(d2 / auToUnity)).Append('\n');
+        _telemetrySb.Append("3. ").Append(BodyLabel(n3)).Append("  ").Append(FormatDistance(d3 / auToUnity));
 
-        _telemetryText.text =
-            T("ProbeTelemetrySunSpeed", "v☉") + "  " + vSunText + "\n" +
-            T("ProbeTelemetryRelSpeed", "v rel") + "  " + vRelText + "\n" +
-            T("ProbeTelemetryRadius", "r") + "  " + rText + "\n" +
-            T("ProbeTelemetryLon", "λ") + "  " + lon.ToString("0.0") + "°\n" +
-            T("ProbeTelemetryZ", "z") + "  " + zText + "\n" +
-            T("ProbeNearestLabel", "Near") + "\n" +
-            "1. " + BodyLabel(n1) + "  " + FormatDistance(d1 / auToUnity) + "\n" +
-            "2. " + BodyLabel(n2) + "  " + FormatDistance(d2 / auToUnity) + "\n" +
-            "3. " + BodyLabel(n3) + "  " + FormatDistance(d3 / auToUnity);
+        if (SbEquals(_telemetrySb, _lastTelemetryBody))
+            return;
+
+        _lastTelemetryBody = _telemetrySb.ToString();
+        _telemetryText.text = _lastTelemetryBody;
     }
 
-    static void FindTopThree(
+    void FindTopThree(
         ProbeSystemController system,
         Vector3 pos,
         out string n1, out float d1,
@@ -1346,14 +1356,11 @@ public class ProbeHudController : MonoBehaviour
     {
         n1 = n2 = n3 = "—";
         d1 = d2 = d3 = 0f;
-        var scratch = new ProbeGravityIntegrator.Attractor[ProbeSystemController.MaxAttractors];
-        int count = system.CopyAttractors(scratch);
-        var dist = new float[count];
-        var names = new string[count];
+        int count = system.CopyAttractors(_findScratch);
         for (int i = 0; i < count; i++)
         {
-            names[i] = scratch[i].name;
-            dist[i] = Mathf.Max(0f, Vector3.Distance(pos, scratch[i].position) - scratch[i].radius);
+            _findNames[i] = _findScratch[i].name;
+            _findDist[i] = Mathf.Max(0f, Vector3.Distance(pos, _findScratch[i].position) - _findScratch[i].radius);
         }
 
         for (int pass = 0; pass < 3; pass++)
@@ -1362,9 +1369,9 @@ public class ProbeHudController : MonoBehaviour
             float bestD = float.MaxValue;
             for (int i = 0; i < count; i++)
             {
-                if (dist[i] < bestD)
+                if (_findDist[i] < bestD)
                 {
-                    bestD = dist[i];
+                    bestD = _findDist[i];
                     best = i;
                 }
             }
@@ -1372,11 +1379,34 @@ public class ProbeHudController : MonoBehaviour
             if (best < 0)
                 break;
 
-            if (pass == 0) { n1 = names[best]; d1 = bestD; }
-            if (pass == 1) { n2 = names[best]; d2 = bestD; }
-            if (pass == 2) { n3 = names[best]; d3 = bestD; }
-            dist[best] = float.MaxValue;
+            if (pass == 0) { n1 = _findNames[best]; d1 = bestD; }
+            if (pass == 1) { n2 = _findNames[best]; d2 = bestD; }
+            if (pass == 2) { n3 = _findNames[best]; d3 = bestD; }
+            _findDist[best] = float.MaxValue;
         }
+    }
+
+    static void SetTmpTextIfChanged(TextMeshProUGUI tmp, ref string last, string value)
+    {
+        if (tmp == null || last == value)
+            return;
+        last = value;
+        tmp.text = value;
+    }
+
+    static bool SbEquals(StringBuilder sb, string s)
+    {
+        if (s == null)
+            return sb.Length == 0;
+        if (sb.Length != s.Length)
+            return false;
+        for (int i = 0; i < sb.Length; i++)
+        {
+            if (sb[i] != s[i])
+                return false;
+        }
+
+        return true;
     }
 
     static string FormatDistance(float au)
