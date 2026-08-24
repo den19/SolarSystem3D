@@ -12,9 +12,9 @@ public class ProbeHudController : MonoBehaviour
 
     const float UpdateInterval = 0.1f;
     const float RowHeight = 56f;
-    const float RowHeightLandscape = 42f;
+    const float RowHeightLandscape = 56f;
     const float ModelRowHeight = 96f;
-    const float ModelRowHeightLandscape = 70f;
+    const float ModelRowHeightLandscape = 96f;
     const float ButtonFontSize = 26f;
     const float ModelLabelFontSizeMin = 18f;
     const float ModelLabelFontSizeMax = 26f;
@@ -23,18 +23,21 @@ public class ProbeHudController : MonoBehaviour
     const float TelemetryStatusFontSize = 22f;
     const float CheckboxSize = 28f;
     const float SliderHeight = 36f;
-    const float SliderHeightLandscape = 28f;
+    const float SliderHeightLandscape = 36f;
     const float TelemetryWidth = 360f;
     const float TelemetryWidthLandscape = 400f;
     const float TelemetryHeight = 392f;
     const float TelemetryHeightLandscape = 220f;
     const float TelemetryHeaderHeight = 52f;
-    const float BarWidthLandscape = 720f;
+    const float BarWidthLandscape = 960f;
     const float BarHeightStandard = 420f;
     const float BarHeightCustom = 466f;
-    const float BarHeightLandscape = 280f;
-    const float BarHeightCustomLandscape = 300f;
+    // Landscape bar preferred size must not be smaller than Portrait.
+    const float BarHeightLandscape = 420f;
+    const float BarHeightCustomLandscape = 466f;
     const float BarTopReserve = 24f;
+    const float CameraButtonMinWidth = 168f;
+    const float ViewsTogglePreferredWidth = 220f;
     const float PipWidthLandscape = 280f;
     const float PipHeightLandscape = 120f;
     const float PipWidthPortrait = 280f;
@@ -43,7 +46,7 @@ public class ProbeHudController : MonoBehaviour
     const float PipCaptionHeight = 28f;
     const float ModelScrollArrowWidth = 48f;
     const float ModelButtonWidthPortrait = 148f;
-    const float ModelButtonWidthLandscape = 120f;
+    const float ModelButtonWidthLandscape = 148f;
     const float SafeAreaChangeThresholdPx = 2f;
     const float SafeAreaLayoutDebounceSeconds = 0.25f;
 
@@ -612,10 +615,20 @@ public class ProbeHudController : MonoBehaviour
     void CreateCameraRow(RectTransform parent)
     {
         var row = CreateRow(parent, "ProbeCameraRow");
-        CreateButton(row, "ProbeWorldLabel", () => ProbeSettings.SetCameraMode(ProbeCameraMode.World));
-        CreateButton(row, "ProbeChaseLabel", () => ProbeSettings.SetCameraMode(ProbeCameraMode.Chase));
-        CreateButton(row, "ProbeCockpitLabel", () => ProbeSettings.SetCameraMode(ProbeCameraMode.Cockpit));
+        CreateButton(row, "ProbeWorldLabel", () => ProbeSettings.SetCameraMode(ProbeCameraMode.World),
+            preferredWidth: null, rowHeight: RowHeight, minWidth: CameraButtonMinWidth, flexibleWidth: 1f);
+        CreateButton(row, "ProbeChaseLabel", () => ProbeSettings.SetCameraMode(ProbeCameraMode.Chase),
+            preferredWidth: null, rowHeight: RowHeight, minWidth: CameraButtonMinWidth, flexibleWidth: 1f);
+        CreateButton(row, "ProbeCockpitLabel", () => ProbeSettings.SetCameraMode(ProbeCameraMode.Cockpit),
+            preferredWidth: null, rowHeight: RowHeight, minWidth: CameraButtonMinWidth, flexibleWidth: 1f);
         _viewsToggle = CreateLabeledToggle(row, "ProbeViewsLabel", ProbeSettings.ShowProbeViews, ProbeSettings.SetShowProbeViews);
+        var viewsLe = _viewsToggle.GetComponent<LayoutElement>();
+        if (viewsLe != null)
+        {
+            viewsLe.minWidth = ViewsTogglePreferredWidth;
+            viewsLe.preferredWidth = ViewsTogglePreferredWidth;
+            viewsLe.flexibleWidth = 0f;
+        }
     }
 
     void CreateModeButton(RectTransform parent, string key, ProbeModelKind kind)
@@ -643,7 +656,14 @@ public class ProbeHudController : MonoBehaviour
         return Screen.width > Screen.height ? ModelButtonWidthLandscape : ModelButtonWidthPortrait;
     }
 
-    Button CreateButton(RectTransform parent, string key, UnityEngine.Events.UnityAction action, float? preferredWidth = null, float rowHeight = RowHeight)
+    Button CreateButton(
+        RectTransform parent,
+        string key,
+        UnityEngine.Events.UnityAction action,
+        float? preferredWidth = null,
+        float rowHeight = RowHeight,
+        float? minWidth = null,
+        float? flexibleWidth = null)
     {
         var go = new GameObject(key, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button), typeof(LayoutElement));
         go.layer = gameObject.layer;
@@ -658,9 +678,19 @@ public class ProbeHudController : MonoBehaviour
             le.preferredWidth = preferredWidth.Value;
             le.flexibleWidth = 0f;
         }
+        else
+        {
+            if (minWidth.HasValue)
+                le.minWidth = minWidth.Value;
+            if (flexibleWidth.HasValue)
+                le.flexibleWidth = flexibleWidth.Value;
+        }
         var label = CreateTmp(go.GetComponent<RectTransform>(), key + "_Text", ButtonFontSize, TextAlignmentOptions.Center);
         label.text = key;
         label.raycastTarget = false;
+        // Action / camera labels must stay on one line (e.g. Russian «Слежение»).
+        label.enableWordWrapping = false;
+        label.overflowMode = TextOverflowModes.Overflow;
 
         var button = go.GetComponent<Button>();
         button.onClick.AddListener(action);
@@ -875,9 +905,10 @@ public class ProbeHudController : MonoBehaviour
         float scale = canvas != null && canvas.scaleFactor > 0.01f ? canvas.scaleFactor : 1f;
         float canvasWidth = Screen.width / scale;
         float canvasHeight = Screen.height / scale;
+        float usableWidth = canvasWidth - left - right - 24f;
         float barWidth = landscape
-            ? BarWidthLandscape
-            : Mathf.Max(280f, canvasWidth - left - right - 24f);
+            ? Mathf.Min(BarWidthLandscape, Mathf.Max(280f, usableWidth))
+            : Mathf.Max(280f, usableWidth);
         bool custom = ProbeSettings.Model == ProbeModelKind.Custom;
         float preferredBar = custom ? BarHeightCustom : BarHeightStandard;
         float timeBar = TimeControlUiBootstrap.BarHeight + TimeControlUiBootstrap.BarBottomMargin + 10f;
@@ -885,9 +916,10 @@ public class ProbeHudController : MonoBehaviour
         float barHeight = preferredBar;
         if (landscape)
         {
+            // Prefer Portrait-equivalent height; shrink only when vertical space is short.
             float landscapeCap = custom ? BarHeightCustomLandscape : BarHeightLandscape;
             float available = canvasHeight - bottom - timeBar - navBottom - BarTopReserve;
-            barHeight = Mathf.Min(landscapeCap, Mathf.Max(BarHeightLandscape * 0.85f, available));
+            barHeight = Mathf.Min(landscapeCap, Mathf.Max(preferredBar * 0.85f, available));
             barHeight = Mathf.Min(barHeight, preferredBar);
         }
 
@@ -968,9 +1000,9 @@ public class ProbeHudController : MonoBehaviour
         var vlg = _bar.GetComponent<VerticalLayoutGroup>();
         if (vlg != null)
         {
-            int pad = landscape ? 6 : 8;
+            int pad = landscape ? 8 : 8;
             vlg.padding = new RectOffset(10, 10, pad, pad);
-            vlg.spacing = landscape ? 4f : 6f;
+            vlg.spacing = landscape ? 6f : 6f;
         }
 
         for (int i = 0; i < _bar.childCount; i++)

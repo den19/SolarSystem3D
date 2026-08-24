@@ -1,0 +1,30 @@
+Solar System 3D is an interactive 3D simulator and planetarium of the Solar System for your phone. Watch planets orbit the Sun, explore moons and comets, change scale and time speed — great for school, self-study, or simply curiosity about astronomy and space.
+
+NEW: PROBE MODE
+Launch educational flights of legendary spacecraft inside the Solar System model. Pick a departure body, set thrust and heading, follow the green trajectory and live telemetry — speed, distance, nearest bodies. Watch the flight in World, Chase, and Cockpit views. The catalog includes historical craft such as Luna-1, Mars-3, Voyager, New Horizons, Juno and other missions from different countries, each with a short mission card.
+
+WHAT'S INSIDE
+• 8 Solar System planets and the Sun in a 3D model
+• Major moons: Moon, Phobos and Deimos, Jupiter’s Galilean moons, Titan, Triton
+• 10 periodic comets with orbits and changing appearance
+• Probe mode: launch, aiming, telemetry, chase and cockpit cameras
+• Real-orbit mode with eccentricity and inclination
+• Educational schematic view and a mode closer to real distance scale
+• Time control: pause and speed from 0.25× to 256×
+• Orbit lines, labels, minimap and gravity grid
+• Short info cards for planets, moons, comets and probes
+• Free camera look: gestures, zoom, focus on a selected body
+• Clean-screen mode without extra UI chrome
+
+WHO IT'S FOR
+• Students — a clear Solar System model and spaceflight history
+• Teachers — demos of orbits, moons, comets and probe trajectories
+• Astronomy fans — explore without a telescope
+
+HOW TO USE
+Open the simulation, choose a planet, moon or comet, read the card and tune orbits, scale and time to your liking. To try Probe mode, enable it on the side panel, pick a start body and craft, adjust Thrust and Heading, then tap Launch. Gestures let you inspect the model from any angle.
+
+LANGUAGES
+Russian, English, Chinese, Vietnamese, Uzbek, Tatar, Belarusian.
+
+Made for education — to get closer to the Solar System and spark interest in astronomy. Download free and explore space in 3D today.
