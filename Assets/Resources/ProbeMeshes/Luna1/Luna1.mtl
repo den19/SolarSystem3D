@@ -5,3 +5,8 @@ Ks 0.1 0.1 0.1
 d 1.0
 map_Kd Luna1_albedo.png
 
+newmtl mat_Mast
+Kd 0.92 0.78 0.32
+Ka 0.08 0.06 0.02
+Ks 0.45 0.38 0.18
+d 1.0

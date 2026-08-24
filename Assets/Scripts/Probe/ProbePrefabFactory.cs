@@ -51,7 +51,7 @@ public static class ProbePrefabFactory
 
     public const string Luna1PrefabResourcePath = "ProbeMeshes/Luna1/Luna1";
     public const string Luna1PrefabAltResourcePath = "ProbeMeshes/Luna1/Luna1Prefab";
-    static readonly Vector3 Luna1AntennaLocal = new Vector3(-0.183f, 0.772f, 0.020f);
+    static readonly Vector3 Luna1AntennaLocal = new Vector3(-0.213f, 0.884f, 0.031f);
     static bool _luna1MeshFallbackWarned;
 
     public const string Hayabusa2PrefabResourcePath = "ProbeMeshes/Hayabusa2/Hayabusa2";

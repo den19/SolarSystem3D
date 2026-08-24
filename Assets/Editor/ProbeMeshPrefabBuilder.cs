@@ -24,7 +24,7 @@ public static class ProbeMeshPrefabBuilder
         new Spec { FolderName = "NewHorizons", MenuLabel = "New Horizons", AntennaLocal = new Vector3(-0.018f, 1.516f, -0.029f) },
         new Spec { FolderName = "Juno", MenuLabel = "Juno", AntennaLocal = new Vector3(-0.075f, 1.681f, 0.043f) },
         new Spec { FolderName = "Venera7", MenuLabel = "Venera 7", AntennaLocal = new Vector3(0.004f, 0.827f, 0.003f) },
-        new Spec { FolderName = "Luna1", MenuLabel = "Luna 1", AntennaLocal = new Vector3(-0.183f, 0.772f, 0.020f) },
+        new Spec { FolderName = "Luna1", MenuLabel = "Luna 1", AntennaLocal = new Vector3(-0.213f, 0.884f, 0.031f) },
         new Spec { FolderName = "Hayabusa2", MenuLabel = "Hayabusa2", AntennaLocal = new Vector3(0f, 0.385f, 0.013f) },
         new Spec { FolderName = "Change4", MenuLabel = "Chang'e 4", AntennaLocal = new Vector3(-0.001f, 0.307f, 0.011f) },
         new Spec { FolderName = "Luna16", MenuLabel = "Luna 16", AntennaLocal = new Vector3(0.018f, 0.66f, 0.014f) },
@@ -288,14 +288,26 @@ public static class ProbeMeshPrefabBuilder
 
         Color color = Color.white;
         color.a = 1f;
+        bool goldMast = baseName.IndexOf("Mast", System.StringComparison.OrdinalIgnoreCase) >= 0;
+        bool goldBody = !goldMast && baseName.IndexOf("Luna1", System.StringComparison.OrdinalIgnoreCase) >= 0;
+        if (goldMast)
+        {
+            color = new Color(0.92f, 0.78f, 0.32f, 1f);
+            albedo = null;
+        }
+        else if (goldBody)
+        {
+            color = new Color(1f, 0.96f, 0.88f, 1f);
+        }
+
         if (mat.HasProperty("_BaseColor"))
             mat.SetColor("_BaseColor", color);
         if (mat.HasProperty("_Color"))
             mat.SetColor("_Color", color);
         if (mat.HasProperty("_Metallic"))
-            mat.SetFloat("_Metallic", 0.25f);
+            mat.SetFloat("_Metallic", goldMast ? 0.65f : goldBody ? 0.45f : 0.25f);
         if (mat.HasProperty("_Smoothness"))
-            mat.SetFloat("_Smoothness", 0.35f);
+            mat.SetFloat("_Smoothness", goldMast ? 0.65f : goldBody ? 0.45f : 0.35f);
 
         if (albedo != null)
         {
@@ -307,6 +319,13 @@ public static class ProbeMeshPrefabBuilder
                 mat.EnableKeyword("_BASEMAP");
             else
                 mat.DisableKeyword("_BASEMAP");
+        }
+        else
+        {
+            if (mat.HasProperty("_BaseMap"))
+                mat.SetTexture("_BaseMap", null);
+            if (mat.HasProperty("_MainTex"))
+                mat.SetTexture("_MainTex", null);
         }
 
         EditorUtility.SetDirty(mat);

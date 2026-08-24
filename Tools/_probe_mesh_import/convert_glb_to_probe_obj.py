@@ -752,7 +752,12 @@ the procedural approximation.
 
 def clear_mesh_outputs(out: Path, out_name: str) -> None:
     out.mkdir(parents=True, exist_ok=True)
-    keep = {"Materials", f"{out_name}Prefab.prefab", f"{out_name}Prefab.prefab.meta"}
+    keep = {
+        "Materials",
+        f"{out_name}Prefab.prefab",
+        f"{out_name}Prefab.prefab.meta",
+        f"{out_name}.obj.meta",
+    }
     for p in list(out.iterdir()):
         if p.name in keep:
             continue
