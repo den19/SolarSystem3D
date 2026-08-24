@@ -16,6 +16,7 @@ public class ProbeSystemController : MonoBehaviour
     public ProbeCraft Craft { get; private set; }
     public bool IsFlying => Craft != null && !Craft.Impacted;
     public bool IsAiming => ProbeSettings.UseProbe && !IsFlying;
+    public bool IsProbeInsideGrid => _probeInsideGrid;
     public float FlightPreviewGraceRemaining { get; private set; }
     public Vector3 AimVelocity { get; private set; }
     public float AimHeadingDeg = 0f;
@@ -35,6 +36,9 @@ public class ProbeSystemController : MonoBehaviour
     LineRenderer _ghostLine;
     Transform _sun;
     Transform _earth;
+    Transform _mercury;
+    Transform[] _cachedBodyTransforms;
+    bool _bodyCacheDirty = true;
     SolarSystemScaleController _scale;
     ProbeCameraController _cameraController;
     ProbeViewRig _viewRig;
@@ -42,6 +46,7 @@ public class ProbeSystemController : MonoBehaviour
     LookAtTarget _lookAt;
     SpacetimeGridController _spacetimeGrid;
     bool _probeInsideGrid = true;
+    int _outsideGridGhostFrame;
 
     public static ProbeSystemController EnsureOnHost(GameObject host)
     {
@@ -176,17 +181,31 @@ public class ProbeSystemController : MonoBehaviour
         Craft.Velocity = vel;
         Craft.AlignToVelocity();
 
-        Transform earth = _earth != null ? _earth : GameObject.Find("Earth")?.transform;
-        if (earth != null)
-            Craft.PointAntennaAt(earth.position);
+        if (_earth != null)
+            Craft.PointAntennaAt(_earth.position);
 
         if (CheckImpact(pos) || CheckOverheat(pos))
             return;
 
         CheckGridExit(pos);
 
-        int n = ProbeTrajectoryPredictor.Predict(pos, vel, _attractors, _attractorCount, _ghostPoints);
-        DrawGhost(n);
+        if (_probeInsideGrid)
+        {
+            _outsideGridGhostFrame = 0;
+            int n = ProbeTrajectoryPredictor.Predict(pos, vel, _attractors, _attractorCount, _ghostPoints);
+            DrawGhost(n);
+        }
+        else
+        {
+            // Soft load shed outside the gravity grid: keep physics, throttle Predict/ghost.
+            _outsideGridGhostFrame++;
+            if ((_outsideGridGhostFrame % 8) == 1)
+            {
+                int n = ProbeTrajectoryPredictor.Predict(pos, vel, _attractors, _attractorCount, _ghostPoints);
+                DrawGhost(n);
+            }
+        }
+
         UpdateTelemetry();
     }
 
@@ -222,9 +241,8 @@ public class ProbeSystemController : MonoBehaviour
         if (Craft.HasShield || _sun == null)
             return false;
 
-        Transform mercury = GameObject.Find("Mercury")?.transform;
-        float limit = mercury != null
-            ? Vector3.Distance(mercury.position, _sun.position) * 0.72f
+        float limit = _mercury != null
+            ? Vector3.Distance(_mercury.position, _sun.position) * 0.72f
             : 8f;
 
         if (Vector3.Distance(pos, _sun.position) < limit)
@@ -365,6 +383,7 @@ public class ProbeSystemController : MonoBehaviour
         SetGhostVisible(false);
         _cappedToastShown = false;
         _probeInsideGrid = true;
+        _outsideGridGhostFrame = 0;
 
         if (!string.IsNullOrEmpty(toastKey))
             TransientMessageController.ShowLocalized(toastKey, toastFallback);
@@ -388,9 +407,17 @@ public class ProbeSystemController : MonoBehaviour
         StateChanged?.Invoke();
     }
 
-    void OnLayoutTeleport(SolarSystemApp.ScaleMode mode) => AbortForTeleport("ProbeAbortedScale", "Probe aborted: scale mode changed.");
+    void OnLayoutTeleport(SolarSystemApp.ScaleMode mode)
+    {
+        InvalidateBodyCache();
+        AbortForTeleport("ProbeAbortedScale", "Probe aborted: scale mode changed.");
+    }
 
-    void OnLayoutTeleport(bool _) => AbortForTeleport("ProbeAbortedOrbits", "Probe aborted: orbit mode changed.");
+    void OnLayoutTeleport(bool _)
+    {
+        InvalidateBodyCache();
+        AbortForTeleport("ProbeAbortedOrbits", "Probe aborted: orbit mode changed.");
+    }
 
     void OnTimeMachineChanged(bool _) => AbortForTeleport("ProbeAbortedTimeMachine", "Probe aborted: Time Machine changed.");
 
@@ -398,6 +425,11 @@ public class ProbeSystemController : MonoBehaviour
     {
         if (IsFlying)
             AbortInternal(restoreCamera: true, key, fallback);
+    }
+
+    void InvalidateBodyCache()
+    {
+        _bodyCacheDirty = true;
     }
 
     void RefreshHudVisibility()
@@ -465,18 +497,64 @@ public class ProbeSystemController : MonoBehaviour
         return circular * Mathf.Lerp(0.35f, 2.4f, t);
     }
 
+    void EnsureBodyCache()
+    {
+        if (!_bodyCacheDirty && _cachedBodyTransforms != null)
+            return;
+
+        _sun = GameObject.Find("Sun")?.transform;
+        _earth = GameObject.Find("Earth")?.transform;
+        _mercury = GameObject.Find("Mercury")?.transform;
+
+        var bodies = SolarSystemCatalog.Bodies;
+        if (_cachedBodyTransforms == null || _cachedBodyTransforms.Length != bodies.Length)
+            _cachedBodyTransforms = new Transform[bodies.Length];
+
+        for (int i = 0; i < bodies.Length; i++)
+        {
+            string name = bodies[i].objectName;
+            if (name == "Sun")
+            {
+                _cachedBodyTransforms[i] = _sun;
+                continue;
+            }
+
+            if (name == "Earth")
+            {
+                _cachedBodyTransforms[i] = _earth;
+                continue;
+            }
+
+            if (name == "Mercury")
+            {
+                _cachedBodyTransforms[i] = _mercury;
+                continue;
+            }
+
+            _cachedBodyTransforms[i] = GameObject.Find(name)?.transform;
+        }
+
+        _bodyCacheDirty = false;
+    }
+
     void SampleAttractors()
     {
+        EnsureBodyCache();
         _attractorCount = 0;
-        AddAttractor(_sun != null ? _sun.gameObject : GameObject.Find("Sun"));
 
-        for (int i = 0; i < SolarSystemCatalog.Bodies.Length && _attractorCount < MaxAttractors; i++)
+        if (_sun != null)
+            AddAttractor(_sun.gameObject);
+
+        if (_cachedBodyTransforms == null)
+            return;
+
+        for (int i = 0; i < _cachedBodyTransforms.Length && _attractorCount < MaxAttractors; i++)
         {
-            string name = SolarSystemCatalog.Bodies[i].objectName;
-            if (name == "Sun")
+            Transform body = _cachedBodyTransforms[i];
+            if (body == null || body.name == "Sun")
                 continue;
 
-            AddAttractor(GameObject.Find(name));
+            AddAttractor(body.gameObject);
         }
     }
 

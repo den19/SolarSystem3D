@@ -19,6 +19,7 @@ public class ProbeViewRig : MonoBehaviour
     RenderTexture _rearLeftRt;
     RenderTexture _rearRightRt;
     bool _active;
+    bool _captureSuppressed;
 
     public static ProbeViewRig EnsureOnHost(GameObject host)
     {
@@ -50,10 +51,12 @@ public class ProbeViewRig : MonoBehaviour
 
         if (!enabled)
         {
+            _instance._captureSuppressed = true;
             _instance.SetCamerasEnabled(false);
             return;
         }
 
+        _instance._captureSuppressed = false;
         _instance.SetCamerasEnabled(_instance._active);
     }
 
@@ -78,6 +81,12 @@ public class ProbeViewRig : MonoBehaviour
         }
 
         EnsureCameras();
+        if (_captureSuppressed)
+        {
+            SetCamerasEnabled(false);
+            return;
+        }
+
         SetCamerasEnabled(true);
         PoseCameras(system.Craft);
     }

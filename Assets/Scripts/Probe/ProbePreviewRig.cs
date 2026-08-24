@@ -11,20 +11,24 @@ public class ProbePreviewRig : MonoBehaviour
 {
     const float PanelWidthPortrait = 300f;
     const float PanelHeightPortrait = 400f;
-    const float PanelWidthLandscape = 260f;
-    const float PanelHeightLandscape = 340f;
+    const float PanelWidthLandscape = 220f;
+    const float PanelHeightLandscape = 240f;
     const float CompactWidthPortrait = 240f;
     const float CompactHeightPortrait = 268f;
-    const float CompactWidthLandscape = 220f;
-    const float CompactHeightLandscape = 248f;
+    const float CompactWidthLandscape = 200f;
+    const float CompactHeightLandscape = 200f;
     const float PortraitImageHeight = 192f;
+    const float PortraitImageHeightLandscape = 120f;
     const float CompactPortraitHeight = 160f;
+    const float CompactPortraitHeightLandscape = 100f;
     const float TitleHeight = 32f;
     const float DescNavHeight = 32f;
     const float DescNavGap = 16f;
     const float DescNavArrowWidth = 36f;
     const float CloseButtonSize = 32f;
     const float Padding = 8f;
+    const float SafeAreaChangeThresholdPx = 2f;
+    const float SafeAreaLayoutDebounceSeconds = 0.25f;
 
     RectTransform _panel;
     HudPanelDrag _drag;
@@ -50,6 +54,15 @@ public class ProbePreviewRig : MonoBehaviour
     bool _customEngine;
     bool _customShield;
     bool _compactMode;
+    int _layoutScreenW = -1;
+    int _layoutScreenH = -1;
+    Rect _layoutSafeArea;
+    bool _layoutLandscape;
+    bool _layoutCompact;
+    float _layoutWidth = -1f;
+    float _layoutHeight = -1f;
+    float _safeAreaLayoutReadyAt = -1f;
+    Rect _pendingSafeArea;
 
     public static ProbePreviewRig EnsureOnHud(Transform hudRoot)
     {
@@ -105,7 +118,71 @@ public class ProbePreviewRig : MonoBehaviour
 
     void Update()
     {
-        LayoutPanel();
+        if (NeedsLayoutPanel())
+            LayoutPanel();
+    }
+
+    bool NeedsLayoutPanel()
+    {
+        if (_panel == null || !_panel.gameObject.activeSelf)
+            return false;
+
+        bool landscape = Screen.width > Screen.height;
+        bool compact = IsCompactMode();
+        if (_layoutScreenW != Screen.width || _layoutScreenH != Screen.height)
+        {
+            ClearSafeAreaLayoutDebounce();
+            return true;
+        }
+
+        if (landscape != _layoutLandscape || compact != _layoutCompact)
+            return true;
+
+        if (HasSignificantSafeAreaChange(Screen.safeArea))
+            return IsSafeAreaLayoutDebounceReady();
+
+        ClearSafeAreaLayoutDebounce();
+        return false;
+    }
+
+    bool HasSignificantSafeAreaChange(Rect safeArea)
+    {
+        return !SafeAreaApproximatelyEqual(_layoutSafeArea, safeArea, SafeAreaChangeThresholdPx);
+    }
+
+    bool IsSafeAreaLayoutDebounceReady()
+    {
+        Rect safeArea = Screen.safeArea;
+        if (_safeAreaLayoutReadyAt < 0f
+            || !SafeAreaApproximatelyEqual(_pendingSafeArea, safeArea, SafeAreaChangeThresholdPx))
+        {
+            _pendingSafeArea = safeArea;
+            _safeAreaLayoutReadyAt = Time.unscaledTime + SafeAreaLayoutDebounceSeconds;
+            return false;
+        }
+
+        return Time.unscaledTime >= _safeAreaLayoutReadyAt;
+    }
+
+    void ClearSafeAreaLayoutDebounce()
+    {
+        _safeAreaLayoutReadyAt = -1f;
+    }
+
+    static bool SafeAreaApproximatelyEqual(Rect a, Rect b, float thresholdPx)
+    {
+        return Mathf.Abs(a.x - b.x) <= thresholdPx
+            && Mathf.Abs(a.y - b.y) <= thresholdPx
+            && Mathf.Abs(a.width - b.width) <= thresholdPx
+            && Mathf.Abs(a.height - b.height) <= thresholdPx;
+    }
+
+    void InvalidateLayoutCache()
+    {
+        _layoutScreenW = -1;
+        _layoutScreenH = -1;
+        _layoutWidth = -1f;
+        _layoutHeight = -1f;
     }
 
     void OnLoadoutChanged()
@@ -395,7 +472,8 @@ public class ProbePreviewRig : MonoBehaviour
         if (_portraitImage == null || _title == null || _description == null)
             return;
 
-        float portraitH = compact ? CompactPortraitHeight : PortraitImageHeight;
+        bool landscape = Screen.width > Screen.height;
+        float portraitH = ResolvePortraitHeight(compact, landscape);
         var portraitRt = _portraitImage.rectTransform;
         portraitRt.offsetMin = new Vector2(Padding, -(Padding + portraitH));
         portraitRt.offsetMax = new Vector2(-Padding, -Padding);
@@ -417,6 +495,26 @@ public class ProbePreviewRig : MonoBehaviour
             _descNavRow.offsetMax = new Vector2(-Padding, Padding + DescNavHeight);
             _descNavRow.gameObject.SetActive(!compact);
         }
+    }
+
+    static float ResolvePortraitHeight(bool compact, bool landscape)
+    {
+        if (compact)
+            return landscape ? CompactPortraitHeightLandscape : CompactPortraitHeight;
+        return landscape ? PortraitImageHeightLandscape : PortraitImageHeight;
+    }
+
+    static void ResolvePanelSize(bool landscape, bool compact, out float width, out float height)
+    {
+        if (compact)
+        {
+            width = landscape ? CompactWidthLandscape : CompactWidthPortrait;
+            height = landscape ? CompactHeightLandscape : CompactHeightPortrait;
+            return;
+        }
+
+        width = landscape ? PanelWidthLandscape : PanelWidthPortrait;
+        height = landscape ? PanelHeightLandscape : PanelHeightPortrait;
     }
 
     void RefreshTexts(ProbeModelKind model, bool compact)
@@ -462,6 +560,7 @@ public class ProbePreviewRig : MonoBehaviour
     void PaginateRawPages(List<string> rawPages)
     {
         _descPages.Clear();
+        Canvas.ForceUpdateCanvases();
         GetDescViewportSize(out float width, out float height);
 
         for (int i = 0; i < rawPages.Count; i++)
@@ -554,20 +653,14 @@ public class ProbePreviewRig : MonoBehaviour
     {
         bool landscape = Screen.width > Screen.height;
         bool compact = IsCompactMode();
-        float panelW = compact
-            ? (landscape ? CompactWidthLandscape : CompactWidthPortrait)
-            : (landscape ? PanelWidthLandscape : PanelWidthPortrait);
-        float panelH = compact
-            ? (landscape ? CompactHeightLandscape : CompactHeightPortrait)
-            : (landscape ? PanelHeightLandscape : PanelHeightPortrait);
-        float portraitH = compact ? CompactPortraitHeight : PortraitImageHeight;
+        ResolvePanelSize(landscape, compact, out float panelW, out float panelH);
+        float portraitH = ResolvePortraitHeight(compact, landscape);
 
         width = panelW - Padding * 2f;
         height = panelH - portraitH - TitleHeight - DescNavHeight - DescNavGap - Padding * 2f;
 
         if (_description != null)
         {
-            Canvas.ForceUpdateCanvases();
             Rect rect = _description.rectTransform.rect;
             if (rect.width > 1f)
                 width = rect.width;
@@ -683,8 +776,14 @@ public class ProbePreviewRig : MonoBehaviour
     void RefreshVisibility(bool useProbe)
     {
         bool show = ShouldShowPreview(useProbe);
+        bool wasActive = _panel != null && _panel.gameObject.activeSelf;
         if (_panel != null)
             _panel.gameObject.SetActive(show);
+        if (show && (!wasActive || NeedsLayoutPanel()))
+        {
+            InvalidateLayoutCache();
+            LayoutPanel();
+        }
     }
 
     bool ShouldShowPreview(bool useProbe)
@@ -709,20 +808,15 @@ public class ProbePreviewRig : MonoBehaviour
 
         bool landscape = Screen.width > Screen.height;
         bool compact = IsCompactMode();
-        float width;
-        float height;
-        if (compact)
-        {
-            width = landscape ? CompactWidthLandscape : CompactWidthPortrait;
-            height = landscape ? CompactHeightLandscape : CompactHeightPortrait;
-        }
-        else
-        {
-            width = landscape ? PanelWidthLandscape : PanelWidthPortrait;
-            height = landscape ? PanelHeightLandscape : PanelHeightPortrait;
-        }
+        ResolvePanelSize(landscape, compact, out float width, out float height);
 
-        _panel.sizeDelta = new Vector2(width, height);
+        bool sizeChanged = !Mathf.Approximately(width, _layoutWidth)
+            || !Mathf.Approximately(height, _layoutHeight)
+            || landscape != _layoutLandscape
+            || compact != _layoutCompact;
+
+        if (sizeChanged)
+            _panel.sizeDelta = new Vector2(width, height);
 
         Canvas canvas = GetComponentInParent<Canvas>();
         SafeAreaInsets.GetCanvasInsets(canvas, out float left, out _, out float top, out _);
@@ -732,9 +826,18 @@ public class ProbePreviewRig : MonoBehaviour
         else
             _panel.anchoredPosition = new Vector2(left + 8f, -(navBottom + 8f));
 
+        _layoutScreenW = Screen.width;
+        _layoutScreenH = Screen.height;
+        _layoutSafeArea = Screen.safeArea;
+        _layoutLandscape = landscape;
+        _layoutCompact = compact;
+        _layoutWidth = width;
+        _layoutHeight = height;
+        ClearSafeAreaLayoutDebounce();
+
         if (_compactMode != compact)
             RefreshContent();
-        else
+        else if (sizeChanged)
             RepaginateIfViewportChanged();
     }
 

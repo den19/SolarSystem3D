@@ -12,7 +12,9 @@ public class ProbeHudController : MonoBehaviour
 
     const float UpdateInterval = 0.1f;
     const float RowHeight = 56f;
+    const float RowHeightLandscape = 42f;
     const float ModelRowHeight = 96f;
+    const float ModelRowHeightLandscape = 70f;
     const float ButtonFontSize = 26f;
     const float ModelLabelFontSizeMin = 18f;
     const float ModelLabelFontSizeMax = 26f;
@@ -21,15 +23,20 @@ public class ProbeHudController : MonoBehaviour
     const float TelemetryStatusFontSize = 22f;
     const float CheckboxSize = 28f;
     const float SliderHeight = 36f;
+    const float SliderHeightLandscape = 28f;
     const float TelemetryWidth = 360f;
     const float TelemetryWidthLandscape = 400f;
     const float TelemetryHeight = 392f;
+    const float TelemetryHeightLandscape = 220f;
     const float TelemetryHeaderHeight = 52f;
     const float BarWidthLandscape = 720f;
     const float BarHeightStandard = 420f;
     const float BarHeightCustom = 466f;
-    const float PipWidthLandscape = 320f;
-    const float PipHeightLandscape = 180f;
+    const float BarHeightLandscape = 280f;
+    const float BarHeightCustomLandscape = 300f;
+    const float BarTopReserve = 24f;
+    const float PipWidthLandscape = 280f;
+    const float PipHeightLandscape = 120f;
     const float PipWidthPortrait = 280f;
     const float PipHeightPortrait = 150f;
     const float PipFrameInset = 4f;
@@ -37,6 +44,8 @@ public class ProbeHudController : MonoBehaviour
     const float ModelScrollArrowWidth = 48f;
     const float ModelButtonWidthPortrait = 148f;
     const float ModelButtonWidthLandscape = 120f;
+    const float SafeAreaChangeThresholdPx = 2f;
+    const float SafeAreaLayoutDebounceSeconds = 0.25f;
 
     RectTransform _root;
     RectTransform _bar;
@@ -71,6 +80,14 @@ public class ProbeHudController : MonoBehaviour
     readonly System.Collections.Generic.Dictionary<ProbeModelKind, Image> _modelButtonImages =
         new System.Collections.Generic.Dictionary<ProbeModelKind, Image>();
     float _nextTelemetry;
+    int _layoutScreenW = -1;
+    int _layoutScreenH = -1;
+    Rect _layoutSafeArea;
+    ProbeModelKind _layoutModel = (ProbeModelKind)(-1);
+    float _layoutModelButtonWidth = -1f;
+    bool _layoutPipsVisible;
+    float _safeAreaLayoutReadyAt = -1f;
+    Rect _pendingSafeArea;
 
     public static ProbeHudController EnsureOnCanvas(Transform canvasTransform)
     {
@@ -122,6 +139,9 @@ public class ProbeHudController : MonoBehaviour
         RefreshLabels();
         RefreshTelemetryHeader();
         RefreshTelemetryNow();
+        ApplyHudFontSizes();
+        InvalidateLayoutCache();
+        Layout();
     }
 
     void OnUseProbeChanged(bool _) => RefreshRootVisibility();
@@ -139,13 +159,79 @@ public class ProbeHudController : MonoBehaviour
 
     void Update()
     {
-        Layout();
+        if (NeedsLayout())
+            Layout();
+
         if (Time.unscaledTime < _nextTelemetry)
             return;
 
         _nextTelemetry = Time.unscaledTime + UpdateInterval;
         RefreshTelemetryNow();
         RefreshPips();
+    }
+
+    bool NeedsLayout()
+    {
+        if (_bar == null)
+            return false;
+        if (_layoutScreenW != Screen.width || _layoutScreenH != Screen.height)
+        {
+            ClearSafeAreaLayoutDebounce();
+            return true;
+        }
+
+        if (_layoutModel != ProbeSettings.Model)
+            return true;
+        bool pipsVisible = ProbeSettings.ShowProbeViews
+            && ProbeSystemController.Instance != null
+            && ProbeSystemController.Instance.IsFlying;
+        if (pipsVisible != _layoutPipsVisible)
+            return true;
+
+        if (HasSignificantSafeAreaChange(Screen.safeArea))
+            return IsSafeAreaLayoutDebounceReady();
+
+        ClearSafeAreaLayoutDebounce();
+        return false;
+    }
+
+    bool HasSignificantSafeAreaChange(Rect safeArea)
+    {
+        return !SafeAreaApproximatelyEqual(_layoutSafeArea, safeArea, SafeAreaChangeThresholdPx);
+    }
+
+    bool IsSafeAreaLayoutDebounceReady()
+    {
+        Rect safeArea = Screen.safeArea;
+        if (_safeAreaLayoutReadyAt < 0f
+            || !SafeAreaApproximatelyEqual(_pendingSafeArea, safeArea, SafeAreaChangeThresholdPx))
+        {
+            _pendingSafeArea = safeArea;
+            _safeAreaLayoutReadyAt = Time.unscaledTime + SafeAreaLayoutDebounceSeconds;
+            return false;
+        }
+
+        return Time.unscaledTime >= _safeAreaLayoutReadyAt;
+    }
+
+    void ClearSafeAreaLayoutDebounce()
+    {
+        _safeAreaLayoutReadyAt = -1f;
+    }
+
+    static bool SafeAreaApproximatelyEqual(Rect a, Rect b, float thresholdPx)
+    {
+        return Mathf.Abs(a.x - b.x) <= thresholdPx
+            && Mathf.Abs(a.y - b.y) <= thresholdPx
+            && Mathf.Abs(a.width - b.width) <= thresholdPx
+            && Mathf.Abs(a.height - b.height) <= thresholdPx;
+    }
+
+    void InvalidateLayoutCache()
+    {
+        _layoutScreenW = -1;
+        _layoutScreenH = -1;
+        _layoutModelButtonWidth = -1f;
     }
 
     void Build()
@@ -205,6 +291,8 @@ public class ProbeHudController : MonoBehaviour
         _coachOverlay = ProbeCoachOverlay.EnsureOnHud(_root);
         _previewRig = ProbePreviewRig.EnsureOnHud(_root);
         _helpButton = CreateHelpButton(_root);
+        ApplyHudFontSizes();
+        Layout();
     }
 
     void EnsureExtensions()
@@ -777,17 +865,33 @@ public class ProbeHudController : MonoBehaviour
 
     void Layout()
     {
+        if (_bar == null)
+            return;
+
         bool landscape = Screen.width > Screen.height;
         Canvas canvas = GetComponentInParent<Canvas>();
         SafeAreaInsets.GetCanvasInsets(canvas, out float left, out float right, out float top, out float bottom);
 
         float scale = canvas != null && canvas.scaleFactor > 0.01f ? canvas.scaleFactor : 1f;
         float canvasWidth = Screen.width / scale;
+        float canvasHeight = Screen.height / scale;
         float barWidth = landscape
             ? BarWidthLandscape
             : Mathf.Max(280f, canvasWidth - left - right - 24f);
-        float barHeight = ProbeSettings.Model == ProbeModelKind.Custom ? BarHeightCustom : BarHeightStandard;
+        bool custom = ProbeSettings.Model == ProbeModelKind.Custom;
+        float preferredBar = custom ? BarHeightCustom : BarHeightStandard;
         float timeBar = TimeControlUiBootstrap.BarHeight + TimeControlUiBootstrap.BarBottomMargin + 10f;
+        float navBottom = top + SidePanelUiBootstrap.BarHeight + 8f;
+        float barHeight = preferredBar;
+        if (landscape)
+        {
+            float landscapeCap = custom ? BarHeightCustomLandscape : BarHeightLandscape;
+            float available = canvasHeight - bottom - timeBar - navBottom - BarTopReserve;
+            barHeight = Mathf.Min(landscapeCap, Mathf.Max(BarHeightLandscape * 0.85f, available));
+            barHeight = Mathf.Min(barHeight, preferredBar);
+        }
+
+        ApplyBarContentHeights(landscape);
 
         _bar.anchorMin = new Vector2(0.5f, 0f);
         _bar.anchorMax = new Vector2(0.5f, 0f);
@@ -797,17 +901,30 @@ public class ProbeHudController : MonoBehaviour
 
         float pipW = landscape ? PipWidthLandscape : PipWidthPortrait;
         float pipH = landscape ? PipHeightLandscape : PipHeightPortrait;
-        float navBottom = top + SidePanelUiBootstrap.BarHeight + 8f;
         float telemW = landscape ? TelemetryWidthLandscape : TelemetryWidth;
+        float preferredTelemH = landscape ? TelemetryHeightLandscape : TelemetryHeight;
+        bool pipsVisible = ProbeSettings.ShowProbeViews
+            && ProbeSystemController.Instance != null
+            && ProbeSystemController.Instance.IsFlying;
+        float telemTop = navBottom + (pipsVisible ? pipH + 8f : 0f);
+        float barTopY = bottom + timeBar + barHeight;
+        float spaceAboveBar = canvasHeight - telemTop - barTopY - 12f;
+        float telemH = Mathf.Min(preferredTelemH, Mathf.Max(120f, spaceAboveBar));
 
         _telemetry.anchorMin = new Vector2(1f, 1f);
         _telemetry.anchorMax = new Vector2(1f, 1f);
         _telemetry.pivot = new Vector2(1f, 1f);
-        _telemetry.sizeDelta = new Vector2(telemW, TelemetryHeight);
+        _telemetry.sizeDelta = new Vector2(telemW, telemH);
+        if (_telemetryText != null)
+        {
+            var telemBodyLe = _telemetryText.GetComponent<LayoutElement>();
+            if (telemBodyLe != null)
+                telemBodyLe.minHeight = Mathf.Max(80f, telemH - TelemetryHeaderHeight - 16f);
+        }
         if (_telemetryDrag != null && _telemetryDrag.HasUserOffset)
             _telemetryDrag.EnsureClamped();
         else
-            _telemetry.anchoredPosition = new Vector2(-(right + 10f), -(navBottom + pipH + 8f));
+            _telemetry.anchoredPosition = new Vector2(-(right + 10f), -telemTop);
 
         _forwardPip.anchorMin = new Vector2(0.5f, 1f);
         _forwardPip.anchorMax = new Vector2(0.5f, 1f);
@@ -827,9 +944,85 @@ public class ProbeHudController : MonoBehaviour
         _rearRightPip.sizeDelta = new Vector2(pipW, pipH);
         _rearRightPip.anchoredPosition = new Vector2(-(right + 8f), -navBottom);
 
-        ApplyHudFontSizes();
-        LayoutHelpButton(landscape, right, bottom, timeBar, barWidth);
+        LayoutHelpButton(bottom, timeBar, barWidth, barHeight);
         LayoutModelScroller();
+        Canvas.ForceUpdateCanvases();
+        RefreshModelScrollArrows();
+
+        _layoutScreenW = Screen.width;
+        _layoutScreenH = Screen.height;
+        _layoutSafeArea = Screen.safeArea;
+        _layoutModel = ProbeSettings.Model;
+        _layoutPipsVisible = pipsVisible;
+        ClearSafeAreaLayoutDebounce();
+    }
+
+    void ApplyBarContentHeights(bool landscape)
+    {
+        if (_bar == null)
+            return;
+
+        float rowH = landscape ? RowHeightLandscape : RowHeight;
+        float modelH = landscape ? ModelRowHeightLandscape : ModelRowHeight;
+        float sliderH = landscape ? SliderHeightLandscape : SliderHeight;
+        var vlg = _bar.GetComponent<VerticalLayoutGroup>();
+        if (vlg != null)
+        {
+            int pad = landscape ? 6 : 8;
+            vlg.padding = new RectOffset(10, 10, pad, pad);
+            vlg.spacing = landscape ? 4f : 6f;
+        }
+
+        for (int i = 0; i < _bar.childCount; i++)
+        {
+            var child = _bar.GetChild(i);
+            var le = child.GetComponent<LayoutElement>();
+            if (le == null)
+                continue;
+
+            bool isModelRow = child.name == "ProbeModelRow";
+            float h = isModelRow ? modelH : rowH;
+            le.minHeight = h;
+            le.preferredHeight = h;
+
+            if (isModelRow)
+                ApplyModelRowInnerHeights(child, modelH);
+
+            for (int j = 0; j < child.childCount; j++)
+            {
+                var nested = child.GetChild(j);
+                if (nested.name != null && nested.name.EndsWith("_Slider", System.StringComparison.Ordinal))
+                {
+                    var sliderLe = nested.GetComponent<LayoutElement>();
+                    if (sliderLe != null)
+                    {
+                        sliderLe.minHeight = sliderH;
+                        sliderLe.preferredHeight = sliderH;
+                    }
+                }
+                else if (nested.GetComponent<Toggle>() != null)
+                {
+                    var toggleLe = nested.GetComponent<LayoutElement>();
+                    if (toggleLe != null)
+                    {
+                        toggleLe.minHeight = rowH;
+                        toggleLe.preferredHeight = rowH;
+                    }
+                }
+            }
+        }
+    }
+
+    void ApplyModelRowInnerHeights(Transform modelRow, float modelH)
+    {
+        for (int i = 0; i < modelRow.childCount; i++)
+        {
+            var le = modelRow.GetChild(i).GetComponent<LayoutElement>();
+            if (le == null)
+                continue;
+            le.minHeight = modelH;
+            le.preferredHeight = modelH;
+        }
     }
 
     void LayoutModelScroller()
@@ -838,6 +1031,10 @@ public class ProbeHudController : MonoBehaviour
             return;
 
         float buttonWidth = GetModelButtonWidth();
+        if (Mathf.Approximately(buttonWidth, _layoutModelButtonWidth))
+            return;
+
+        _layoutModelButtonWidth = buttonWidth;
         for (int i = 0; i < _modelScrollContent.childCount; i++)
         {
             var childLe = _modelScrollContent.GetChild(i).GetComponent<LayoutElement>();
@@ -846,12 +1043,9 @@ public class ProbeHudController : MonoBehaviour
             childLe.minWidth = buttonWidth;
             childLe.preferredWidth = buttonWidth;
         }
-
-        Canvas.ForceUpdateCanvases();
-        RefreshModelScrollArrows();
     }
 
-    void LayoutHelpButton(bool landscape, float safeRight, float safeBottom, float timeBar, float barWidth)
+    void LayoutHelpButton(float safeBottom, float timeBar, float barWidth, float barHeight)
     {
         if (_helpButton == null)
             return;
@@ -860,7 +1054,7 @@ public class ProbeHudController : MonoBehaviour
         rt.anchorMin = new Vector2(0.5f, 0f);
         rt.anchorMax = new Vector2(0.5f, 0f);
         rt.pivot = new Vector2(1f, 0f);
-        rt.anchoredPosition = new Vector2(barWidth * 0.5f - 8f, safeBottom + timeBar + (ProbeSettings.Model == ProbeModelKind.Custom ? BarHeightCustom : BarHeightStandard) + 8f);
+        rt.anchoredPosition = new Vector2(barWidth * 0.5f - 8f, safeBottom + timeBar + barHeight + 8f);
     }
 
     void ApplyHudFontSizes()
@@ -930,6 +1124,8 @@ public class ProbeHudController : MonoBehaviour
         RefreshTelemetryHeader();
         RefreshTelemetryNow();
         RefreshRootVisibility();
+        if (NeedsLayout())
+            Layout();
     }
 
     void RefreshModelButtonHighlights()

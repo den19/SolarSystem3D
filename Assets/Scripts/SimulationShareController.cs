@@ -124,6 +124,7 @@ public class SimulationShareController : MonoBehaviour
         float previousAspect = captureCamera.aspect;
         bool minimapWasEnabled = _minimapCamera != null && _minimapCamera.enabled;
         bool sizeMismatch = false;
+        bool captureSuppressed = false;
 
         renderTexture = RenderTexture.GetTemporary(captureWidth, captureHeight, 24, RenderTextureFormat.ARGB32);
         if (renderTexture.width != captureWidth || renderTexture.height != captureHeight)
@@ -134,52 +135,59 @@ public class SimulationShareController : MonoBehaviour
             sizeMismatch = true;
         }
 
-        if (!sizeMismatch)
+        try
         {
-            if (_minimapCamera != null)
-                _minimapCamera.enabled = false;
-            ProbeViewRig.SetEnabledForCapture(false);
-
-            captureCamera.aspect = 9f / 16f;
-            captureCamera.targetTexture = renderTexture;
-            captureCamera.Render();
-
-            yield return new WaitForEndOfFrame();
-
-            try
+            if (!sizeMismatch)
             {
-                RenderTexture previousActive = RenderTexture.active;
-                RenderTexture.active = renderTexture;
+                if (_minimapCamera != null)
+                    _minimapCamera.enabled = false;
+                ProbeViewRig.SetEnabledForCapture(false);
+                captureSuppressed = true;
 
-                texture = new Texture2D(captureWidth, captureHeight, TextureFormat.RGB24, false);
-                texture.ReadPixels(new Rect(0, 0, captureWidth, captureHeight), 0, 0);
-                texture.Apply();
+                captureCamera.aspect = 9f / 16f;
+                captureCamera.targetTexture = renderTexture;
+                captureCamera.Render();
 
-                RenderTexture.active = previousActive;
-                onCaptured(texture);
-            }
-            catch (Exception exception)
-            {
-                if (texture != null)
+                yield return new WaitForEndOfFrame();
+
+                try
                 {
-                    Destroy(texture);
-                    texture = null;
-                }
+                    RenderTexture previousActive = RenderTexture.active;
+                    RenderTexture.active = renderTexture;
 
-                Debug.LogError("SimulationShareController: capture failed. " + exception.Message);
-                onCaptured(null);
+                    texture = new Texture2D(captureWidth, captureHeight, TextureFormat.RGB24, false);
+                    texture.ReadPixels(new Rect(0, 0, captureWidth, captureHeight), 0, 0);
+                    texture.Apply();
+
+                    RenderTexture.active = previousActive;
+                    onCaptured(texture);
+                }
+                catch (Exception exception)
+                {
+                    if (texture != null)
+                    {
+                        Destroy(texture);
+                        texture = null;
+                    }
+
+                    Debug.LogError("SimulationShareController: capture failed. " + exception.Message);
+                    onCaptured(null);
+                }
             }
         }
+        finally
+        {
+            captureCamera.targetTexture = previousTarget;
+            captureCamera.aspect = previousAspect;
 
-        captureCamera.targetTexture = previousTarget;
-        captureCamera.aspect = previousAspect;
+            if (_minimapCamera != null)
+                _minimapCamera.enabled = minimapWasEnabled;
+            if (captureSuppressed)
+                ProbeViewRig.SetEnabledForCapture(true);
 
-        if (_minimapCamera != null)
-            _minimapCamera.enabled = minimapWasEnabled;
-        ProbeViewRig.SetEnabledForCapture(true);
-
-        if (renderTexture != null)
-            RenderTexture.ReleaseTemporary(renderTexture);
+            if (renderTexture != null)
+                RenderTexture.ReleaseTemporary(renderTexture);
+        }
     }
 
     IEnumerator CaptureScreenWithUiAndShareRoutine()

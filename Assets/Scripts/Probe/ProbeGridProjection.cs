@@ -39,6 +39,13 @@ public class ProbeGridProjection : MonoBehaviour
             return;
         }
 
+        // Soft load shed: freeze/hide fabric projection while the probe is outside the grid.
+        if (!system.IsProbeInsideGrid)
+        {
+            SetVisible(false);
+            return;
+        }
+
         EnsureVisuals();
         _grid = _grid != null ? _grid : FindFirstObjectByType<SpacetimeGridController>();
         Vector3 pos = system.Craft.transform.position;

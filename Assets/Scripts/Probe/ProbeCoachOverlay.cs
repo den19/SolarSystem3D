@@ -29,6 +29,8 @@ public class ProbeCoachOverlay : MonoBehaviour
     bool _step1Acknowledged;
     int _lastRenderedStep = int.MinValue;
     float _lastCardWidth = -1f;
+    float _lastCanvasHeight = -1f;
+    float _lastMaxCardHeight = -1f;
     LookAtTarget _lookAt;
 
     public static ProbeCoachOverlay EnsureOnHud(Transform hudRoot)
@@ -209,7 +211,6 @@ public class ProbeCoachOverlay : MonoBehaviour
         if (!show)
             return;
 
-        LayoutCardIfNeeded(force: true);
         RefreshStep(forceLayout: true);
     }
 
@@ -221,14 +222,66 @@ public class ProbeCoachOverlay : MonoBehaviour
         Canvas canvas = GetComponentInParent<Canvas>();
         float scale = canvas != null && canvas.scaleFactor > 0.01f ? canvas.scaleFactor : 1f;
         float canvasWidth = Screen.width / scale;
+        float canvasHeight = Screen.height / scale;
         float width = Mathf.Min(Mathf.Max(320f, canvasWidth * 0.9f), 760f);
-        if (!force && Mathf.Abs(width - _lastCardWidth) < 0.5f)
+        float maxHeight = Mathf.Max(200f, Mathf.Min(canvasHeight * 0.88f, canvasHeight - 48f));
+        if (!force
+            && Mathf.Abs(width - _lastCardWidth) < 0.5f
+            && Mathf.Abs(canvasHeight - _lastCanvasHeight) < 0.5f
+            && Mathf.Abs(maxHeight - _lastMaxCardHeight) < 0.5f)
             return;
 
         _lastCardWidth = width;
+        _lastCanvasHeight = canvasHeight;
+        _lastMaxCardHeight = maxHeight;
         _card.sizeDelta = new Vector2(width, _card.sizeDelta.y);
         SyncTextPreferredHeights();
         RebuildCardLayout();
+        ClampCardHeight(width, maxHeight);
+    }
+
+    void ClampCardHeight(float width, float maxHeight)
+    {
+        if (_card == null)
+            return;
+
+        var fitter = _card.GetComponent<ContentSizeFitter>();
+        if (fitter != null)
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        Canvas.ForceUpdateCanvases();
+        LayoutRebuilder.ForceRebuildLayoutImmediate(_card);
+
+        float preferred = LayoutUtility.GetPreferredHeight(_card);
+        if (preferred <= maxHeight + 0.5f)
+            return;
+
+        if (fitter != null)
+            fitter.verticalFit = ContentSizeFitter.FitMode.Unconstrained;
+        _card.sizeDelta = new Vector2(width, maxHeight);
+
+        var vlg = _card.GetComponent<VerticalLayoutGroup>();
+        float chrome = 56f + 14f;
+        if (vlg != null)
+            chrome = vlg.padding.top + vlg.padding.bottom + vlg.spacing * 3f + 56f;
+
+        float stepH = _stepLabel != null ? LayoutUtility.GetPreferredHeight(_stepLabel.rectTransform) : 0f;
+        float titleH = _title != null ? LayoutUtility.GetPreferredHeight(_title.rectTransform) : 0f;
+        float bodyBudget = Mathf.Max(48f, maxHeight - chrome - stepH - titleH);
+        if (_body != null)
+        {
+            var bodyLe = _body.GetComponent<LayoutElement>();
+            if (bodyLe != null)
+            {
+                bodyLe.minHeight = Mathf.Min(bodyLe.preferredHeight, bodyBudget);
+                bodyLe.preferredHeight = bodyBudget;
+            }
+
+            _body.overflowMode = TextOverflowModes.Ellipsis;
+        }
+
+        Canvas.ForceUpdateCanvases();
+        LayoutRebuilder.ForceRebuildLayoutImmediate(_card);
     }
 
     void RebuildCardLayout()
@@ -272,12 +325,14 @@ public class ProbeCoachOverlay : MonoBehaviour
         string bodyKey = "ProbeCoachStep" + step + "Body";
         _title.text = T(titleKey, titleKey);
         _body.text = T(bodyKey, bodyKey);
+        if (_body != null)
+            _body.overflowMode = TextOverflowModes.Overflow;
         SyncTextPreferredHeights();
 
         if (_backButton != null)
             _backButton.interactable = step > FirstCoachStep;
 
-        RebuildCardLayout();
+        LayoutCardIfNeeded(force: true);
     }
 
     void SyncTextPreferredHeights()
