@@ -27,6 +27,8 @@ public class ProbeCoachOverlay : MonoBehaviour
     const int FirstCoachStep = 1;
     int _manualStep = -1;
     bool _step1Acknowledged;
+    /// <summary>Skip hides overlay for this play session; prefs unchanged.</summary>
+    bool _sessionSkipped;
     int _lastRenderedStep = int.MinValue;
     float _lastCardWidth = -1f;
     float _lastCanvasHeight = -1f;
@@ -61,6 +63,9 @@ public class ProbeCoachOverlay : MonoBehaviour
         ProbeSettings.UseProbeChanged += OnProbeSettingChanged;
         LocalizationManager.OnLanguageChanged += RefreshLabels;
         _lookAt = FindFirstObjectByType<LookAtTarget>();
+        // Doc §2.8: auto starts at step 2 while UseProbe is already on.
+        if (ProbeSettings.UseProbe)
+            _step1Acknowledged = true;
         RefreshVisibility();
     }
 
@@ -71,7 +76,13 @@ public class ProbeCoachOverlay : MonoBehaviour
         LocalizationManager.OnLanguageChanged -= RefreshLabels;
     }
 
-    void OnProbeSettingChanged(bool _) => RefreshVisibility();
+    void OnProbeSettingChanged(bool enabled)
+    {
+        // Doc §2.8: with UseProbe on, auto coach starts at step 2 (step 1 is obsolete).
+        if (enabled)
+            _step1Acknowledged = true;
+        RefreshVisibility();
+    }
 
     void Update()
     {
@@ -158,13 +169,20 @@ public class ProbeCoachOverlay : MonoBehaviour
             return;
         }
 
+        _sessionSkipped = false;
+        if (ProbeSettings.UseProbe)
+            _step1Acknowledged = true;
         _manualStep = ResolveAutoStep();
+        bool wasActive = gameObject.activeSelf;
         RefreshVisibility();
+        if (wasActive && gameObject.activeSelf)
+            RefreshStep(forceLayout: true);
     }
 
     void SkipCoach()
     {
         _manualStep = -1;
+        _sessionSkipped = true;
         gameObject.SetActive(false);
     }
 
@@ -203,15 +221,16 @@ public class ProbeCoachOverlay : MonoBehaviour
 
     public void RefreshVisibility()
     {
-        if (!ProbeSettings.UseProbe)
-            return;
-
         bool show = ShouldShow();
-        gameObject.SetActive(show);
+        bool wasActive = gameObject.activeSelf;
+        if (wasActive != show)
+            gameObject.SetActive(show);
         if (!show)
             return;
 
-        RefreshStep(forceLayout: true);
+        // Only rebuild when presenting — model/loadout refreshes must not re-trigger coach UI.
+        if (!wasActive)
+            RefreshStep(forceLayout: true);
     }
 
     void LayoutCardIfNeeded(bool force = false)
@@ -299,6 +318,9 @@ public class ProbeCoachOverlay : MonoBehaviour
             return false;
 
         if (!ProbeSettings.UseProbe)
+            return false;
+
+        if (_sessionSkipped)
             return false;
 
         var system = ProbeSystemController.Instance;
