@@ -1,8 +1,6 @@
-Venera 7 spacecraft 3D model
-============================
+Venera7 spacecraft 3D model
+=============================
 
-Intended source (CC BY when available): Sketchfab Venera 7
-  https://sketchfab.com/3d-models/venera-7-fd464eedd93a41c98d2608faeb871cd0
-
-If this folder contains a procedural approximation, place Venera7-source.glb next to
-Tools/_probe_mesh_import/ and re-run convert_glb_to_probe_obj.py, then Build Probe Mesh Prefabs.
+Imported from local GLB: Tools\_probe_mesh_import\Venera7-source.glb
+Converted/decimated to OBJ + PNG for Unity mobile.
+Verify and keep creator attribution (CC BY) as required.

@@ -26,19 +26,20 @@ Or menu: **Solar System → Build Probe Mesh Prefabs**
 
 ## Picker visibility (in-game list)
 
-Only **5** mesh packs are shown in the probe picker (`ProbeModelCatalog.ShowInPicker`), **display order**:
+Only **6** mesh packs are shown in the probe picker (`ProbeModelCatalog.ShowInPicker`), **display order**:
 
 | # | Folder | Source quality |
 |---|--------|----------------|
 | 1 | Luna1 | Sketchfab GLB (`Luna1-source.glb`; requires `fast_simplification`) |
 | 2 | Mars3 | Sketchfab CC BY (separate `Mars3PrefabBuilder`) |
-| 3 | Voyager1 | NASA VTAD (separate `Voyager1PrefabBuilder`) |
-| 4 | NewHorizons | NASA VTAD |
-| 5 | Juno | NASA VTAD |
+| 3 | Venera7 | Sketchfab GLB (`Venera7-source.glb`) |
+| 4 | Voyager1 | NASA VTAD (separate `Voyager1PrefabBuilder`) |
+| 5 | NewHorizons | NASA VTAD |
+| 6 | Juno | NASA VTAD |
 
 **Default model** on first launch / Reset: **Luna 1** (`ProbeModelCatalog.GetDefaultPickerModel()`). Hidden pref on load → remap to Luna 1.
 
-**Hidden** until a real GLB replaces procedural stand-in: Venera7, Luna16, Change4, Change5, Tianwen1, Hayabusa2, Akatsuki, Chandrayaan3, Custom. Assets stay under `Assets/Resources/ProbeMeshes/`; re-enable by setting `ShowInPicker = true`.
+**Hidden** until a real GLB replaces procedural stand-in: Luna16, Change4, Change5, Tianwen1, Hayabusa2, Akatsuki, Chandrayaan3, Custom. Assets stay under `Assets/Resources/ProbeMeshes/`; re-enable by setting `ShowInPicker = true`.
 
 ## Sketchfab / 429
 

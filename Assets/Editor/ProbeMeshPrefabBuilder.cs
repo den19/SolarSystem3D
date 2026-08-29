@@ -23,7 +23,7 @@ public static class ProbeMeshPrefabBuilder
     {
         new Spec { FolderName = "NewHorizons", MenuLabel = "New Horizons", AntennaLocal = new Vector3(-0.018f, 1.516f, -0.029f) },
         new Spec { FolderName = "Juno", MenuLabel = "Juno", AntennaLocal = new Vector3(-0.075f, 1.681f, 0.043f) },
-        new Spec { FolderName = "Venera7", MenuLabel = "Venera 7", AntennaLocal = new Vector3(0.004f, 0.827f, 0.003f) },
+        new Spec { FolderName = "Venera7", MenuLabel = "Venera 7", AntennaLocal = new Vector3(0.004f, 0.35f, 0.197f) },
         new Spec { FolderName = "Luna1", MenuLabel = "Luna 1", AntennaLocal = new Vector3(-0.213f, 0.884f, 0.031f) },
         new Spec { FolderName = "Hayabusa2", MenuLabel = "Hayabusa2", AntennaLocal = new Vector3(0f, 0.385f, 0.013f) },
         new Spec { FolderName = "Change4", MenuLabel = "Chang'e 4", AntennaLocal = new Vector3(-0.001f, 0.307f, 0.011f) },

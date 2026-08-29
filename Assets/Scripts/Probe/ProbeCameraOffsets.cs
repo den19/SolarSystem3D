@@ -28,7 +28,7 @@ public static class ProbeCameraOffsets
         /* Juno */ new Profile { CockpitScale = 1.05f, PipScale = 1.05f },
         /* Custom */ DefaultProfile,
         /* Luna1 */ new Profile { CockpitScale = 1.12f, PipScale = 1.08f },
-        /* Venera7 */ DefaultProfile,
+        /* Venera7 */ new Profile { CockpitScale = 1.15f, PipScale = 1.10f },
         /* Luna16 */ DefaultProfile,
         /* Mars3 */ new Profile { CockpitScale = 1.18f, PipScale = 1.12f },
         /* Change4 */ DefaultProfile,
