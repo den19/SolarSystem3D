@@ -1,7 +1,8 @@
 Probe portrait image sources and licenses
 =========================================
 
-All photo portraits are center-cropped/resized derivatives for in-app probe info cards (256×256).
+Most photo portraits are center-cropped/resized derivatives for in-app probe info cards (256×256).
+Venera7.png is contain/fit (no crop) with dark navy padding so the full craft stays visible.
 
 Voyager.png
 -----------
@@ -35,10 +36,14 @@ Author:  See Wikimedia file page
 Venera7.png
 -----------
 Source:  https://commons.wikimedia.org/wiki/File:Venera-7.jpg
+Direct:  https://upload.wikimedia.org/wikipedia/commons/2/28/Venera-7.jpg
 Author:  Stanislav Kozlovskiy
 License: Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
-Subject: 1:1 museum replica of Venera-7 descent vehicle (VDNKh, Moscow).
+Subject: 1:1 museum replica of Venera-7 descent vehicle (Lavochkin / VDNKh Cosmos pavilion, Moscow).
+Derivative: full-frame contain/fit (no crop) into 256×256 PNG with dark navy letterbox padding
+  matching other probe portraits; entire descent vehicle remains visible.
 Attribution: Venera-7 descent vehicle replica photo © Stanislav Kozlovskiy, CC BY-SA 4.0
+  https://creativecommons.org/licenses/by-sa/4.0/
 
 Other probe portraits (Change4, Tianwen1, Change5, Hayabusa2, Akatsuki, Chandrayaan3, Custom)
 are original procedural artwork (no third-party license). Re-bake via Solar System → Bake Probe Portraits.

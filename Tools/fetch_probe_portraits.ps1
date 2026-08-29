@@ -87,6 +87,14 @@ $portraits = @(
         Source = "https://commons.wikimedia.org/wiki/File:Chandrayaan-3_%E2%80%93_Image_of_Vikram_lander_on_lunar_surface_taken_by_Pragyan_rover_navcam_at_1104_IST,_30_August_2023_from_15_meters_away_(3x2_cropped).jpg"
         License = "GODL-India (ISRO)"
         Author = "Indian Space Research Organisation"
+    },
+    @{
+        File = "Venera7.png"
+        Url = "https://upload.wikimedia.org/wikipedia/commons/2/28/Venera-7.jpg"
+        Source = "https://commons.wikimedia.org/wiki/File:Venera-7.jpg"
+        License = "CC BY-SA 4.0"
+        Author = "Stanislav Kozlovskiy"
+        Fit = "contain"  # full craft visible; dark navy letterbox (not center-crop)
     }
 )
 
@@ -126,6 +134,48 @@ function Save-CenterCropPortrait {
     }
 }
 
+# Contain/fit: entire source visible in square with dark navy padding (matches Luna1/Mars3 cards).
+function Save-ContainPortrait {
+    param(
+        [string]$InputPath,
+        [string]$OutputPath,
+        [int]$TargetSize = 256,
+        [double]$Margin = 0.06
+    )
+
+    $padColor = [System.Drawing.Color]::FromArgb(255, 4, 8, 18)
+    $img = [System.Drawing.Image]::FromFile($InputPath)
+    try {
+        $inner = [int]($TargetSize * (1.0 - 2.0 * $Margin))
+        $scale = [Math]::Min($inner / [double]$img.Width, $inner / [double]$img.Height)
+        $dw = [int][Math]::Round($img.Width * $scale)
+        $dh = [int][Math]::Round($img.Height * $scale)
+        $dx = [int](($TargetSize - $dw) / 2)
+        $dy = [int](($TargetSize - $dh) / 2)
+
+        $bmp = New-Object System.Drawing.Bitmap $TargetSize, $TargetSize
+        $g = [System.Drawing.Graphics]::FromImage($bmp)
+        try {
+            $g.Clear($padColor)
+            $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+            $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
+            $g.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
+            $g.CompositingQuality = [System.Drawing.Drawing2D.CompositingQuality]::HighQuality
+            $dst = New-Object System.Drawing.Rectangle $dx, $dy, $dw, $dh
+            $g.DrawImage($img, $dst)
+        }
+        finally {
+            $g.Dispose()
+        }
+
+        $bmp.Save($OutputPath, [System.Drawing.Imaging.ImageFormat]::Png)
+        $bmp.Dispose()
+    }
+    finally {
+        $img.Dispose()
+    }
+}
+
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 New-Item -ItemType Directory -Force -Path $tempDir | Out-Null
 
@@ -133,8 +183,9 @@ $attributionLines = @(
     "Probe portrait image sources and licenses",
     "=========================================",
     "",
-    "All portraits are center-cropped/resized derivatives for in-app probe info cards (256x256).",
-    "Luna1.png and Venera7.png were added earlier; Custom.png remains procedural artwork.",
+    "Most portraits are center-cropped/resized derivatives for in-app probe info cards (256x256).",
+    "Venera7.png uses contain/fit (no crop) with dark navy padding so the full craft stays visible.",
+    "Luna1.png attribution is preserved below; Custom.png remains procedural artwork.",
     ""
 )
 
@@ -147,7 +198,14 @@ foreach ($entry in $portraits) {
     Start-Sleep -Seconds 3
     Invoke-WebRequest -Uri $entry.Url -OutFile $tempFile -UseBasicParsing -Headers @{ "User-Agent" = "SolarSystemV7-probe-portraits/1.0 (educational app; contact: densappstudio)" }
 
-    Save-CenterCropPortrait -InputPath $tempFile -OutputPath $outFile -TargetSize $size
+    $fitMode = if ($entry.ContainsKey("Fit")) { $entry.Fit } else { "crop" }
+    if ($fitMode -eq "contain") {
+        Save-ContainPortrait -InputPath $tempFile -OutputPath $outFile -TargetSize $size
+        Write-Host "  (contain/fit, no crop)"
+    }
+    else {
+        Save-CenterCropPortrait -InputPath $tempFile -OutputPath $outFile -TargetSize $size
+    }
     $bytes = (Get-Item $outFile).Length
     Write-Host "  -> $outFile ($bytes bytes)"
 
@@ -156,21 +214,17 @@ foreach ($entry in $portraits) {
     $attributionLines += "Source:  $($entry.Source)"
     $attributionLines += "Author:  $($entry.Author)"
     $attributionLines += "License: $($entry.License)"
+    if ($fitMode -eq "contain") {
+        $attributionLines += "Derivative: full-frame contain/fit into 256x256 with dark navy padding (no crop)."
+    }
     $attributionLines += ""
 }
 
-# Preserve existing Luna1 / Venera7 attribution blocks
+# Preserve existing Luna1 attribution (not in fetch list above)
 $attributionLines += "Luna1.png"
 $attributionLines += "---------"
 $attributionLines += "Source:  https://commons.wikimedia.org/wiki/File:Luna_1_-_2_Spacecraft.png"
 $attributionLines += "License: Public domain (NASA/NSSDCA)."
-$attributionLines += ""
-$attributionLines += "Venera7.png"
-$attributionLines += "-----------"
-$attributionLines += "Source:  https://commons.wikimedia.org/wiki/File:Venera-7.jpg"
-$attributionLines += "Author:  Stanislav Kozlovskiy"
-$attributionLines += "License: Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)"
-$attributionLines += "Attribution: Venera-7 descent vehicle replica photo (c) Stanislav Kozlovskiy, CC BY-SA 4.0"
 $attributionLines += ""
 $attributionLines += "Custom.png"
 $attributionLines += "----------"
