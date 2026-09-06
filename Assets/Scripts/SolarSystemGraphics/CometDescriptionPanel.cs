@@ -11,6 +11,7 @@ public class CometDescriptionPanel : MonoBehaviour
 
     [SerializeField] GameObject panelRoot;
     [SerializeField] TMP_Text titleText;
+    [SerializeField] TMP_Text orbitElementsText;
     [SerializeField] TMP_Text bodyText;
     [SerializeField] ScrollRect bodyScroll;
     [SerializeField] Button closeButton;
@@ -77,6 +78,7 @@ public class CometDescriptionPanel : MonoBehaviour
 
         _currentComet = info;
         _currentAsteroid = null;
+        EnsureOrbitElementsRow();
         panelRoot.SetActive(true);
         RefreshText();
     }
@@ -88,6 +90,7 @@ public class CometDescriptionPanel : MonoBehaviour
 
         _currentAsteroid = info;
         _currentComet = null;
+        EnsureOrbitElementsRow();
         panelRoot.SetActive(true);
         RefreshText();
     }
@@ -103,6 +106,43 @@ public class CometDescriptionPanel : MonoBehaviour
     {
         if (panelRoot != null)
             panelRoot.SetActive(false);
+    }
+
+    public bool IsOpenFor(Transform body)
+    {
+        if (body == null || panelRoot == null || !panelRoot.activeInHierarchy)
+            return false;
+
+        string objectName = GetCurrentObjectName();
+        if (string.IsNullOrEmpty(objectName))
+            return false;
+
+        for (Transform t = body; t != null; t = t.parent)
+        {
+            if (t.name == objectName)
+                return true;
+        }
+
+        return false;
+    }
+
+    string GetCurrentObjectName()
+    {
+        if (_currentComet != null)
+        {
+            if (!string.IsNullOrEmpty(_currentComet.CometId))
+                return _currentComet.CometId;
+            return _currentComet.gameObject != null ? _currentComet.gameObject.name : null;
+        }
+
+        if (_currentAsteroid != null)
+        {
+            if (!string.IsNullOrEmpty(_currentAsteroid.AsteroidId))
+                return _currentAsteroid.AsteroidId;
+            return _currentAsteroid.gameObject != null ? _currentAsteroid.gameObject.name : null;
+        }
+
+        return null;
     }
 
     void RefreshText()
@@ -132,12 +172,93 @@ public class CometDescriptionPanel : MonoBehaviour
         if (bodyText != null)
             bodyText.text = body;
 
+        RefreshOrbitElements();
+
         if (bodyText != null && bodyScroll != null && bodyScroll.content != null)
         {
             bodyText.ForceMeshUpdate();
             LayoutRebuilder.ForceRebuildLayoutImmediate(bodyScroll.content);
             bodyScroll.verticalNormalizedPosition = 1f;
         }
+    }
+
+    void RefreshOrbitElements()
+    {
+        if (orbitElementsText == null)
+            return;
+
+        string objectName = GetCurrentObjectName();
+        if (OrbitElementsDisplay.TryFormat(objectName, out string text))
+        {
+            orbitElementsText.gameObject.SetActive(true);
+            OrbitElementsDisplay.ConfigureCardTmp(orbitElementsText as TextMeshProUGUI);
+            orbitElementsText.text = text;
+        }
+        else
+        {
+            orbitElementsText.gameObject.SetActive(false);
+        }
+    }
+
+    void EnsureOrbitElementsRow()
+    {
+        if (orbitElementsText != null)
+            return;
+
+        Transform card = panelRoot != null ? panelRoot.transform.Find("Card") : null;
+        if (card == null)
+            return;
+
+        var existing = card.Find("OrbitElements");
+        if (existing != null)
+        {
+            orbitElementsText = existing.GetComponent<TMP_Text>();
+            return;
+        }
+
+        var titleRect = titleText != null ? titleText.rectTransform : null;
+        var scrollRectTransform = bodyScroll != null ? bodyScroll.transform as RectTransform : null;
+        var closeRect = closeButton != null ? closeButton.transform as RectTransform : null;
+
+        if (titleRect != null)
+        {
+            titleRect.anchorMin = new Vector2(0.04f, 0.88f);
+            titleRect.anchorMax = new Vector2(0.82f, 0.98f);
+            titleRect.offsetMin = Vector2.zero;
+            titleRect.offsetMax = Vector2.zero;
+        }
+
+        if (closeRect != null)
+        {
+            closeRect.anchorMin = new Vector2(0.86f, 0.88f);
+            closeRect.anchorMax = new Vector2(0.98f, 0.98f);
+            closeRect.offsetMin = Vector2.zero;
+            closeRect.offsetMax = Vector2.zero;
+        }
+
+        if (scrollRectTransform != null)
+        {
+            scrollRectTransform.anchorMin = new Vector2(0.04f, 0.04f);
+            scrollRectTransform.anchorMax = new Vector2(0.96f, 0.78f);
+            scrollRectTransform.offsetMin = Vector2.zero;
+            scrollRectTransform.offsetMax = Vector2.zero;
+        }
+
+        var orbitGo = new GameObject("OrbitElements");
+        orbitGo.transform.SetParent(card, false);
+        var orbitRect = orbitGo.AddComponent<RectTransform>();
+        orbitRect.anchorMin = new Vector2(0.04f, 0.80f);
+        orbitRect.anchorMax = new Vector2(0.96f, 0.87f);
+        orbitRect.offsetMin = Vector2.zero;
+        orbitRect.offsetMax = Vector2.zero;
+
+        var tmp = orbitGo.AddComponent<TextMeshProUGUI>();
+        OrbitElementsDisplay.ConfigureCardTmp(tmp);
+        tmp.alignment = TextAlignmentOptions.Left;
+        orbitElementsText = tmp;
+
+        if (titleText != null)
+            orbitGo.transform.SetSiblingIndex(titleText.transform.GetSiblingIndex() + 1);
     }
 
     public static CometDescriptionPanel EnsureOnCanvas(Transform canvasTransform)
@@ -188,7 +309,7 @@ public class CometDescriptionPanel : MonoBehaviour
         var titleGo = new GameObject("Title");
         titleGo.transform.SetParent(cardGo.transform, false);
         var titleRect = titleGo.AddComponent<RectTransform>();
-        titleRect.anchorMin = new Vector2(0.04f, 0.84f);
+        titleRect.anchorMin = new Vector2(0.04f, 0.88f);
         titleRect.anchorMax = new Vector2(0.82f, 0.98f);
         titleRect.offsetMin = Vector2.zero;
         titleRect.offsetMax = Vector2.zero;
@@ -207,7 +328,7 @@ public class CometDescriptionPanel : MonoBehaviour
         var closeGo = new GameObject("CloseButton");
         closeGo.transform.SetParent(cardGo.transform, false);
         var closeRect = closeGo.AddComponent<RectTransform>();
-        closeRect.anchorMin = new Vector2(0.86f, 0.84f);
+        closeRect.anchorMin = new Vector2(0.86f, 0.88f);
         closeRect.anchorMax = new Vector2(0.98f, 0.98f);
         closeRect.offsetMin = Vector2.zero;
         closeRect.offsetMax = Vector2.zero;
@@ -229,11 +350,23 @@ public class CometDescriptionPanel : MonoBehaviour
         closeLabel.color = Color.white;
         closeLabel.raycastTarget = false;
 
+        var orbitGo = new GameObject("OrbitElements");
+        orbitGo.transform.SetParent(cardGo.transform, false);
+        var orbitRect = orbitGo.AddComponent<RectTransform>();
+        orbitRect.anchorMin = new Vector2(0.04f, 0.80f);
+        orbitRect.anchorMax = new Vector2(0.96f, 0.87f);
+        orbitRect.offsetMin = Vector2.zero;
+        orbitRect.offsetMax = Vector2.zero;
+        var orbitTmp = orbitGo.AddComponent<TextMeshProUGUI>();
+        OrbitElementsDisplay.ConfigureCardTmp(orbitTmp);
+        orbitTmp.alignment = TextAlignmentOptions.Left;
+        panel.orbitElementsText = orbitTmp;
+
         var scrollGo = new GameObject("ScrollView");
         scrollGo.transform.SetParent(cardGo.transform, false);
         var scrollRect = scrollGo.AddComponent<RectTransform>();
         scrollRect.anchorMin = new Vector2(0.04f, 0.04f);
-        scrollRect.anchorMax = new Vector2(0.96f, 0.82f);
+        scrollRect.anchorMax = new Vector2(0.96f, 0.78f);
         scrollRect.offsetMin = Vector2.zero;
         scrollRect.offsetMax = Vector2.zero;
 

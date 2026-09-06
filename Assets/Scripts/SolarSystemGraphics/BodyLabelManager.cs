@@ -12,6 +12,8 @@ public class BodyLabelManager : MonoBehaviour
     const float BaseCometFontSize = 3.2f;
     const float SunFontScale = 1.7f;
     const float ObservationFontScale = 2f;
+    const float OrbitElementsFontScale = 0.55f;
+    const float OrbitElementsGapFactor = 0.7f;
 
     struct LabelEntry
     {
@@ -22,6 +24,7 @@ public class BodyLabelManager : MonoBehaviour
         public float baseFontSize;
         public bool alwaysVisible;
         public TextMeshPro label;
+        public TextMeshPro orbitElements;
     }
 
     static readonly string[] BodyNames =
@@ -64,7 +67,8 @@ public class BodyLabelManager : MonoBehaviour
             baselineTargetScale = cometTransform.lossyScale.x,
             baseFontSize = BaseCometFontSize,
             alwaysVisible = true,
-            label = CreateCometLabelObject(cometTransform.name + "_Label", labelKey)
+            label = CreateCometLabelObject(cometTransform.name + "_Label", labelKey),
+            orbitElements = CreateOrbitElementsLabel(cometTransform.name + "_OrbitElements")
         });
         RefreshEntryText(_entries[_entries.Count - 1]);
         ApplyVisibility(_visible);
@@ -89,7 +93,8 @@ public class BodyLabelManager : MonoBehaviour
                 verticalOffset = 1.5f,
                 baselineTargetScale = bodyGo.transform.lossyScale.x,
                 baseFontSize = fontSize,
-                label = CreateLabelObject(bodyName + "_OrbitLabel", labelKey)
+                label = CreateLabelObject(bodyName + "_OrbitLabel", labelKey),
+                orbitElements = CreateOrbitElementsLabel(bodyName + "_OrbitElements")
             });
         }
 
@@ -127,6 +132,23 @@ public class BodyLabelManager : MonoBehaviour
         return tmp;
     }
 
+    TextMeshPro CreateOrbitElementsLabel(string objectName)
+    {
+        var labelGo = new GameObject(objectName);
+        labelGo.transform.SetParent(transform, false);
+        var tmp = labelGo.AddComponent<TextMeshPro>();
+        tmp.fontSize = BaseBodyFontSize * OrbitElementsFontScale;
+        tmp.alignment = TextAlignmentOptions.Center;
+        tmp.color = OrbitElementsDisplay.IttenOrange;
+        tmp.textWrappingMode = TextWrappingModes.NoWrap;
+        tmp.characterSpacing = 4f;
+        tmp.sortingOrder = 11;
+        tmp.gameObject.SetActive(false);
+
+        ApplyLabelFont(tmp);
+        return tmp;
+    }
+
     static void ApplyLabelFont(TextMeshPro tmp)
     {
         var lang = LocalizationManager.CurrentLanguage;
@@ -158,6 +180,8 @@ public class BodyLabelManager : MonoBehaviour
             {
                 if (entry.label.gameObject.activeSelf)
                     entry.label.gameObject.SetActive(false);
+                if (entry.orbitElements != null && entry.orbitElements.gameObject.activeSelf)
+                    entry.orbitElements.gameObject.SetActive(false);
                 continue;
             }
 
@@ -173,7 +197,43 @@ public class BodyLabelManager : MonoBehaviour
             Vector3 worldPos = entry.target.position + Vector3.up * GetEffectiveOffset(entry, fontScale);
             entry.label.transform.position = worldPos;
             entry.label.transform.rotation = Quaternion.LookRotation(_mainCamera.transform.forward, _mainCamera.transform.up);
+
+            UpdateOrbitElementsLabel(entry, isObserved, worldPos, desiredFontSize);
         }
+    }
+
+    void UpdateOrbitElementsLabel(LabelEntry entry, bool isObserved, Vector3 nameWorldPos, float nameFontSize)
+    {
+        if (entry.orbitElements == null)
+            return;
+
+        string text = string.Empty;
+        bool show = isObserved
+            && _lookAtTarget != null
+            && _lookAtTarget.IsEncyclopediaOpenFor(entry.target)
+            && entry.target != null
+            && OrbitElementsDisplay.TryFormat(entry.target.name, out text);
+
+        if (!show)
+        {
+            if (entry.orbitElements.gameObject.activeSelf)
+                entry.orbitElements.gameObject.SetActive(false);
+            return;
+        }
+
+        if (!entry.orbitElements.gameObject.activeSelf)
+            entry.orbitElements.gameObject.SetActive(true);
+
+        if (entry.orbitElements.text != text)
+            entry.orbitElements.text = text;
+
+        float eiFontSize = nameFontSize * OrbitElementsFontScale;
+        if (!Mathf.Approximately(entry.orbitElements.fontSize, eiFontSize))
+            entry.orbitElements.fontSize = eiFontSize;
+
+        Vector3 eiPos = nameWorldPos - _mainCamera.transform.up * (nameFontSize * OrbitElementsGapFactor);
+        entry.orbitElements.transform.position = eiPos;
+        entry.orbitElements.transform.rotation = Quaternion.LookRotation(_mainCamera.transform.forward, _mainCamera.transform.up);
     }
 
     static bool IsObservedEntry(LabelEntry entry, Transform observedTarget)
@@ -223,6 +283,18 @@ public class BodyLabelManager : MonoBehaviour
         }
 
         entry.label.text = text;
+
+        if (entry.orbitElements != null)
+        {
+            entry.orbitElements.font = LocalizationFontHelper.GetFontForLanguage(lang);
+            var eiOverlay = LocalizationFontHelper.GetOverlayMaterialForLanguage(lang);
+            if (eiOverlay != null)
+                entry.orbitElements.fontSharedMaterial = eiOverlay;
+            entry.orbitElements.color = OrbitElementsDisplay.IttenOrange;
+
+            if (entry.target != null && OrbitElementsDisplay.TryFormat(entry.target.name, out string eiText))
+                entry.orbitElements.text = eiText;
+        }
     }
 
     void ApplyVisibility(bool visible)
@@ -232,6 +304,8 @@ public class BodyLabelManager : MonoBehaviour
         {
             if (_entries[i].label != null)
                 _entries[i].label.gameObject.SetActive(ShouldShowEntry(_entries[i], visible));
+            if (_entries[i].orbitElements != null)
+                _entries[i].orbitElements.gameObject.SetActive(false);
         }
     }
 

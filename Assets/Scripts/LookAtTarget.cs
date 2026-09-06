@@ -10,6 +10,8 @@ public class LookAtTarget : MonoBehaviour {
 
     public static event Action<GameObject> OnTargetChanged;
 
+    string _openEncyclopediaBodyName;
+
     [Tooltip("This is the object that the script's game object will look at by default")]
     public GameObject defaultTarget; // the default target that the camera should look at
 
@@ -120,6 +122,8 @@ public class LookAtTarget : MonoBehaviour {
 
     void MakeAllDescriptionsInvisible()
     {
+        _openEncyclopediaBodyName = null;
+
         SetDescriptionActive(theEarthGameObject, false);
         SetDescriptionActive(theMoonGameObject, false);
         SetDescriptionActive(theMarsGameObject, false);
@@ -150,7 +154,7 @@ public class LookAtTarget : MonoBehaviour {
             description.SetActive(active);
     }
 
-    void MakeDescriptionVisible(GameObject planet)
+    void MakeDescriptionVisible(GameObject planet, string bodyName)
     {
         if (planet == null)
             return;
@@ -159,6 +163,60 @@ public class LookAtTarget : MonoBehaviour {
         var layout = planet.GetComponent<BodyDescriptionPanelLayout>();
         if (layout != null)
             layout.ApplyLayout();
+
+        _openEncyclopediaBodyName = bodyName;
+        OrbitElementsDisplay.EnsureCardRow(planet, bodyName);
+    }
+
+    /// <summary>
+    /// True while the encyclopedia card for this body is open (not merely focused).
+    /// </summary>
+    public bool IsEncyclopediaOpenFor(Transform body)
+    {
+        if (body == null)
+            return false;
+
+        if (CometDescriptionPanel.Instance != null && CometDescriptionPanel.Instance.IsOpenFor(body))
+            return true;
+
+        for (Transform t = body; t != null; t = t.parent)
+        {
+            if (t.name == "Sun")
+                return false;
+
+            GameObject panel = GetPlanetDescriptionPanel(t.name);
+            if (panel != null && panel.activeInHierarchy)
+                return true;
+        }
+
+        return false;
+    }
+
+    GameObject GetPlanetDescriptionPanel(string planetName)
+    {
+        switch (planetName)
+        {
+            case "Sun": return theSunGameObject;
+            case "Earth": return theEarthGameObject;
+            case "Moon": return theMoonGameObject;
+            case "Mars": return theMarsGameObject;
+            case "Mercury": return theMercuryGameObject;
+            case "Venus": return theVenusGameObject;
+            case "Jupiter": return theJupiterGameObject;
+            case "Saturn": return theSaturnGameObject;
+            case "Titan": return theTitanGameObject;
+            case "Ganymede": return theGanymedeGameObject;
+            case "Io": return theIoGameObject;
+            case "Europa": return theEuropaGameObject;
+            case "Callisto": return theCallistoGameObject;
+            case "Phobos": return thePhobosGameObject;
+            case "Deimos": return theDeimosGameObject;
+            case "Uranus": return theUranusGameObject;
+            case "Neptune": return theNeptuneGameObject;
+            case "Triton": return theTritonGameObject;
+            case "Pluto": return thePlutoGameObject;
+            default: return null;
+        }
     }
 
     void WireDescriptionCloseButtons()
@@ -467,7 +525,12 @@ public class LookAtTarget : MonoBehaviour {
             CometDescriptionPanel.EnsureOnCanvas(myCanvasGameObject.transform);
 
         if (CometDescriptionPanel.Instance != null)
+        {
             CometDescriptionPanel.Instance.Show(info);
+            _openEncyclopediaBodyName = !string.IsNullOrEmpty(info.CometId)
+                ? info.CometId
+                : info.gameObject.name;
+        }
     }
 
     void ShowAsteroidDescription(AsteroidInfo info)
@@ -479,7 +542,12 @@ public class LookAtTarget : MonoBehaviour {
             CometDescriptionPanel.EnsureOnCanvas(myCanvasGameObject.transform);
 
         if (CometDescriptionPanel.Instance != null)
+        {
             CometDescriptionPanel.Instance.Show(info);
+            _openEncyclopediaBodyName = !string.IsNullOrEmpty(info.AsteroidId)
+                ? info.AsteroidId
+                : info.gameObject.name;
+        }
     }
 
     public static bool IsCometObject(GameObject go)
@@ -520,25 +588,25 @@ public class LookAtTarget : MonoBehaviour {
 
     private void ShowDescriptionForPlanet(string planetName)
     {
-        if (planetName == "Sun" && theSunGameObject) MakeDescriptionVisible(theSunGameObject);
-        else if (planetName == "Earth" && theEarthGameObject) MakeDescriptionVisible(theEarthGameObject);
-        else if (planetName == "Moon" && theMoonGameObject) MakeDescriptionVisible(theMoonGameObject);
-        else if (planetName == "Mars" && theMarsGameObject) MakeDescriptionVisible(theMarsGameObject);
-        else if (planetName == "Mercury" && theMercuryGameObject) MakeDescriptionVisible(theMercuryGameObject);
-        else if (planetName == "Venus" && theVenusGameObject) MakeDescriptionVisible(theVenusGameObject);
-        else if (planetName == "Jupiter" && theJupiterGameObject) MakeDescriptionVisible(theJupiterGameObject);
-        else if (planetName == "Saturn" && theSaturnGameObject) MakeDescriptionVisible(theSaturnGameObject);
-        else if (planetName == "Titan" && theTitanGameObject) MakeDescriptionVisible(theTitanGameObject);
-        else if (planetName == "Ganymede" && theGanymedeGameObject) MakeDescriptionVisible(theGanymedeGameObject);
-        else if (planetName == "Io" && theIoGameObject) MakeDescriptionVisible(theIoGameObject);
-        else if (planetName == "Europa" && theEuropaGameObject) MakeDescriptionVisible(theEuropaGameObject);
-        else if (planetName == "Callisto" && theCallistoGameObject) MakeDescriptionVisible(theCallistoGameObject);
-        else if (planetName == "Phobos" && thePhobosGameObject) MakeDescriptionVisible(thePhobosGameObject);
-        else if (planetName == "Deimos" && theDeimosGameObject) MakeDescriptionVisible(theDeimosGameObject);
-        else if (planetName == "Uranus" && theUranusGameObject) MakeDescriptionVisible(theUranusGameObject);
-        else if (planetName == "Neptune" && theNeptuneGameObject) MakeDescriptionVisible(theNeptuneGameObject);
-        else if (planetName == "Triton" && theTritonGameObject) MakeDescriptionVisible(theTritonGameObject);
-        else if (planetName == "Pluto" && thePlutoGameObject) MakeDescriptionVisible(thePlutoGameObject);
+        if (planetName == "Sun" && theSunGameObject) MakeDescriptionVisible(theSunGameObject, planetName);
+        else if (planetName == "Earth" && theEarthGameObject) MakeDescriptionVisible(theEarthGameObject, planetName);
+        else if (planetName == "Moon" && theMoonGameObject) MakeDescriptionVisible(theMoonGameObject, planetName);
+        else if (planetName == "Mars" && theMarsGameObject) MakeDescriptionVisible(theMarsGameObject, planetName);
+        else if (planetName == "Mercury" && theMercuryGameObject) MakeDescriptionVisible(theMercuryGameObject, planetName);
+        else if (planetName == "Venus" && theVenusGameObject) MakeDescriptionVisible(theVenusGameObject, planetName);
+        else if (planetName == "Jupiter" && theJupiterGameObject) MakeDescriptionVisible(theJupiterGameObject, planetName);
+        else if (planetName == "Saturn" && theSaturnGameObject) MakeDescriptionVisible(theSaturnGameObject, planetName);
+        else if (planetName == "Titan" && theTitanGameObject) MakeDescriptionVisible(theTitanGameObject, planetName);
+        else if (planetName == "Ganymede" && theGanymedeGameObject) MakeDescriptionVisible(theGanymedeGameObject, planetName);
+        else if (planetName == "Io" && theIoGameObject) MakeDescriptionVisible(theIoGameObject, planetName);
+        else if (planetName == "Europa" && theEuropaGameObject) MakeDescriptionVisible(theEuropaGameObject, planetName);
+        else if (planetName == "Callisto" && theCallistoGameObject) MakeDescriptionVisible(theCallistoGameObject, planetName);
+        else if (planetName == "Phobos" && thePhobosGameObject) MakeDescriptionVisible(thePhobosGameObject, planetName);
+        else if (planetName == "Deimos" && theDeimosGameObject) MakeDescriptionVisible(theDeimosGameObject, planetName);
+        else if (planetName == "Uranus" && theUranusGameObject) MakeDescriptionVisible(theUranusGameObject, planetName);
+        else if (planetName == "Neptune" && theNeptuneGameObject) MakeDescriptionVisible(theNeptuneGameObject, planetName);
+        else if (planetName == "Triton" && theTritonGameObject) MakeDescriptionVisible(theTritonGameObject, planetName);
+        else if (planetName == "Pluto" && thePlutoGameObject) MakeDescriptionVisible(thePlutoGameObject, planetName);
     }
 
     private void TurnOnDetailCameraForPlanet(string planetName)
